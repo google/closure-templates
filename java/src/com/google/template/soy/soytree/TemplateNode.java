@@ -30,6 +30,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -103,10 +104,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   private static final SoyErrorKind INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE =
       SoyErrorKind.of(
           "Not allowed to alias the last part of the file''s namespace ({0}) "
-              + "to another namespace ({1}).");
+              + "to another namespace ({1}).",
+          Impression.ERROR_TEMPLATE_NODE_INVALID_ALIAS_FOR_LAST_PART_OF_NAMESPACE);
 
   private static final SoyErrorKind DUPLICATE_ALIAS =
-      SoyErrorKind.of("Duplicate alias definition ''{0}''.");
+      SoyErrorKind.of(
+          "Duplicate alias definition ''{0}''.", Impression.ERROR_TEMPLATE_NODE_DUPLICATE_ALIAS);
 
   /**
    * Info from the containing Soy file's {@code modname} and {@code namespace} declarations.

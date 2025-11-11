@@ -32,6 +32,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Copyable;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -49,17 +50,29 @@ import javax.annotation.Nullable;
 public final class CommandTagAttribute implements Copyable<CommandTagAttribute> {
 
   private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
-      SoyErrorKind.of("Attribute ''{0}'' was already specified.");
+      SoyErrorKind.of(
+          "Attribute ''{0}'' was already specified.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_DUPLICATE_ATTRIBUTE);
   public static final SoyErrorKind INVALID_ATTRIBUTE =
-      SoyErrorKind.of("Invalid value for attribute ''{0}'', expected {1}.");
+      SoyErrorKind.of(
+          "Invalid value for attribute ''{0}'', expected {1}.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_INVALID_ATTRIBUTE);
   private static final SoyErrorKind INVALID_ATTRIBUTE_LIST =
-      SoyErrorKind.of("Invalid value for attribute ''{0}'', expected one of {1}.");
+      SoyErrorKind.of(
+          "Invalid value for attribute ''{0}'', expected one of {1}.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_INVALID_ATTRIBUTE_LIST);
   private static final SoyErrorKind INVALID_CSS_BASE_NAMESPACE_NAME =
-      SoyErrorKind.of("Invalid CSS base namespace name ''{0}''.");
+      SoyErrorKind.of(
+          "Invalid CSS base namespace name ''{0}''.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_INVALID_CSS_BASE_NAMESPACE_NAME);
   private static final SoyErrorKind INVALID_REQUIRE_CSS_ATTRIBUTE =
-      SoyErrorKind.of("Invalid required CSS namespace name ''{0}'', expected an identifier.");
+      SoyErrorKind.of(
+          "Invalid required CSS namespace name ''{0}'', expected an identifier.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_INVALID_REQUIRE_CSS_ATTRIBUTE);
   public static final SoyErrorKind MISSING_ATTRIBUTE =
-      SoyErrorKind.of("Missing required attribute ''{0}'' in ''{1}''.");
+      SoyErrorKind.of(
+          "Missing required attribute ''{0}'' in ''{1}''.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_MISSING_ATTRIBUTE);
   public static final SoyErrorKind UNSUPPORTED_ATTRIBUTE_KEY =
       SoyErrorKind.of("Unsupported attribute ''{0}'' for ''{1}'' tag, expected one of {2}.");
   public static final SoyErrorKind UNSUPPORTED_ATTRIBUTE_KEY_SINGLE =

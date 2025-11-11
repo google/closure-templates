@@ -83,6 +83,7 @@ import com.google.template.soy.basicfunctions.MutableArrayMethods.Splice;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Unshift;
 import com.google.template.soy.basicfunctions.NumberListSortMethod;
 import com.google.template.soy.basicfunctions.SortMethod;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -253,175 +254,293 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
   // Keep in alphabetical order.
   private static final SoyErrorKind BAD_FOREACH_TYPE =
-      SoyErrorKind.of("Cannot iterate over {0} of type {1}.");
-  private static final SoyErrorKind BAD_INDEX_TYPE = SoyErrorKind.of("Bad index type {0} for {1}.");
-  private static final SoyErrorKind BAD_KEY_TYPE = SoyErrorKind.of("Bad key type {0} for {1}.");
+      SoyErrorKind.of(
+          "Cannot iterate over {0} of type {1}.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_BAD_FOREACH_TYPE);
+  private static final SoyErrorKind BAD_INDEX_TYPE =
+      SoyErrorKind.of(
+          "Bad index type {0} for {1}.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_BAD_INDEX_TYPE);
+  private static final SoyErrorKind BAD_KEY_TYPE =
+      SoyErrorKind.of(
+          "Bad key type {0} for {1}.", Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_BAD_KEY_TYPE);
   private static final SoyErrorKind BAD_LIST_COMP_TYPE =
-      SoyErrorKind.of("Bad list comprehension type. {0} has type: {1}, but should be a list.");
+      SoyErrorKind.of(
+          "Bad list comprehension type. {0} has type: {1}, but should be a list.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_BAD_LIST_COMP_TYPE);
   private static final SoyErrorKind BAD_MAP_LITERAL_FROM_LIST_TYPE =
       SoyErrorKind.of(
           "Bad list to map constructor. {0} has type: {1}, but should be a list of records with 2"
-              + " fields named key and value.");
+              + " fields named key and value.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_BAD_MAP_LITERAL_FROM_LIST_TYPE);
   private static final SoyErrorKind RECORD_LITERAL_NOT_ALLOWED =
       SoyErrorKind.of(
           "Record literal is not allowed as an argument here. "
-              + "Object identity equality is used so this will never match anything in the list.");
+              + "Object identity equality is used so this will never match anything in the list.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_RECORD_LITERAL_NOT_ALLOWED);
   private static final SoyErrorKind BRACKET_ACCESS_NOT_SUPPORTED =
-      SoyErrorKind.of("Type {0} does not support bracket access.");
+      SoyErrorKind.of(
+          "Type {0} does not support bracket access.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_BRACKET_ACCESS_NOT_SUPPORTED);
   private static final SoyErrorKind BRACKET_ACCESS_NULLABLE_UNION =
       SoyErrorKind.of(
           "Union type that is nullable cannot use bracket access. To access this value, "
-              + "first check for null or use null-safe (\"?[\") operations.");
+              + "first check for null or use null-safe (\"?[\") operations.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_BRACKET_ACCESS_NULLABLE_UNION);
   private static final SoyErrorKind CHECK_NOT_NULL_ON_COMPILE_TIME_NULL =
-      SoyErrorKind.of("Cannot {0} on a value with a static type of ''null'' or ''undefined''.");
+      SoyErrorKind.of(
+          "Cannot {0} on a value with a static type of ''null'' or ''undefined''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_CHECK_NOT_NULL_ON_COMPILE_TIME_NULL);
   private static final SoyErrorKind NULLISH_FIELD_ACCESS =
-      SoyErrorKind.of("Field access not allowed on nullable type.");
+      SoyErrorKind.of(
+          "Field access not allowed on nullable type.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_NULLISH_FIELD_ACCESS);
   private static final SoyErrorKind NO_SUCH_FIELD =
       SoyErrorKind.of(
-          "Field ''{0}'' does not exist on type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
+          "Field ''{0}'' does not exist on type {1}.{2}",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_NO_SUCH_FIELD,
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind METHOD_REFERENCE =
-      SoyErrorKind.of("References to methods are not allowed.", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "References to methods are not allowed.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_METHOD_REFERENCE,
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD =
-      SoyErrorKind.of("Type {0} does not support dot access (consider record instead of map).");
+      SoyErrorKind.of(
+          "Type {0} does not support dot access (consider record instead of map).",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD);
   private static final SoyErrorKind NO_SUCH_EXTERN_OVERLOAD_1 =
-      SoyErrorKind.of("Parameter types, {0}, do not satisfy the function signature, {1}.");
+      SoyErrorKind.of(
+          "Parameter types, {0}, do not satisfy the function signature, {1}.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_NO_SUCH_EXTERN_OVERLOAD_ONE);
   private static final SoyErrorKind NO_SUCH_EXTERN_OVERLOAD_N =
       SoyErrorKind.of(
-          "Parameter types, {0}, do not uniquely satisfy one of the function signatures [{1}].");
+          "Parameter types, {0}, do not uniquely satisfy one of the function signatures [{1}].",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_NO_SUCH_EXTERN_OVERLOAD_N);
   private static final SoyErrorKind INVALID_INSTANCE_OF =
-      SoyErrorKind.of("Not a valid instanceof type operand.");
+      SoyErrorKind.of(
+          "Not a valid instanceof type operand.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_INVALID_INSTANCE_OF);
   private static final SoyErrorKind UNNECESSARY_CAST =
       SoyErrorKind.of(
-          "This `as` expression is unnecessary, it does not change the type of the expression.");
+          "This `as` expression is unnecessary, it does not change the type of the expression.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_UNNECESSARY_CAST);
   private static final SoyErrorKind SUSPECT_CAST =
       SoyErrorKind.of(
           "Conversion of type {0} to {1} may be a mistake. If this is intentional cast to `any`"
-              + " first.");
+              + " first.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_SUSPECT_CAST);
   private static final SoyErrorKind DUPLICATE_KEY_IN_MAP_LITERAL =
-      SoyErrorKind.of("Map literals with duplicate keys are not allowed.  Duplicate key: ''{0}''");
+      SoyErrorKind.of(
+          "Map literals with duplicate keys are not allowed.  Duplicate key: ''{0}''",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_DUPLICATE_KEY_IN_MAP_LITERAL);
   private static final SoyErrorKind KEYS_PASSED_MAP =
       SoyErrorKind.of(
-          "Use the ''mapKeys'' function instead of ''keys'' for objects of type ''map''.");
+          "Use the ''mapKeys'' function instead of ''keys'' for objects of type ''map''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_KEYS_PASSED_MAP);
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
-      SoyErrorKind.of("Accessing item in empty map.");
+      SoyErrorKind.of(
+          "Accessing item in empty map.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_EMPTY_MAP_ACCESS);
   private static final SoyErrorKind INVALID_TYPE_SUBSTITUTION =
-      SoyErrorKind.of("Cannot narrow expression of type ''{0}'' to ''{1}''.");
+      SoyErrorKind.of(
+          "Cannot narrow expression of type ''{0}'' to ''{1}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_INVALID_TYPE_SUBSTITUTION);
   private static final SoyErrorKind MISSING_SOY_TYPE =
-      SoyErrorKind.of("Missing Soy type for node {0}.");
+      SoyErrorKind.of(
+          "Missing Soy type for node {0}.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_MISSING_SOY_TYPE);
   private static final SoyErrorKind NOT_PROTO_INIT =
-      SoyErrorKind.of("Expected a protocol buffer for the second argument.");
+      SoyErrorKind.of(
+          "Expected a protocol buffer for the second argument.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_NOT_PROTO_INIT);
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_RECORD_TYPE =
       SoyErrorKind.of(
-          "Undefined field ''{0}'' for record type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
+          "Undefined field ''{0}'' for record type {1}.{2}",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_UNDEFINED_FIELD_FOR_RECORD_TYPE,
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_FIELD_DOES_NOT_EXIST =
       SoyErrorKind.of(
-          "Proto field ''{0}'' does not exist in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
+          "Proto field ''{0}'' does not exist in {1}.{2}",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_PROTO_FIELD_DOES_NOT_EXIST,
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
-      SoyErrorKind.of("Missing required proto field ''{0}''.");
+      SoyErrorKind.of(
+          "Missing required proto field ''{0}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_PROTO_MISSING_REQUIRED_FIELD);
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
       SoyErrorKind.of(
-          "Cannot assign static type ''null'' or ''undefined'' to proto field ''{0}''.");
+          "Cannot assign static type ''null'' or ''undefined'' to proto field ''{0}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_PROTO_NULL_ARG_TYPE);
   private static final SoyErrorKind PROTO_FIELD_NAME_IMPORT_CONFLICT =
       SoyErrorKind.of(
-          "Imported symbol ''{0}'' conflicts with a field of proto constructor ''{1}''.");
+          "Imported symbol ''{0}'' conflicts with a field of proto constructor ''{1}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_PROTO_FIELD_NAME_IMPORT_CONFLICT);
   private static final SoyErrorKind TYPE_MISMATCH =
-      SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
+      SoyErrorKind.of(
+          "Soy types ''{0}'' and ''{1}'' are not comparable.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_TYPE_MISMATCH);
   private static final SoyErrorKind DECLARED_DEFAULT_TYPE_MISMATCH =
       SoyErrorKind.of(
-          "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
+          "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_DECLARED_DEFAULT_TYPE_MISMATCH);
   private static final SoyErrorKind PARAM_DEPENDS_ON_PARAM =
-      SoyErrorKind.of("Param initializers may not depend on other params.");
+      SoyErrorKind.of(
+          "Param initializers may not depend on other params.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_PARAM_DEPENDS_ON_PARAM);
   private static final SoyErrorKind PARAM_DEPENDS_ON_FUNCTION =
-      SoyErrorKind.of("Only pure functions are allowed in param initializers.");
+      SoyErrorKind.of(
+          "Only pure functions are allowed in param initializers.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_PARAM_DEPENDS_ON_FUNCTION);
   private static final SoyErrorKind STATE_CYCLE =
-      SoyErrorKind.of("Illegal cycle in state param initializers: {0}.");
+      SoyErrorKind.of(
+          "Illegal cycle in state param initializers: {0}.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_STATE_CYCLE);
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP =
       SoyErrorKind.of(
-          "Using arithmetic operator ''{0}'' on Soy types ''{1}'' and ''{2}'' is illegal.");
+          "Using arithmetic operator ''{0}'' on Soy types ''{1}'' and ''{2}'' is illegal.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_INCOMPATIBLE_ARITHMETIC_OP);
   private static final SoyErrorKind INCOMPATIBLE_ARITHMETIC_OP_UNARY =
-      SoyErrorKind.of("Using arithmetic operators on the Soy type ''{0}'' is illegal.");
+      SoyErrorKind.of(
+          "Using arithmetic operators on the Soy type ''{0}'' is illegal.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_INCOMPATIBLE_ARITHMETIC_OP_UNARY);
   private static final SoyErrorKind INCORRECT_ARG_TYPE =
-      SoyErrorKind.of("Function ''{0}'' called with incorrect arg type {1} (expected {2}).");
+      SoyErrorKind.of(
+          "Function ''{0}'' called with incorrect arg type {1} (expected {2}).",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_INCORRECT_ARG_TYPE);
   private static final SoyErrorKind INCORRECT_ARG_STYLE =
-      SoyErrorKind.of("Function called with incorrect arg style (positional or named).");
+      SoyErrorKind.of(
+          "Function called with incorrect arg style (positional or named).",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_INCORRECT_ARG_STYLE);
   private static final SoyErrorKind STRING_LITERAL_REQUIRED =
-      SoyErrorKind.of("Argument to function ''{0}'' must be a string literal.");
+      SoyErrorKind.of(
+          "Argument to function ''{0}'' must be a string literal.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_STRING_LITERAL_REQUIRED);
   private static final SoyErrorKind INVALID_METHOD_BASE =
       SoyErrorKind.of(
-          "Method ''{0}'' does not exist on type ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
+          "Method ''{0}'' does not exist on type ''{1}''.{2}",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_INVALID_METHOD_BASE,
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind MULTIPLE_METHODS_MATCH =
       SoyErrorKind.of(
           "Method ''{0}'' with {1} arg(s) for type ''{2}'' matches multiple method"
-              + " implementations.");
+              + " implementations.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_MULTIPLE_METHODS_MATCH);
   private static final SoyErrorKind METHOD_INVALID_PARAM_NUM =
-      SoyErrorKind.of("Method ''{0}'' called with {1} parameter(s) but expected {2}.");
+      SoyErrorKind.of(
+          "Method ''{0}'' called with {1} parameter(s) but expected {2}.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_METHOD_INVALID_PARAM_NUM);
   private static final SoyErrorKind METHOD_INVALID_PARAM_TYPES =
-      SoyErrorKind.of("Method ''{0}'' called with parameter types ({1}) but expected ({2}).");
+      SoyErrorKind.of(
+          "Method ''{0}'' called with parameter types ({1}) but expected ({2}).",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_METHOD_INVALID_PARAM_TYPES);
   private static final SoyErrorKind METHOD_BASE_TYPE_NULL_SAFE_REQUIRED =
       SoyErrorKind.of(
           "Method calls are not allowed on objects with nullable types (''{0}''). Either ensure"
-              + " the type is non-nullable or perform a null safe access (''?.'').");
+              + " the type is non-nullable or perform a null safe access (''?.'').",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_METHOD_BASE_TYPE_NULL_SAFE_REQUIRED);
   private static final SoyErrorKind EXPLICIT_NULL =
-      SoyErrorKind.of("Use of the ''null'' or ''undefined'' literal is not allowed.");
+      SoyErrorKind.of(
+          "Use of the ''null'' or ''undefined'' literal is not allowed.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_EXPLICIT_NULL);
   private static final SoyErrorKind AMBIGUOUS_INFERRED_TYPE =
       SoyErrorKind.of(
           "Using {0} in the initializer for a parameter with an inferred type is ambiguous. "
-              + "Add an explicit type declaration.");
+              + "Add an explicit type declaration.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_AMBIGUOUS_INFERRED_TYPE);
   private static final SoyErrorKind TEMPLATE_TYPE_PARAMETERS_CANNOT_USE_INFERRED_TYPES =
       SoyErrorKind.of(
-          "Template type parameters cannot be inferred. Instead, explicitly declare the type.");
+          "Template type parameters cannot be inferred. Instead, explicitly declare the type.",
+          Impression
+              .ERROR_RESOLVE_EXPRESSION_TYPES_PASS_TEMPLATE_TYPE_PARAMETERS_CANNOT_USE_INFERRED_TYPES);
   private static final SoyErrorKind CANNOT_USE_INFERRED_TYPES =
-      SoyErrorKind.of("Type cannot be inferred, the param definition requires an explicit type.");
+      SoyErrorKind.of(
+          "Type cannot be inferred, the param definition requires an explicit type.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_CANNOT_USE_INFERRED_TYPES);
   private static final SoyErrorKind PROTO_EXT_FQN =
       SoyErrorKind.of(
           "Extensions fields in proto init functions must be imported symbols. Fully qualified"
-              + " names are not allowed.");
+              + " names are not allowed.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_PROTO_EXT_FQN);
   private static final SoyErrorKind NOT_PROTO_MESSAGE =
-      SoyErrorKind.of("Only proto messages may be instantiated.");
+      SoyErrorKind.of(
+          "Only proto messages may be instantiated.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_NOT_PROTO_MESSAGE);
   private static final SoyErrorKind MUST_USE_TEMPLATES_IMMEDIATELY =
       SoyErrorKind.of(
           "Templates may only be called to initialize a '{'let'}', set a '{'param'}', or as the"
-              + " sole child of a print statement.");
+              + " sole child of a print statement.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_MUST_USE_TEMPLATES_IMMEDIATELY);
   private static final SoyErrorKind CONSTANTS_CANT_BE_NULLABLE =
-      SoyErrorKind.of("Type calculated type, {0}, is nullable, which is not allowed for const.");
+      SoyErrorKind.of(
+          "Type calculated type, {0}, is nullable, which is not allowed for const.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_CONSTANTS_CANT_BE_NULLABLE);
   private static final SoyErrorKind CONSTANTS_DECLARED_MISMATCH =
-      SoyErrorKind.of("Inferred type, {0}, is not assignable to declared type {1}.");
+      SoyErrorKind.of(
+          "Inferred type, {0}, is not assignable to declared type {1}.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_CONSTANTS_DECLARED_MISMATCH);
   private static final SoyErrorKind NOT_ALLOWED_IN_CONSTANT_VALUE =
-      SoyErrorKind.of("This operation is not allowed inside a const value definition.");
+      SoyErrorKind.of(
+          "This operation is not allowed inside a const value definition.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_NOT_ALLOWED_IN_CONSTANT_VALUE);
   private static final SoyErrorKind ILLEGAL_SWITCH_EXPRESSION_TYPE =
-      SoyErrorKind.of("Type ''{0}'' is not allowed in a switch expression.");
+      SoyErrorKind.of(
+          "Type ''{0}'' is not allowed in a switch expression.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_ILLEGAL_SWITCH_EXPRESSION_TYPE);
   private static final SoyErrorKind SWITCH_CASE_TYPE_MISMATCH =
-      SoyErrorKind.of("Case type ''{0}'' not assignable to switch type ''{1}''.");
+      SoyErrorKind.of(
+          "Case type ''{0}'' not assignable to switch type ''{1}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_SWITCH_CASE_TYPE_MISMATCH);
   private static final SoyErrorKind BAD_DELCALL_VARIANT_TYPE =
-      SoyErrorKind.of("Delcall variant must be of type string, int, or proto enum. Found ''{0}''.");
+      SoyErrorKind.of(
+          "Delcall variant must be of type string, int, or proto enum. Found ''{0}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_BAD_DELCALL_VARIANT_TYPE);
   private static final SoyErrorKind INVALID_VARIANT_EXPRESSION =
-      SoyErrorKind.of("Invalid variant literal value ''{0}'' in ''delcall''.");
+      SoyErrorKind.of(
+          "Invalid variant literal value ''{0}'' in ''delcall''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_INVALID_VARIANT_EXPRESSION);
   private static final SoyErrorKind PLURAL_EXPR_TYPE =
-      SoyErrorKind.of("Plural expression must be a number type. Found ''{0}''.");
+      SoyErrorKind.of(
+          "Plural expression must be a number type. Found ''{0}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_PLURAL_EXPR_TYPE);
   private static final SoyErrorKind PLURAL_EXPR_NULLABLE =
-      SoyErrorKind.of("Plural expression should be a non-nullable number type. Found ''{0}''.");
+      SoyErrorKind.of(
+          "Plural expression should be a non-nullable number type. Found ''{0}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_PLURAL_EXPR_NULLABLE);
   private static final SoyErrorKind BAD_CLASS_STRING =
       SoyErrorKind.of(
           "Spaces are not allowed in CSS class names. Either remove the space(s) or pass the"
-              + " individual class names to multiple separate calls of the css() function.");
+              + " individual class names to multiple separate calls of the css() function.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_BAD_CLASS_STRING);
   private static final SoyErrorKind CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL =
       SoyErrorKind.of(
           "The ''kind'' attribute can be omitted only if the let contains only calls with matching "
-              + "kind and the control structures if/switch/for.");
+              + "kind and the control structures if/switch/for.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL);
   static final SoyErrorKind TEMPLATE_CALL_NULLISH =
       SoyErrorKind.of(
-          "Template call expressions must be non-nullish. Try guarding with an '{'if'}' command.");
+          "Template call expressions must be non-nullish. Try guarding with an '{'if'}' command.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_TEMPLATE_CALL_NULLISH);
   private static final SoyErrorKind INVALID_SPREAD_VALUE =
-      SoyErrorKind.of("Value of type ''{0}'' may not be spread here.");
+      SoyErrorKind.of(
+          "Value of type ''{0}'' may not be spread here.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_INVALID_SPREAD_VALUE);
   private static final SoyErrorKind INVALID_ASSIGNMENT_TYPES =
-      SoyErrorKind.of("Cannot set a variable of type ''{0}'' to a value of type ''{1}''.");
+      SoyErrorKind.of(
+          "Cannot set a variable of type ''{0}'' to a value of type ''{1}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_INVALID_ASSIGNMENT_TYPES);
   private static final SoyErrorKind GENERIC_PARAM_NOT_ASSIGNABLE =
-      SoyErrorKind.of("Argument of type ''{0}'' is not assignable to type ''{1}''.");
+      SoyErrorKind.of(
+          "Argument of type ''{0}'' is not assignable to type ''{1}''.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_GENERIC_PARAM_NOT_ASSIGNABLE);
   private static final SoyErrorKind SPREAD_NOT_VARARGS =
       SoyErrorKind.of(
-          "Spread expression argument found where function does not accept a varargs parameter.");
+          "Spread expression argument found where function does not accept a varargs parameter.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_SPREAD_NOT_VARARGS);
   private static final SoyErrorKind SPREAD_NOT_ITERABLE =
-      SoyErrorKind.of("Spread operator cannot be used with non-iterable types.");
+      SoyErrorKind.of(
+          "Spread operator cannot be used with non-iterable types.",
+          Impression.ERROR_RESOLVE_EXPRESSION_TYPES_PASS_SPREAD_NOT_ITERABLE);
 
   private final ErrorReporter errorReporter;
 

@@ -32,6 +32,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -135,120 +136,165 @@ final class HtmlRewriter {
 
   private static final SoyErrorKind BLOCK_CHANGES_CONTEXT =
       SoyErrorKind.of(
-          "{0} changes context from ''{1}'' to ''{2}''.{3}", StyleAllowance.NO_PUNCTUATION);
+          "{0} changes context from ''{1}'' to ''{2}''.{3}",
+          Impression.ERROR_HTML_REWRITER_BLOCK_CHANGES_CONTEXT, StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind SPECIAL_TOKEN_NOT_ALLOWED_WITHIN_HTML_TAG =
       SoyErrorKind.of(
           "Special tokens are not allowed inside html tags, except for within quoted attribute"
-              + " values.");
+              + " values.",
+          Impression.ERROR_HTML_REWRITER_SPECIAL_TOKEN_NOT_ALLOWED_WITHIN_HTML_TAG);
 
   private static final SoyErrorKind BLOCK_ENDS_IN_INVALID_STATE =
-      SoyErrorKind.of("''{0}'' block ends in an invalid state ''{1}''.");
+      SoyErrorKind.of(
+          "''{0}'' block ends in an invalid state ''{1}''.",
+          Impression.ERROR_HTML_REWRITER_BLOCK_ENDS_IN_INVALID_STATE);
 
   private static final SoyErrorKind BLOCK_TRANSITION_DISALLOWED =
-      SoyErrorKind.of("{0} started in ''{1}'', cannot create a {2}.");
+      SoyErrorKind.of(
+          "{0} started in ''{1}'', cannot create a {2}.",
+          Impression.ERROR_HTML_REWRITER_BLOCK_TRANSITION_DISALLOWED);
 
   private static final SoyErrorKind
       CONDITIONAL_BLOCK_ISNT_GUARANTEED_TO_PRODUCE_ONE_ATTRIBUTE_VALUE =
           SoyErrorKind.of(
               "Expected exactly one attribute value, the {0} isn''t guaranteed to produce exactly "
-                  + "one.");
+                  + "one.",
+              Impression
+                  .ERROR_HTML_REWRITER_CONDITIONAL_BLOCK_ISNT_GUARANTEED_TO_PRODUCE_ONE_ATTRIBUTE_VALUE);
 
   private static final SoyErrorKind CONTROL_FLOW_IN_HTML_TAG_NAME =
       SoyErrorKind.of(
           "Invalid location for a ''{0}'' node, html tag names can only be constants or "
-              + "print nodes.");
+              + "print nodes.",
+          Impression.ERROR_HTML_REWRITER_CONTROL_FLOW_IN_HTML_TAG_NAME);
 
   private static final SoyErrorKind EXPECTED_ATTRIBUTE_NAME =
-      SoyErrorKind.of("Expected an attribute name.");
+      SoyErrorKind.of(
+          "Expected an attribute name.", Impression.ERROR_HTML_REWRITER_EXPECTED_ATTRIBUTE_NAME);
 
   private static final SoyErrorKind EXPECTED_ATTRIBUTE_VALUE =
-      SoyErrorKind.of("Expected an attribute value.");
+      SoyErrorKind.of(
+          "Expected an attribute value.", Impression.ERROR_HTML_REWRITER_EXPECTED_ATTRIBUTE_VALUE);
 
   private static final SoyErrorKind EXPECTED_TAG_NAME =
-      SoyErrorKind.of("Expected an html tag name.");
+      SoyErrorKind.of(
+          "Expected an html tag name.", Impression.ERROR_HTML_REWRITER_EXPECTED_TAG_NAME);
 
   private static final SoyErrorKind EXPECTED_WS_EQ_OR_CLOSE_AFTER_ATTRIBUTE_NAME =
       SoyErrorKind.of(
           "Expected whitespace, ''='' or tag close after an attribute name.  If you "
               + "are trying to create an attribute from a mix of text and print nodes, try moving "
               + "it all inside the print node. For example, instead of ''data-'{$foo}''' write "
-              + "'''{'''data-'' + $foo'}'''.");
+              + "'''{'''data-'' + $foo'}'''.",
+          Impression.ERROR_HTML_REWRITER_EXPECTED_WS_EQ_OR_CLOSE_AFTER_ATTRIBUTE_NAME);
 
   private static final SoyErrorKind EXPECTED_WS_OR_CLOSE_AFTER_TAG_OR_ATTRIBUTE =
       SoyErrorKind.of(
           "Expected whitespace or tag close after a tag name or attribute. If you "
               + "are trying to create an attribute or tag name from a mix of text and print nodes, "
               + "try moving it all inside the print node. For example, instead of ''data-'{$foo}'''"
-              + " write '''{'''data-'' + $foo'}'''.");
+              + " write '''{'''data-'' + $foo'}'''.",
+          Impression.ERROR_HTML_REWRITER_EXPECTED_WS_OR_CLOSE_AFTER_TAG_OR_ATTRIBUTE);
 
   private static final SoyErrorKind FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK =
       SoyErrorKind.of(
           "Found the end of an html attribute that was started in another block. Html attributes "
-              + "should be opened and closed in the same block.");
+              + "should be opened and closed in the same block.",
+          Impression.ERROR_HTML_REWRITER_FOUND_END_OF_ATTRIBUTE_STARTED_IN_ANOTHER_BLOCK);
 
   private static final SoyErrorKind FOUND_END_TAG_STARTED_IN_ANOTHER_BLOCK =
       SoyErrorKind.of(
           "Found the end of a tag that was started in another block. Html tags should be opened "
-              + "and closed in the same block.");
+              + "and closed in the same block.",
+          Impression.ERROR_HTML_REWRITER_FOUND_END_TAG_STARTED_IN_ANOTHER_BLOCK);
 
   private static final SoyErrorKind FOUND_END_COMMENT_STARTED_IN_ANOTHER_BLOCK =
       SoyErrorKind.of(
           "Found the end of an html comment that was started in another block. Html comments"
-              + " should be opened and closed in the same block.");
+              + " should be opened and closed in the same block.",
+          Impression.ERROR_HTML_REWRITER_FOUND_END_COMMENT_STARTED_IN_ANOTHER_BLOCK);
 
   private static final SoyErrorKind FOUND_EQ_WITH_ATTRIBUTE_IN_ANOTHER_BLOCK =
-      SoyErrorKind.of("Found an ''='' character in a different block than the attribute name.");
+      SoyErrorKind.of(
+          "Found an ''='' character in a different block than the attribute name.",
+          Impression.ERROR_HTML_REWRITER_FOUND_EQ_WITH_ATTRIBUTE_IN_ANOTHER_BLOCK);
 
   private static final SoyErrorKind HTML_COMMENT_WITHIN_MSG_BLOCK =
-      SoyErrorKind.of("Found HTML comment within ''msg'' block. This is not allowed.");
+      SoyErrorKind.of(
+          "Found HTML comment within ''msg'' block. This is not allowed.",
+          Impression.ERROR_HTML_REWRITER_HTML_COMMENT_WITHIN_MSG_BLOCK);
 
   private static final SoyErrorKind ILLEGAL_HTML_ATTRIBUTE_CHARACTER =
-      SoyErrorKind.of("Illegal unquoted attribute value character.");
+      SoyErrorKind.of(
+          "Illegal unquoted attribute value character.",
+          Impression.ERROR_HTML_REWRITER_ILLEGAL_HTML_ATTRIBUTE_CHARACTER);
 
-  private static final SoyErrorKind BAD_TAG_NAME = SoyErrorKind.of("Illegal tag name character.");
+  private static final SoyErrorKind BAD_TAG_NAME =
+      SoyErrorKind.of("Illegal tag name character.", Impression.ERROR_HTML_REWRITER_BAD_TAG_NAME);
 
   private static final SoyErrorKind BAD_ATTRIBUTE_NAME =
-      SoyErrorKind.of("Illegal attribute name character.");
+      SoyErrorKind.of(
+          "Illegal attribute name character.", Impression.ERROR_HTML_REWRITER_BAD_ATTRIBUTE_NAME);
 
   private static final SoyErrorKind INVALID_LOCATION_FOR_NONPRINTABLE =
       SoyErrorKind.of(
-          "Invalid location for a non-printable node: {0}", StyleAllowance.NO_PUNCTUATION);
+          "Invalid location for a non-printable node: {0}",
+          Impression.ERROR_HTML_REWRITER_INVALID_LOCATION_FOR_NONPRINTABLE,
+          StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INVALID_TAG_NAME =
       SoyErrorKind.of(
           "Tag names may only be raw text or print nodes, consider extracting a '''{'let...'' "
-              + "variable.");
+              + "variable.",
+          Impression.ERROR_HTML_REWRITER_INVALID_TAG_NAME);
 
   private static final SoyErrorKind SELF_CLOSING_CLOSE_TAG =
-      SoyErrorKind.of("Close tags should not be self closing.");
+      SoyErrorKind.of(
+          "Close tags should not be self closing.",
+          Impression.ERROR_HTML_REWRITER_SELF_CLOSING_CLOSE_TAG);
 
   private static final SoyErrorKind SMART_QUOTE_ERROR =
       SoyErrorKind.of(
           "Unexpected smart quote character ''”'',  Did you mean ''\"''?  If this is intentional,"
-              + " replace with the HTML entity ''&ldquo;'' or ''&rdquo;''.");
+              + " replace with the HTML entity ''&ldquo;'' or ''&rdquo;''.",
+          Impression.ERROR_HTML_REWRITER_SMART_QUOTE_ERROR);
 
   private static final SoyErrorKind UNEXPECTED_WS_AFTER_LT =
-      SoyErrorKind.of("Unexpected whitespace after ''<'', did you mean ''&lt;''?");
+      SoyErrorKind.of(
+          "Unexpected whitespace after ''<'', did you mean ''&lt;''?",
+          Impression.ERROR_HTML_REWRITER_UNEXPECTED_WS_AFTER_LT);
 
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
-      SoyErrorKind.of("Unexpected close tag for context-changing tag.");
+      SoyErrorKind.of(
+          "Unexpected close tag for context-changing tag.",
+          Impression.ERROR_HTML_REWRITER_UNEXPECTED_CLOSE_TAG);
 
   private static final SoyErrorKind VELOG_CAN_ONLY_BE_USED_IN_PCDATA =
       SoyErrorKind.of(
-          "'{'velog ...'}' commands can only be used in pcdata context.", StyleAllowance.NO_CAPS);
+          "'{'velog ...'}' commands can only be used in pcdata context.",
+          Impression.ERROR_HTML_REWRITER_VELOG_CAN_ONLY_BE_USED_IN_PCDATA,
+          StyleAllowance.NO_CAPS);
 
   private static final SoyErrorKind SUSPICIOUS_PARTIAL_END_TAG_IN_RCDATA =
-      SoyErrorKind.of("Found suspicious partial end tag inside of a {0} tag.");
+      SoyErrorKind.of(
+          "Found suspicious partial end tag inside of a {0} tag.",
+          Impression.ERROR_HTML_REWRITER_SUSPICIOUS_PARTIAL_END_TAG_IN_RCDATA);
 
   private static final SoyErrorKind UNEXPECTED_LITERAL_BEGIN =
-      SoyErrorKind.of("Invalid location for literal start command.");
+      SoyErrorKind.of(
+          "Invalid location for literal start command.",
+          Impression.ERROR_HTML_REWRITER_UNEXPECTED_LITERAL_BEGIN);
 
   private static final SoyErrorKind UNEXPECTED_LITERAL_END =
-      SoyErrorKind.of("Invalid location for literal end command.");
+      SoyErrorKind.of(
+          "Invalid location for literal end command.",
+          Impression.ERROR_HTML_REWRITER_UNEXPECTED_LITERAL_END);
 
   private static final SoyErrorKind UNEXPECTED_LITERAL_SPAN =
-      SoyErrorKind.of("Literal blocks may not span multiple attribute values.");
+      SoyErrorKind.of(
+          "Literal blocks may not span multiple attribute values.",
+          Impression.ERROR_HTML_REWRITER_UNEXPECTED_LITERAL_SPAN);
 
   private static final String DISALLOWED_SCRIPT_SEQUENCE_TEXT =
       "Within script tags, the character sequences ''<script'' and ''<!--'' are disallowed by the"
@@ -257,14 +303,17 @@ final class HtmlRewriter {
           + " for more details.";
 
   private static final SoyErrorKind DISALLOWED_SCRIPT_SEQUENCE =
-      SoyErrorKind.of(DISALLOWED_SCRIPT_SEQUENCE_TEXT);
+      SoyErrorKind.of(
+          DISALLOWED_SCRIPT_SEQUENCE_TEXT,
+          Impression.ERROR_HTML_REWRITER_DISALLOWED_SCRIPT_SEQUENCE);
 
   private static final SoyErrorKind DISALLOWED_SCRIPT_SEQUENCE_PREFIX =
       SoyErrorKind.of(
           DISALLOWED_SCRIPT_SEQUENCE_TEXT
               + " Prefixes of"
               + " these sequences are also disallowed if they appear at the end of a block of"
-              + " text.");
+              + " text.",
+          Impression.ERROR_HTML_REWRITER_DISALLOWED_SCRIPT_SEQUENCE_PREFIX);
 
   /** Represents features of the parser states. */
   private enum StateFeature {

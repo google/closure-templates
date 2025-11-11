@@ -66,6 +66,7 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
@@ -357,7 +358,7 @@ import javax.annotation.Nullable;
  *         allowed).
  *       - Brackets "[ ]" or question-brackets "?[ ]" with any expression inside the brackets (see
  *         below for definition of expression).
- *    + A special case is when the first key name is "ij". In this case, it's a reference to
+ *    + A special case is when the first key name is "ij". In this case, it's a refe rence to
  *      injected data, and the reference is considered to start from the second key (i.e. the second
  *      key actually becomes the first key in the parsed node).
  *    Examples:   $aaa   $ij.aaa   $aaa.bbb.0.ccc.12   $aaa[0]['bbb'].ccc   $aaa[$bbb + $ccc]
@@ -444,68 +445,109 @@ public class SoyFileParser {
 
   // Template errors:
   private static final SoyErrorKind INVALID_ALIAS_NAME =
-      SoyErrorKind.of("An alias must be a single identifier. Found ''{0}''.");
+      SoyErrorKind.of(
+          "An alias must be a single identifier. Found ''{0}''.",
+          Impression.ERROR_SOY_FILE_PARSER_INVALID_ALIAS_NAME);
   private static final SoyErrorKind INVALID_CALLEE_NAME =
-      SoyErrorKind.of("Invalid callee name ''{0}''.");
+      SoyErrorKind.of(
+          "Invalid callee name ''{0}''.", Impression.ERROR_SOY_FILE_PARSER_INVALID_CALLEE_NAME);
   private static final SoyErrorKind INVALID_TEMPLATE_NAME =
-      SoyErrorKind.of("Template name ''{0}'' must be relative to the file namespace, i.e. a dot "
-          + "followed by an identifier.");
+      SoyErrorKind.of(
+          "Template name ''{0}'' must be relative to the file namespace, i.e. a dot "
+              + "followed by an identifier.",
+          Impression.ERROR_SOY_FILE_PARSER_INVALID_TEMPLATE_NAME);
   private static final SoyErrorKind PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK =
-      SoyErrorKind.of("Tags ''plural'' and ''select'' are not allowed inside ''plural'' blocks.");
+      SoyErrorKind.of(
+          "Tags ''plural'' and ''select'' are not allowed inside ''plural'' blocks.",
+          Impression.ERROR_SOY_FILE_PARSER_PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
   private static final SoyErrorKind PLURAL_CASE_OUT_OF_BOUNDS =
-      SoyErrorKind.of("Plural case ''{0}'' must be a nonnegative integer.");
+      SoyErrorKind.of(
+          "Plural case ''{0}'' must be a nonnegative integer.",
+          Impression.ERROR_SOY_FILE_PARSER_PLURAL_CASE_OUT_OF_BOUNDS);
   private static final SoyErrorKind PLURAL_CASE_MALFORMED =
-      SoyErrorKind.of("Invalid number in ''plural case'' command text.");
+      SoyErrorKind.of(
+          "Invalid number in ''plural case'' command text.",
+          Impression.ERROR_SOY_FILE_PARSER_PLURAL_CASE_MALFORMED);
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
-      SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
+      SoyErrorKind.of(
+          "Unexpected content after ''{0}'', expected only comments or whitespace.",
+          Impression.ERROR_SOY_FILE_PARSER_UNEXPECTED_CONTENT_AFTER);
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
-      SoyErrorKind.of("Unexpected content before ''{0}'', expected only comments or whitespace.");
+      SoyErrorKind.of(
+          "Unexpected content before ''{0}'', expected only comments or whitespace.",
+          Impression.ERROR_SOY_FILE_PARSER_UNEXPECTED_CONTENT_BEFORE);
   // There's nothing technical preventing us from allowing default values on injected parameters,
   // but we're not sure if that's something we want in the language, so we're preventing it for now.
   private static final SoyErrorKind INJECT_DEFAULT_PARAM =
-      SoyErrorKind.of("Default parameters are not supported on injected parameters.");
+      SoyErrorKind.of(
+          "Default parameters are not supported on injected parameters.",
+          Impression.ERROR_SOY_FILE_PARSER_INJECT_DEFAULT_PARAM);
   private static final SoyErrorKind OPTIONAL_DEFAULT_PARAM =
       SoyErrorKind.of(
           "Default parameters are not supported on optional parameters. Did you mean "
-          + "'''{@param ...}'''?");
+              + "'''{@param ...}'''?",
+          Impression.ERROR_SOY_FILE_PARSER_OPTIONAL_DEFAULT_PARAM);
   private static final SoyErrorKind STATE_IN_TEMPLATE =
-      SoyErrorKind.of("@state declarations are only allowed in elements.");
+      SoyErrorKind.of(
+          "@state declarations are only allowed in elements.",
+          Impression.ERROR_SOY_FILE_PARSER_STATE_IN_TEMPLATE);
 
   // Expression errors:
   static final SoyErrorKind DUPLICATE_KEY_NAME =
-      SoyErrorKind.of("Duplicate argument ''{0}''.");
-  private static final SoyErrorKind INVALID_RECORD_KEY = SoyErrorKind.of(
-      "Invalid record key ''{0}''. A record key must be a valid Soy identifier. Did you mean to use a map?");
+      SoyErrorKind.of(
+          "Duplicate argument ''{0}''.", Impression.ERROR_SOY_FILE_PARSER_DUPLICATE_KEY_NAME);
+  private static final SoyErrorKind INVALID_RECORD_KEY =
+      SoyErrorKind.of(
+          "Invalid record key ''{0}''. A record key must be a valid Soy identifier. Did you mean to"
+              + " use a map?",
+          Impression.ERROR_SOY_FILE_PARSER_INVALID_RECORD_KEY);
   private static final SoyErrorKind INTEGER_OUT_OF_RANGE =
       SoyErrorKind.of(
           "Soy integers are constrained to the range of JavaScript integers: "
               + "https://www.ecma-international.org/ecma-262/5.1/#sec-8.5",
+          Impression.ERROR_SOY_FILE_PARSER_INTEGER_OUT_OF_RANGE,
           StyleAllowance.NO_PUNCTUATION);
   static final SoyErrorKind INVALID_PARAM_NAME =
-      SoyErrorKind.of("Invalid param name ''{0}''.");
+      SoyErrorKind.of(
+          "Invalid param name ''{0}''.", Impression.ERROR_SOY_FILE_PARSER_INVALID_PARAM_NAME);
   private static final SoyErrorKind UNEXPECTED_PIPE =
-      SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
+      SoyErrorKind.of(
+          "Unexpected ''|''. Print directives should not have whitespace after ''|''.",
+          Impression.ERROR_SOY_FILE_PARSER_UNEXPECTED_PIPE);
   private static final SoyErrorKind RECORD_NAMED_PARAMS =
-      SoyErrorKind.of("Record literals require named parameters.");
+      SoyErrorKind.of(
+          "Record literals require named parameters.",
+          Impression.ERROR_SOY_FILE_PARSER_RECORD_NAMED_PARAMS);
   // TODO(b/314845158): Remove legacy and/or from parser.
   private static final SoyErrorKind LEGACY_AND_ERROR =
-      SoyErrorKind.of("Found use of deprecated ''and'', use the ''&&'' operator instead.");
+      SoyErrorKind.of(
+          "Found use of deprecated ''and'', use the ''&&'' operator instead.",
+          Impression.ERROR_SOY_FILE_PARSER_LEGACY_AND_ERROR);
   private static final SoyErrorKind LEGACY_OR_ERROR =
-      SoyErrorKind.of("Found use of deprecated ''or'', use the ''||'' operator instead.");
+      SoyErrorKind.of(
+          "Found use of deprecated ''or'', use the ''||'' operator instead.",
+          Impression.ERROR_SOY_FILE_PARSER_LEGACY_OR_ERROR);
   private static final SoyErrorKind MAP_LITERAL_LIST_ARGS =
-      SoyErrorKind.of("The map() function accepts either named parameters or a single positional parameter.");
+      SoyErrorKind.of(
+          "The map() function accepts either named parameters or a single positional parameter.",
+          Impression.ERROR_SOY_FILE_PARSER_MAP_LITERAL_LIST_ARGS);
 
   // Extern errors:
   private static final SoyErrorKind MULTIPLE_IMPLS =
-      SoyErrorKind.of("An extern can only have one implementation per language.");
+      SoyErrorKind.of(
+          "An extern can only have one implementation per language.",
+          Impression.ERROR_SOY_FILE_PARSER_MULTIPLE_IMPLS);
 
   private static final SoyErrorKind THREE_IMPLS =
-      SoyErrorKind.of("An extern cannot have all three of '{'javaimpl'}', '{'jsimpl'}', and '{'autoimpl'}'.");
+      SoyErrorKind.of(
+          "An extern cannot have all three of '{'javaimpl'}', '{'jsimpl'}', and '{'autoimpl'}'.",
+          Impression.ERROR_SOY_FILE_PARSER_THREE_IMPLS);
 
   // Error message that mimics a ParseException
   private static final SoyErrorKind PARSER_ERROR =
       SoyErrorKind.of(
           "parse error at ''{0}'': expected {1}",
+          Impression.ERROR_SOY_FILE_PARSER_PARSER_ERROR,
           StyleAllowance.NO_CAPS,
           StyleAllowance.NO_PUNCTUATION);
 

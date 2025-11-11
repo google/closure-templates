@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -57,18 +58,27 @@ import java.util.TreeSet;
 final class ImportsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind IMPORT_NOT_IN_DEPS =
-      SoyErrorKind.of("Unknown import dep {0}.{1}{2}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Unknown import dep {0}.{1}{2}",
+          Impression.ERROR_IMPORTS_PASS_IMPORT_NOT_IN_DEPS, StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind RELATIVE_IMPORT =
       SoyErrorKind.of(
-          "Relative imports are not supported, use the fully qualified name of the file.");
+          "Relative imports are not supported, use the fully qualified name of the file.",
+          Impression.ERROR_IMPORTS_PASS_RELATIVE_IMPORT);
   private static final SoyErrorKind UNKNOWN_SYMBOL =
-      SoyErrorKind.of("Unknown symbol {0} in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Unknown symbol {0} in {1}.{2}",
+          Impression.ERROR_IMPORTS_PASS_UNKNOWN_SYMBOL, StyleAllowance.NO_PUNCTUATION);
 
   // Naming conflict errors:
   private static final SoyErrorKind IMPORT_CONFLICTS_WITH_TYPE_NAME =
-      SoyErrorKind.of("Import ''{0}'' conflicts with a builtin type of the same name.");
+      SoyErrorKind.of(
+          "Import ''{0}'' conflicts with a builtin type of the same name.",
+          Impression.ERROR_IMPORTS_PASS_IMPORT_CONFLICTS_WITH_TYPE_NAME);
   private static final SoyErrorKind IMPORT_SAME_FILE =
-      SoyErrorKind.of("Importing from the same file is not allowed.");
+      SoyErrorKind.of(
+          "Importing from the same file is not allowed.",
+          Impression.ERROR_IMPORTS_PASS_IMPORT_SAME_FILE);
 
   interface ImportProcessor {
     boolean handlesPath(SourceLogicalPath path);

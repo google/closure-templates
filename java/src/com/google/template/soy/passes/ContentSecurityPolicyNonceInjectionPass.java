@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -82,13 +83,15 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
   private static final SoyErrorKind IJ_CSP_NONCE_REFERENCE =
       SoyErrorKind.of(
           "Found a use of the injected parameter ''{0}''. This parameter is reserved "
-              + "by the Soy compiler for Content Security Policy support.");
+              + "by the Soy compiler for Content Security Policy support.",
+          Impression.ERROR_CONTENT_SECURITY_POLICY_NONCE_INJECTION_PASS_IJ_CSP_NONCE_REFERENCE);
 
   private static final SoyErrorKind MANUAL_NONCE =
       SoyErrorKind.of(
           "Found a ''nonce'' attribute on a tag that is supported by Soy auto-nonce support. "
               + "Instead of manually adding nonces you should just supply the ''csp_nonce'' "
-              + "injected parameter and rely on the Soy compiler to add nonce attributes.");
+              + "injected parameter and rely on the Soy compiler to add nonce attributes.",
+          Impression.ERROR_CONTENT_SECURITY_POLICY_NONCE_INJECTION_PASS_MANUAL_NONCE);
 
   private final ErrorReporter errorReporter;
 

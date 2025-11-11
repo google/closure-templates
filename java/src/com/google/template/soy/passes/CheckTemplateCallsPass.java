@@ -33,6 +33,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -94,46 +95,70 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
   static final SoyErrorKind ARGUMENT_TYPE_MISMATCH =
       SoyErrorKind.of(
-          "Type mismatch on param {0}: expected: {1}, actual: {2}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind DUPLICATE_PARAM = SoyErrorKind.of("Duplicate param ''{0}''.");
+          "Type mismatch on param {0}: expected: {1}, actual: {2}",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_ARGUMENT_TYPE_MISMATCH,
+          StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind DUPLICATE_PARAM =
+      SoyErrorKind.of(
+          "Duplicate param ''{0}''.", Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_DUPLICATE_PARAM);
   private static final SoyErrorKind PASSES_UNUSED_PARAM =
       SoyErrorKind.of(
           "''{0}'' is not a declared parameter of {1} or any indirect callee.{2}",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_PASSES_UNUSED_PARAM,
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind NO_DEFAULT_DELTEMPLATE =
       SoyErrorKind.of(
           "No default deltemplate found for {0}. Please add a default deltemplate, even if it is "
-              + "empty.\nSee go/soy/reference/delegate-templates#basic-structure.");
+              + "empty.\nSee go/soy/reference/delegate-templates#basic-structure.",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_NO_DEFAULT_DELTEMPLATE);
   private static final SoyErrorKind NO_IMPORT_DEFAULT_DELTEMPLATE =
       SoyErrorKind.of(
           "Delcall without without import to file containing default deltemplate ''{0}''. Add:"
               + " import * as unused{1} from ''{2}'';\n"
-              + "See go/soy/reference/delegate-templates#basic-structure.");
+              + "See go/soy/reference/delegate-templates#basic-structure.",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_NO_IMPORT_DEFAULT_DELTEMPLATE);
   private static final SoyErrorKind NO_USEVARIANTTYPE =
-      SoyErrorKind.of("Cannot specify \"variant\" unless the callee specifies \"usevarianttype\".");
+      SoyErrorKind.of(
+          "Cannot specify \"variant\" unless the callee specifies \"usevarianttype\".",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_NO_USEVARIANTTYPE);
   private static final SoyErrorKind BAD_VARIANT_TYPE =
-      SoyErrorKind.of("Expected variant of type {0}, found type {1}.");
-  private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
+      SoyErrorKind.of(
+          "Expected variant of type {0}, found type {1}.",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_BAD_VARIANT_TYPE);
+  private static final SoyErrorKind MISSING_PARAM =
+      SoyErrorKind.of(
+          "Call missing required {0}.", Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_MISSING_PARAM);
   private static final SoyErrorKind STRICT_HTML =
       SoyErrorKind.of(
           "Found call to non stricthtml template. Strict HTML template "
-              + "can only call other strict HTML templates from an HTML context.");
+              + "can only call other strict HTML templates from an HTML context.",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_STRICT_HTML);
   private static final SoyErrorKind CAN_ONLY_CALL_TEMPLATE_TYPES =
-      SoyErrorKind.of("'{'call'}' is only valid on template types, but found type ''{0}''.");
+      SoyErrorKind.of(
+          "'{'call'}' is only valid on template types, but found type ''{0}''.",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_CAN_ONLY_CALL_TEMPLATE_TYPES);
   private static final SoyErrorKind CANNOT_CALL_MIXED_CONTENT_TYPE =
-      SoyErrorKind.of("Cannot call expressions of different content types; found {0} and {1}.");
+      SoyErrorKind.of(
+          "Cannot call expressions of different content types; found {0} and {1}.",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_CANNOT_CALL_MIXED_CONTENT_TYPE);
   private static final SoyErrorKind CANNOT_CALL_MODIFYING_TEMPLATE_DIRECTLY =
       SoyErrorKind.of(
-          "Cannot call modifying templates directly. Call the main modifiable template instead.");
+          "Cannot call modifying templates directly. Call the main modifiable template instead.",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_CANNOT_CALL_MODIFYING_TEMPLATE_DIRECTLY);
   private static final SoyErrorKind CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL =
       SoyErrorKind.of(
           "The ''kind'' attribute can be omitted only if the param contains only calls with"
-              + " matching kind and the control structures if/switch/for.");
+              + " matching kind and the control structures if/switch/for.",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_CAN_OMIT_KIND_ONLY_FOR_SINGLE_CALL);
   private static final SoyErrorKind LAZY_CALL_NOT_HTML =
-      SoyErrorKind.of("Calls with lazy=\"true\" can only be made to html templates.");
+      SoyErrorKind.of(
+          "Calls with lazy=\"true\" can only be made to html templates.",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_LAZY_CALL_NOT_HTML);
 
   private static final SoyErrorKind INVALID_DATA_EXPR =
-      SoyErrorKind.of("''data='' should be a record type, found ''{0}''.", StyleAllowance.NO_CAPS);
+      SoyErrorKind.of(
+          "''data='' should be a record type, found ''{0}''.",
+          Impression.ERROR_CHECK_TEMPLATE_CALLS_PASS_INVALID_DATA_EXPR, StyleAllowance.NO_CAPS);
 
   /** The error reporter that is used in this compiler pass. */
   private final ErrorReporter errorReporter;

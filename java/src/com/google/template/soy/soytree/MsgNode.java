@@ -33,6 +33,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -74,20 +75,24 @@ public final class MsgNode extends AbstractBlockCommandNode
     implements ExprHolderNode, MsgBlockNode, CommandTagAttributesHolder {
 
   private static final SoyErrorKind WRONG_NUMBER_OF_GENDER_EXPRS =
-      SoyErrorKind.of("Attribute ''genders'' should contain 1-3 expressions.");
+      SoyErrorKind.of(
+          "Attribute ''genders'' should contain 1-3 expressions.",
+          Impression.ERROR_MSG_NODE_WRONG_NUMBER_OF_GENDER_EXPRS);
 
   private static final SoyErrorKind BASE_NAME_COLLISION_SINGLE =
       SoyErrorKind.of(
           "Placeholder ''{0}'' collision with element at {1},"
               + " please collapse them into a single Soy variable,"
-              + " or change `phname` of at last one to avoid conflict (go/soy-msg#msg).");
+              + " or change `phname` of at last one to avoid conflict (go/soy-msg#msg).",
+          Impression.ERROR_MSG_NODE_BASE_NAME_COLLISION_SINGLE);
 
   private static final SoyErrorKind BASE_NAME_COLLISION_MULTIPLE =
       SoyErrorKind.of(
           "Placeholder ''{0}'' collision with element at {1},"
               + " please collapse them into a single Soy variable,"
               + " or change `phname`  of at last one to avoid conflict,"
-              + " ditto for these {2} (go/soy-msg#msg).");
+              + " ditto for these {2} (go/soy-msg#msg).",
+          Impression.ERROR_MSG_NODE_BASE_NAME_COLLISION_MULTIPLE);
 
   private static final SoyErrorKind INCOMPATIBLE_PLACEHOLDER_EXAMPLES =
       SoyErrorKind.of(

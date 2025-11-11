@@ -74,6 +74,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -209,14 +210,17 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private static final SoyErrorKind UNION_ACCESSOR_MISMATCH =
       SoyErrorKind.of(
           "Cannot access field ''{0}'' of type ''{1}'', "
-              + "because the different union member types have different access methods.");
-
+              + "because the different union member types have different access methods.",
+          Impression.ERROR_TRANSLATE_EXPR_NODE_VISITOR_UNION_ACCESSOR_MISMATCH);
   private static final SoyErrorKind SOY_JS_SRC_FUNCTION_NOT_FOUND =
       SoyErrorKind.of(
-          "Function ''{0}'' implemented by ''{1}'' does not have a JavaScript implementation.");
+          "Function ''{0}'' implemented by ''{1}'' does not have a JavaScript implementation.",
+          Impression.ERROR_TRANSLATE_EXPR_NODE_VISITOR_SOY_JS_SRC_FUNCTION_NOT_FOUND);
 
   private static final SoyErrorKind SOY_JS_SRC_BAD_LIST_TO_MAP_CONSTRUCTOR =
-      SoyErrorKind.of("List to map constructor encloses ''{0}'', which is not a list.");
+      SoyErrorKind.of(
+          "List to map constructor encloses ''{0}'', which is not a list.",
+          Impression.ERROR_TRANSLATE_EXPR_NODE_VISITOR_SOY_JS_SRC_BAD_LIST_TO_MAP_CONSTRUCTOR);
 
   private final TranslationContext translationContext;
   private final JavaScriptValueFactoryImpl javascriptValueFactory;

@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.template.soy.soytree.SoyTreeUtils.getChildTypeNodes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -48,13 +49,20 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
   static final SoyErrorKind BAD_MAP_OR_SET_KEY_TYPE =
       SoyErrorKind.of(
           "''{0}'' is not allowed as a map or set key type. Allowed key types: "
-              + "bool, int, float, gbigint, number, string, proto enum.");
+              + "bool, int, float, gbigint, number, string, proto enum.",
+          Impression.ERROR_CHECK_DECLARED_TYPES_PASS_BAD_MAP_OR_SET_KEY_TYPE);
   private static final SoyErrorKind VE_BAD_DATA_TYPE =
-      SoyErrorKind.of("Illegal VE metadata type ''{0}''. The metadata must be a proto.");
+      SoyErrorKind.of(
+          "Illegal VE metadata type ''{0}''. The metadata must be a proto.",
+          Impression.ERROR_CHECK_DECLARED_TYPES_PASS_VE_BAD_DATA_TYPE);
   private static final SoyErrorKind LITERAL_TYPE =
-      SoyErrorKind.of("Literal types are not allowed.");
+      SoyErrorKind.of(
+          "Literal types are not allowed.",
+          Impression.ERROR_CHECK_DECLARED_TYPES_PASS_LITERAL_TYPE);
   private static final SoyErrorKind MUTABLE_TYPE =
-      SoyErrorKind.of("Mutable types are only allowed inside '{'autoimpl'}'.");
+      SoyErrorKind.of(
+          "Mutable types are only allowed inside '{'autoimpl'}'.",
+          Impression.ERROR_CHECK_DECLARED_TYPES_PASS_MUTABLE_TYPE);
 
   private final ErrorReporter errorReporter;
 

@@ -30,6 +30,7 @@ import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basicfunctions.BasicFunctions;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -101,18 +102,25 @@ import javax.annotation.Nullable;
 final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind ILLEGAL_CHILD =
-      SoyErrorKind.of("Only HTML attributes are allowed as children of this template call.");
+      SoyErrorKind.of(
+          "Only HTML attributes are allowed as children of this template call.",
+          Impression.ERROR_SOY_ELEMENT_COMPOSITION_PASS_ILLEGAL_CHILD);
 
   private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
-      SoyErrorKind.of("Attribute specified multiple times.");
+      SoyErrorKind.of(
+          "Attribute specified multiple times.",
+          Impression.ERROR_SOY_ELEMENT_COMPOSITION_PASS_DUPLICATE_ATTRIBUTE);
 
   private static final SoyErrorKind SKIP_NODE_NOT_ALLOWED =
-      SoyErrorKind.of("Skip nodes are not allowed on this template call.");
+      SoyErrorKind.of(
+          "Skip nodes are not allowed on this template call.",
+          Impression.ERROR_SOY_ELEMENT_COMPOSITION_PASS_SKIP_NODE_NOT_ALLOWED);
 
   private static final SoyErrorKind EXTRA_ATTRIBUTES_NOT_ALLOWED =
       SoyErrorKind.of(
           "The called template does not specify '''{'attribute *'}''' so only "
-              + "static HTML attributes are allowed.");
+              + "static HTML attributes are allowed.",
+          Impression.ERROR_SOY_ELEMENT_COMPOSITION_PASS_EXTRA_ATTRIBUTES_NOT_ALLOWED);
 
   private final ErrorReporter errorReporter;
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;

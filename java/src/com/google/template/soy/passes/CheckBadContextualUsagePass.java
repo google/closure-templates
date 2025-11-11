@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
@@ -54,31 +55,39 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
               + "2. Convert the HTML to plain text by '{let $html kind=\"html\"}{call ...}{/let}"
               + "{htmlToText($html)}', e.g. inside <title>. "
               + "3. Stringify the HTML by '{let $html kind=\"html\"}{call ...}{/let}"
-              + "{'''' + $html}', e.g. inside <pre>.");
+              + "{'''' + $html}', e.g. inside <pre>.",
+          Impression.ERROR_CHECK_BAD_CONTEXTUAL_USAGE_PASS_CALLS_HTML_FROM_NON_HTML);
 
   private static final SoyErrorKind PRINTS_HTML_FROM_NON_HTML =
       SoyErrorKind.of(
           "Printing HTML from non-HTML context is not allowed. You have these options: "
               + "1. Change the type to non-HTML, e.g. to string or uri. "
               + "2. Convert the HTML to plain text by htmlToText($html), e.g. inside <title>. "
-              + "3. Stringify the HTML by outputting '''' + $html, e.g. inside <pre>.");
+              + "3. Stringify the HTML by outputting '''' + $html, e.g. inside <pre>.",
+          Impression.ERROR_CHECK_BAD_CONTEXTUAL_USAGE_PASS_PRINTS_HTML_FROM_NON_HTML);
 
   private static final SoyErrorKind CALLS_CSS_FROM_NON_CSS =
       SoyErrorKind.of(
           "Calling CSS templates from non-CSS context is not allowed. You likely need to change "
-              + "the kind to \"text\".");
+              + "the kind to \"text\".",
+          Impression.ERROR_CHECK_BAD_CONTEXTUAL_USAGE_PASS_CALLS_CSS_FROM_NON_CSS);
 
   private static final SoyErrorKind PRINTS_CSS_FROM_NON_CSS =
       SoyErrorKind.of(
           "Printing CSS from non-CSS context is not allowed. You likely need to change the type to "
-              + "string (kind=\"text\").");
+              + "string (kind=\"text\").",
+          Impression.ERROR_CHECK_BAD_CONTEXTUAL_USAGE_PASS_PRINTS_CSS_FROM_NON_CSS);
 
   // TODO(jakubvrana): Move to InferenceEngine and apply for other filter directives.
   private static final SoyErrorKind PRINTS_NON_TRU_FROM_TRU =
-      SoyErrorKind.of("In trusted_resource_uri context, only trusted_resource_uri can be printed.");
+      SoyErrorKind.of(
+          "In trusted_resource_uri context, only trusted_resource_uri can be printed.",
+          Impression.ERROR_CHECK_BAD_CONTEXTUAL_USAGE_PASS_PRINTS_NON_TRU_FROM_TRU);
 
   private static final SoyErrorKind CALLS_NON_TRU_FROM_TRU =
-      SoyErrorKind.of("In trusted_resource_uri context, only trusted_resource_uri can be called.");
+      SoyErrorKind.of(
+          "In trusted_resource_uri context, only trusted_resource_uri can be called.",
+          Impression.ERROR_CHECK_BAD_CONTEXTUAL_USAGE_PASS_CALLS_NON_TRU_FROM_TRU);
 
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFull;
