@@ -52,6 +52,8 @@ TEMPLATE_RESTRICTED_UTIL = [
 
 RECORD_PROPERTY = ["RecordProperty.java"]
 
+HTML_TO_TEXT = ["HtmlToText.java"]
+
 java_library(
     name = "record_property",
     srcs = RECORD_PROPERTY,
@@ -92,6 +94,19 @@ java_library(
 )
 
 java_library(
+    name = "html_to_text",
+    srcs = HTML_TO_TEXT,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":data",
+        "//java/src/com/google/template/soy/internal/base",
+        "//java/src/com/google/template/soy/shared/internal:escaping_library",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
     name = "data",
     srcs = glob(
         [
@@ -99,7 +114,7 @@ java_library(
             "restricted/*.java",
             "internal/*.java",
         ],
-        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + TEMPLATE_RESTRICTED_UTIL + RECORD_PROPERTY,
+        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + TEMPLATE_RESTRICTED_UTIL + RECORD_PROPERTY + HTML_TO_TEXT,
     ),
     visibility = ["//visibility:public"],
     exports = [

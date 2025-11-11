@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.basicfunctions;
+package com.google.template.soy.data;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.shared.internal.Sanitizers.HTML5_VOID_ELEMENTS;
@@ -26,9 +26,6 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.internal.base.UnescapeUtils;
 import java.util.ArrayDeque;
 import java.util.Optional;
@@ -136,7 +133,8 @@ public final class HtmlToText {
     if (!(value instanceof SanitizedContent)) {
       return value.stringValue();
     }
-    Preconditions.checkArgument(((SanitizedContent) value).getContentKind() == ContentKind.HTML);
+    Preconditions.checkArgument(
+        ((SanitizedContent) value).getContentKind() == SanitizedContent.ContentKind.HTML);
     String html = value.stringValue();
 
     return new HtmlToTextConverter().convert(html);
