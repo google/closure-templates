@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -55,7 +56,10 @@ public final class ContextualAutoescaper {
       "Invalid or ambiguous syntax prevents Soy from escaping this template correctly:\n";
 
   private static final SoyErrorKind AUTOESCAPE_ERROR =
-      SoyErrorKind.of(AUTOESCAPE_ERROR_PREFIX + "{0}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          AUTOESCAPE_ERROR_PREFIX + "{0}",
+          Impression.ERROR_CONTEXTUAL_AUTOESCAPER_AUTOESCAPE_ERROR,
+          StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;

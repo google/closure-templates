@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.BooleanNode;
@@ -65,7 +66,8 @@ public final class InsertMsgsVisitor {
   private static final SoyErrorKind ENCOUNTERED_PLURAL_OR_SELECT =
       SoyErrorKind.of(
           "JS code generation currently only supports plural/select messages when "
-              + "shouldGenerateGoogMsgDefs is true.");
+              + "shouldGenerateGoogMsgDefs is true.",
+          Impression.ERROR_INSERT_MSGS_VISITOR_ENCOUNTERED_PLURAL_OR_SELECT);
 
   @Nullable private final SoyMsgBundle msgBundle;
   private final ErrorReporter errorReporter;

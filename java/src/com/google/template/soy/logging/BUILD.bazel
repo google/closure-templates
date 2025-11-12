@@ -29,6 +29,7 @@ java_library(
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/types",
+        "//src/main/protobuf:soy_compiler_metrics_java_proto",
         "@com_google_auto_value_auto_value",
     ],
 )

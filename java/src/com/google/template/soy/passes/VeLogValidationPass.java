@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -69,44 +70,58 @@ final class VeLogValidationPass implements CompilerFileSetPass {
   private static final SoyErrorKind UNEXPECTED_DATA =
       SoyErrorKind.of(
           "Unexpected data argument. The VE is type ''{0}'' which means there cannot be any data. "
-              + "The data is typed ''{1}'' and must match with the VE.");
+              + "The data is typed ''{1}'' and must match with the VE.",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_UNEXPECTED_DATA);
   private static final SoyErrorKind WRONG_TYPE =
-      SoyErrorKind.of("Expected an expression of type ''{0}'', instead got ''{1}''.");
+      SoyErrorKind.of(
+          "Expected an expression of type ''{0}'', instead got ''{1}''.",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_WRONG_TYPE);
   private static final SoyErrorKind LOGONLY_DISALLOWED_IN_MSG =
       SoyErrorKind.of(
           "The logonly attribute may not be set on '''{velog}''' nodes in '''{msg}''' context. "
               + "Consider moving the logonly content into another template and calling it, or "
-              + "refactoring your '''{msg}''' into multiple distinct messages.");
+              + "refactoring your '''{msg}''' into multiple distinct messages.",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_LOGONLY_DISALLOWED_IN_MSG);
   private static final SoyErrorKind REQUIRE_STRICTHTML =
       SoyErrorKind.of(
-          "The '{'velog ...'}' command can only be used in templates with stricthtml=\"true\".");
+          "The '{'velog ...'}' command can only be used in templates with stricthtml=\"true\".",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_REQUIRE_STRICTHTML);
 
   private static final SoyErrorKind INVALID_LOGGING_FUNCTION_LOCATION =
       SoyErrorKind.of(
           "The logging function ''{0}'' can only be evaluated in a print command that is the "
               + "only direct child of an html attribute value.{1}",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_INVALID_LOGGING_FUNCTION_LOCATION,
           SoyErrorKind.StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NO_PRINT_DIRECTIVES =
       SoyErrorKind.of(
           "The logging function ''{0}'' can only be evaluated in a print command with no print "
-              + "directives.");
+              + "directives.",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_NO_PRINT_DIRECTIVES);
 
   private static final SoyErrorKind UNKNOWN_PROTO =
-      SoyErrorKind.of("Unknown proto type ''{0}'' configured for use with this VE.");
+      SoyErrorKind.of(
+          "Unknown proto type ''{0}'' configured for use with this VE.",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_UNKNOWN_PROTO);
   private static final SoyErrorKind BAD_DATA_TYPE =
       SoyErrorKind.of(
-          "Illegal VE metadata type ''{0}'' for this VE. The metadata must be a proto.");
+          "Illegal VE metadata type ''{0}'' for this VE. The metadata must be a proto.",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_BAD_DATA_TYPE);
   private static final SoyErrorKind INVALID_VE =
       SoyErrorKind.of(
           "The velog command requires a VE identifier, an expression of the ''ve'' type or an "
-              + "expression of the ''ve_data'' type. Found an expression of type ''{0}''.");
+              + "expression of the ''ve_data'' type. Found an expression of type ''{0}''.",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_INVALID_VE);
   private static final SoyErrorKind VE_UNION_WITH_DATA =
       SoyErrorKind.of(
-          "It is illegal to set the data parameter if the ve type is a union (''{0}'').");
+          "It is illegal to set the data parameter if the ve type is a union (''{0}'').",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_VE_UNION_WITH_DATA);
 
   private static final SoyErrorKind LOG_WITHIN_MESSAGE_REQUIRES_ELEMENT =
-      SoyErrorKind.of("'{velog'} within '{msg'} must directly wrap an HTML element.");
+      SoyErrorKind.of(
+          "'{velog'} within '{msg'} must directly wrap an HTML element.",
+          Impression.ERROR_VE_LOG_VALIDATION_PASS_LOG_WITHIN_MESSAGE_REQUIRES_ELEMENT);
 
   private final ErrorReporter reporter;
   private final SoyTypeRegistry typeRegistry;

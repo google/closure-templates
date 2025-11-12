@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -32,10 +33,13 @@ import com.google.template.soy.soytree.SoyFileNode;
  */
 final class CheckGlobalsPass implements CompilerFilePass {
   private static final SoyErrorKind UNBOUND_GLOBAL =
-      SoyErrorKind.of("Undefined symbol ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Undefined symbol ''{0}''.{1}",
+          Impression.ERROR_CHECK_GLOBALS_PASS_UNBOUND_GLOBAL, StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind NO_BUILTIN_REFS =
       SoyErrorKind.of(
           "References to built-in and plugin functions are not allowed.",
+          Impression.ERROR_CHECK_GLOBALS_PASS_NO_BUILTIN_REFS,
           StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;

@@ -20,6 +20,7 @@ package com.google.template.soy.logging;
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import java.util.LinkedHashMap;
@@ -31,20 +32,29 @@ import java.util.Optional;
 public final class LoggingConfigValidator {
 
   private static final SoyErrorKind INVALID_VE_NAME =
-      SoyErrorKind.of("''{0}'' is not a valid identifier.");
+      SoyErrorKind.of(
+          "''{0}'' is not a valid identifier.",
+          Impression.ERROR_LOGGING_CONFIG_VALIDATOR_INVALID_VE_NAME);
 
   private static final SoyErrorKind INVALID_VE_ID =
       SoyErrorKind.of(
-          "ID {0,number,#} for ''{1}'' must be between {2,number,#} and {3,number,#} (inclusive).");
+          "ID {0,number,#} for ''{1}'' must be between {2,number,#} and {3,number,#} (inclusive).",
+          Impression.ERROR_LOGGING_CONFIG_VALIDATOR_INVALID_VE_ID);
 
   private static final SoyErrorKind CONFLICTING_VE =
-      SoyErrorKind.of("Found VE definition that conflicts with {0}.");
+      SoyErrorKind.of(
+          "Found VE definition that conflicts with {0}.",
+          Impression.ERROR_LOGGING_CONFIG_VALIDATOR_CONFLICTING_VE);
 
   private static final SoyErrorKind UNDEFINED_VE_WITH_DATA_TYPE =
-      SoyErrorKind.of("The special VE ''UndefinedVe'' cannot be defined with a proto type.");
+      SoyErrorKind.of(
+          "The special VE ''UndefinedVe'' cannot be defined with a proto type.",
+          Impression.ERROR_LOGGING_CONFIG_VALIDATOR_UNDEFINED_VE_WITH_DATA_TYPE);
 
   private static final SoyErrorKind UNDEFINED_VE_WITH_METADATA =
-      SoyErrorKind.of("The special VE ''UndefinedVe'' cannot be defined with metadata.");
+      SoyErrorKind.of(
+          "The special VE ''UndefinedVe'' cannot be defined with metadata.",
+          Impression.ERROR_LOGGING_CONFIG_VALIDATOR_UNDEFINED_VE_WITH_METADATA);
 
   public static void validate(List<VisualElement> ves, ErrorReporter errorReporter) {
     Map<String, VisualElement> elementsByName = new LinkedHashMap<>();

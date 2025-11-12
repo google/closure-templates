@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -60,21 +61,27 @@ import javax.annotation.Nullable;
  */
 final class BasicHtmlValidationPass implements CompilerFilePass {
   private static final SoyErrorKind MULTIPLE_ATTRIBUTES =
-      SoyErrorKind.of("Found multiple ''{0}'' attributes with the same name.");
+      SoyErrorKind.of(
+          "Found multiple ''{0}'' attributes with the same name.",
+          Impression.ERROR_BASIC_HTML_VALIDATION_PASS_MULTIPLE_ATTRIBUTES);
 
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG_CONTENT =
-      SoyErrorKind.of("Unexpected close tag content, only whitespace is allowed in close tags.");
+      SoyErrorKind.of(
+          "Unexpected close tag content, only whitespace is allowed in close tags.",
+          Impression.ERROR_BASIC_HTML_VALIDATION_PASS_UNEXPECTED_CLOSE_TAG_CONTENT);
   private static final SoyErrorKind BAD_ID_VALUE =
       SoyErrorKind.of(
           "Html id attributes should not be valid JavaScript identifiers, consider hyphenating the"
               + " id."
-          );
+          ,
+          Impression.ERROR_BASIC_HTML_VALIDATION_PASS_BAD_ID_VALUE);
   private static final SoyErrorKind XID_ID_VALUE =
       SoyErrorKind.of(
           "Html id attributes should not be valid JavaScript identifiers and the xid() function can"
               + " return a JavaScript identifier. Consider adding a hyphen outside of the xid()"
               + " call."
-          );
+          ,
+          Impression.ERROR_BASIC_HTML_VALIDATION_PASS_XID_ID_VALUE);
 
   private final ErrorReporter errorReporter;
 

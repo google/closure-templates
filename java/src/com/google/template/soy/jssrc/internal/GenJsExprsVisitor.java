@@ -26,6 +26,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.ParentNode;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -67,7 +68,9 @@ import java.util.List;
 public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> {
 
   private static final SoyErrorKind UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE =
-      SoyErrorKind.of("Unknown SoyJsSrcPrintDirective ''{0}''.");
+      SoyErrorKind.of(
+          "Unknown SoyJsSrcPrintDirective ''{0}''.",
+          Impression.ERROR_GEN_JS_EXPRS_VISITOR_UNKNOWN_SOY_JS_SRC_PRINT_DIRECTIVE);
 
   private final VisitorsState state;
 

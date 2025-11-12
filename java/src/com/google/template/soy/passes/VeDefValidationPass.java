@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -45,21 +46,30 @@ import java.util.Set;
 final class VeDefValidationPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind VE_DEF_OUTSIDE_CONST =
-      SoyErrorKind.of("Visual elements defined with ve_def() must be assigned to a constant.");
+      SoyErrorKind.of(
+          "Visual elements defined with ve_def() must be assigned to a constant.",
+          Impression.ERROR_VE_DEF_VALIDATION_PASS_VE_DEF_OUTSIDE_CONST);
 
   private static final SoyErrorKind BAD_VE_DEF_NAME =
-      SoyErrorKind.of("The first argument to ve_def() must be an string literal.");
+      SoyErrorKind.of(
+          "The first argument to ve_def() must be an string literal.",
+          Impression.ERROR_VE_DEF_VALIDATION_PASS_BAD_VE_DEF_NAME);
 
   private static final SoyErrorKind BAD_VE_DEF_ID =
-      SoyErrorKind.of("The second argument to ve_def() must be an integer literal.");
+      SoyErrorKind.of(
+          "The second argument to ve_def() must be an integer literal.",
+          Impression.ERROR_VE_DEF_VALIDATION_PASS_BAD_VE_DEF_ID);
 
   private static final SoyErrorKind BAD_VE_DEF_DATA_PROTO_TYPE =
-      SoyErrorKind.of("The third argument to ve_def() must be proto type or 'null'.");
+      SoyErrorKind.of(
+          "The third argument to ve_def() must be proto type or 'null'.",
+          Impression.ERROR_VE_DEF_VALIDATION_PASS_BAD_VE_DEF_DATA_PROTO_TYPE);
 
   private static final SoyErrorKind BAD_VE_DEF_METADATA =
       SoyErrorKind.of(
           "The fourth argument to ve_def() must be an proto init expression of "
-              + "LoggableElementMetadata. All fields must be literals.");
+              + "LoggableElementMetadata. All fields must be literals.",
+          Impression.ERROR_VE_DEF_VALIDATION_PASS_BAD_VE_DEF_METADATA);
 
   private final ErrorReporter errorReporter;
   private final ExprEquivalence exprEquivalence;

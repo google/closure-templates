@@ -56,6 +56,7 @@ import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -146,7 +147,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private static final SoyErrorKind EXTERN_NO_JS_IMPL =
       SoyErrorKind.of(
           "Extern ''{0}'' does not have a JS implementation. Either add one or don''t compile this"
-              + " Soy to JS.");
+              + " Soy to JS.",
+          Impression.ERROR_GEN_JS_CODE_VISITOR_EXTERN_NO_JS_IMPL);
 
   protected static final String MODIFIABLE_DEFAULT_IMPL_SUFFIX = "__default_impl";
 

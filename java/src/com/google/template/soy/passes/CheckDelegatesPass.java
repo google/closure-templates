@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -57,34 +58,43 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CROSS_PACKAGE_DELCALL =
       SoyErrorKind.of(
-          "Found illegal call from ''{0}'' to ''{1}'', which is in a different delegate package.");
+          "Found illegal call from ''{0}'' to ''{1}'', which is in a different delegate package.",
+          Impression.ERROR_CHECK_DELEGATES_PASS_CROSS_PACKAGE_DELCALL);
   private static final SoyErrorKind DELCALL_TO_BASIC_TEMPLATE =
-      SoyErrorKind.of("''delcall'' to basic template defined at ''{0}'' (expected ''call'').");
+      SoyErrorKind.of(
+          "''delcall'' to basic template defined at ''{0}'' (expected ''call'').",
+          Impression.ERROR_CHECK_DELEGATES_PASS_DELCALL_TO_BASIC_TEMPLATE);
   private static final SoyErrorKind DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS =
       SoyErrorKind.of(
           "Found delegate template with same name ''{0}'' but different param declarations"
               + " compared to the definition at {1}.{2}",
+          Impression.ERROR_CHECK_DELEGATES_PASS_DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS,
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind STRICT_DELTEMPLATES_WITH_DIFFERENT_CONTENT_KIND =
       SoyErrorKind.of(
           "If one deltemplate has strict autoescaping, all its peers must also be strictly"
               + " autoescaped with the same content kind: {0} != {1}. Conflicting definition at"
-              + " {2}.");
+              + " {2}.",
+          Impression.ERROR_CHECK_DELEGATES_PASS_STRICT_DELTEMPLATES_WITH_DIFFERENT_CONTENT_KIND);
   private static final SoyErrorKind DELTEMPLATES_WITH_DIFFERENT_STRICT_HTML_MODE =
       SoyErrorKind.of(
           "Found delegate template with same name ''{0}'' but different strict html mode "
-              + "compared to the definition at {1}.");
+              + "compared to the definition at {1}.",
+          Impression.ERROR_CHECK_DELEGATES_PASS_DELTEMPLATES_WITH_DIFFERENT_STRICT_HTML_MODE);
   private static final SoyErrorKind CANNOT_DELCALL_WITHOUT_LEGACY_NAMESPACE =
       SoyErrorKind.of(
           "Modifiable templates must have legacydeltemplatenamespace set to be used with"
-              + " `delcall`.");
+              + " `delcall`.",
+          Impression.ERROR_CHECK_DELEGATES_PASS_CANNOT_DELCALL_WITHOUT_LEGACY_NAMESPACE);
   private static final SoyErrorKind CANNOT_DELTEMPLATE_WITHOUT_LEGACY_NAMESPACE =
       SoyErrorKind.of(
           "Modifiable templates must have legacydeltemplatenamespace set to be used with"
-              + " `deltemplate`.");
+              + " `deltemplate`.",
+          Impression.ERROR_CHECK_DELEGATES_PASS_CANNOT_DELTEMPLATE_WITHOUT_LEGACY_NAMESPACE);
   private static final SoyErrorKind DELTEMPLATES_DEPRECATED =
       SoyErrorKind.of(
-          "Deltemplates are deprecated. Use go/soy/reference/modifiable-templates instead.");
+          "Deltemplates are deprecated. Use go/soy/reference/modifiable-templates instead.",
+          Impression.ERROR_CHECK_DELEGATES_PASS_DELTEMPLATES_DEPRECATED);
 
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFull;

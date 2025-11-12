@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -36,6 +37,7 @@ final class CheckIndirectDepsPass implements CompilerFileSetPass {
   private static final SoyErrorKind CALL_TO_INDIRECT_DEPENDENCY =
       SoyErrorKind.of(
           "Import is satisfied only by indirect dependency {0}. Add it as a direct dependency.{1}",
+          Impression.ERROR_CHECK_INDIRECT_DEPS_PASS_CALL_TO_INDIRECT_DEPENDENCY,
           StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;

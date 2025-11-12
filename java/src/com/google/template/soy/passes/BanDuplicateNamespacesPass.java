@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
@@ -46,13 +47,17 @@ final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
   private static final SoyErrorKind DUPLICATE_NAMESPACE =
       SoyErrorKind.of(
           "Found another file ''{0}'' with the same namespace.  All files must have unique"
-              + " namespaces.");
+              + " namespaces.",
+          Impression.ERROR_BAN_DUPLICATE_NAMESPACES_PASS_DUPLICATE_NAMESPACE);
   private static final SoyErrorKind DUPLICATE_NAMESPACE_WARNING =
       SoyErrorKind.of(
           "Found another file ''{0}'' with the same namespace.  All files should have unique"
-              + " namespaces. This will soon become an error.");
+              + " namespaces. This will soon become an error.",
+          Impression.WARNING_BAN_DUPLICATE_NAMESPACES_PASS_DUPLICATE_NAMESPACE_WARNING);
   private static final SoyErrorKind NAMESPACE_COLLISION =
-      SoyErrorKind.of("Template ''{0}'' collides with namespace ''{1}'' declared in ''{2}''.");
+      SoyErrorKind.of(
+          "Template ''{0}'' collides with namespace ''{1}'' declared in ''{2}''.",
+          Impression.ERROR_BAN_DUPLICATE_NAMESPACES_PASS_NAMESPACE_COLLISION);
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> fileSetTemplateRegistry;
 

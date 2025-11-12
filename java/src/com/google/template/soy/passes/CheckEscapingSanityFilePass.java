@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.EscapingMode;
@@ -34,7 +35,9 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 final class CheckEscapingSanityFilePass implements CompilerFilePass {
 
   private static final SoyErrorKind ILLEGAL_PRINT_DIRECTIVE =
-      SoyErrorKind.of("{0} can only be used internally by the Soy compiler.");
+      SoyErrorKind.of(
+          "{0} can only be used internally by the Soy compiler.",
+          Impression.ERROR_CHECK_ESCAPING_SANITY_FILE_PASS_ILLEGAL_PRINT_DIRECTIVE);
 
   private final ErrorReporter errorReporter;
 

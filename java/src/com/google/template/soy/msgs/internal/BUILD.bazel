@@ -30,6 +30,7 @@ java_library(
         "//java/src/com/google/template/soy/shared/internal:builtin_function",
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/soytree:soynode",
+        "//src/main/protobuf:soy_compiler_metrics_java_proto",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
     ],
