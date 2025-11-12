@@ -41,6 +41,7 @@ import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TypeReference;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -82,13 +83,17 @@ public final class Metadata {
           ImmutableList.of(), ParseContext.of(ErrorReporter.exploding(), null));
 
   private static final SoyErrorKind DUPLICATE_TEMPLATES =
-      SoyErrorKind.of("Template/element ''{0}'' already defined at {1}.");
+      SoyErrorKind.of(
+          "Template/element ''{0}'' already defined at {1}.",
+          Impression.ERROR_METADATA_TEMPLATE_ALREADY_DEFINED);
   private static final SoyErrorKind DUPLICATE_DELEGATE_TEMPLATES_IN_MOD =
       SoyErrorKind.of(
           "Delegate/Modifies template ''{0}'' already defined in mod {1}: {2}",
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME =
-      SoyErrorKind.of("Found deltemplate {0} with the same name as a template/element at {1}.");
+      SoyErrorKind.of(
+          "Found deltemplate {0} with the same name as a template/element at {1}.",
+          Impression.ERROR_METADATA_DELTEMPLATE_ALREADY_DEFINED);
 
   private Metadata() {}
 

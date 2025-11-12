@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import java.util.Optional;
@@ -36,9 +37,13 @@ public abstract class MessagePlaceholder {
   public static final String PHNAME_ATTR = "phname";
   public static final String PHEX_ATTR = "phex";
   private static final SoyErrorKind INVALID_PHNAME_ATTRIBUTE =
-      SoyErrorKind.of("''phname'' is not a valid identifier.");
+      SoyErrorKind.of(
+          "''phname'' is not a valid identifier.",
+          Impression.ERROR_MESSAGE_PLACEHOLDER_INVALID_PHNAME);
   private static final SoyErrorKind INVALID_PHNAME_EXAMPLE =
-      SoyErrorKind.of("Placeholder examples must be non-empty.");
+      SoyErrorKind.of(
+          "Placeholder examples must be non-empty.",
+          Impression.ERROR_MESSAGE_PLACEHOLDER_EMPTY_PHEX);
 
   /** Returns {@code name} if it's valid; otherwise, returns {@code null} and reports the error. */
   @Nullable

@@ -31,6 +31,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.base.internal.TypeReference;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -79,11 +80,17 @@ import javax.annotation.Nullable;
 /** Utilities to transform TemplateMetadata objects to and From CompilationUnit protos */
 public final class TemplateMetadataSerializer {
   private static final SoyErrorKind UNABLE_TO_PARSE_TEMPLATE_HEADER =
-      SoyErrorKind.of("Unable to parse template header for {0} from Soy file {1}: {2}.");
+      SoyErrorKind.of(
+          "Unable to parse template header for {0} from Soy file {1}: {2}.",
+          Impression.ERROR_TEMPLATE_METADATA_SERIALIZER_UNABLE_TO_PARSE_HEADER);
   private static final SoyErrorKind UNABLE_TO_FIND_TYPE =
-      SoyErrorKind.of("Unable to find {0}: {1} referenced by dependency.");
+      SoyErrorKind.of(
+          "Unable to find {0}: {1} referenced by dependency.",
+          Impression.ERROR_TEMPLATE_METADATA_SERIALIZER_UNABLE_TO_FIND_REFERENCED_TEMPLATE);
   private static final SoyErrorKind UNEXPECTED_TYPE =
-      SoyErrorKind.of("Expected {0} to be a {1} but it was a {2}.");
+      SoyErrorKind.of(
+          "Expected {0} to be a {1} but it was a {2}.",
+          Impression.ERROR_TEMPLATE_METADATA_SERIALIZER_EXPECTED_TEMPLATE_TYPE);
 
   private static final Converter<VisibilityP, Visibility> VISIBILITY_CONVERTER =
       createEnumConverter(VisibilityP.class, Visibility.class);

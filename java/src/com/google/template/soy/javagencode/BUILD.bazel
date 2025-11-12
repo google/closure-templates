@@ -45,6 +45,7 @@ java_library(
         "//java/src/com/google/template/soy/soytree:soynode",
         "//java/src/com/google/template/soy/soytree/defn",
         "//java/src/com/google/template/soy/types",
+        "//src/main/protobuf:soy_compiler_metrics_java_proto",
         "@com_google_auto_value_auto_value",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_errorprone_error_prone_annotations",

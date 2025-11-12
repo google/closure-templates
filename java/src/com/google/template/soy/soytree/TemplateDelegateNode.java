@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -35,9 +36,13 @@ import javax.annotation.Nullable;
 public final class TemplateDelegateNode extends TemplateNode {
 
   private static final SoyErrorKind INVALID_VARIANT_STRING =
-      SoyErrorKind.of("Invalid variant ''{0}'' string literal must be an identifier.");
+      SoyErrorKind.of(
+          "Invalid variant ''{0}'' string literal must be an identifier.",
+          Impression.ERROR_TEMPLATE_DELEGATE_NODE_INVALID_VARIANT_IDENTIFIER);
   private static final SoyErrorKind INVALID_VARIANT_INTEGER =
-      SoyErrorKind.of("Invalid variant ''{0}'' integer literal must non-negative.");
+      SoyErrorKind.of(
+          "Invalid variant ''{0}'' integer literal must non-negative.",
+          Impression.ERROR_TEMPLATE_DELEGATE_NODE_INVALID_VARIANT_INTEGER);
   private static final SoyErrorKind INVALID_VARIANT_EXPR =
       SoyErrorKind.of(
           "Invalid variant expression with kind {0}; must be a string, int, or proto enum"

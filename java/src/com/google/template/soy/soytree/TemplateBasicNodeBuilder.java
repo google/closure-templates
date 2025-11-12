@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -30,22 +31,35 @@ import java.util.List;
 public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicNodeBuilder> {
 
   public static final SoyErrorKind MODIFIABLE_AND_MODIFIES_BOTH_SET =
-      SoyErrorKind.of("\"modifies\" and \"modifiable\" cannot both be set.");
+      SoyErrorKind.of(
+          "\"modifies\" and \"modifiable\" cannot both be set.",
+          Impression.ERROR_TEMPLATE_BASIC_NODE_BUILDER_MODIFIABLE_AND_MODIFIES_BOTH_SET);
 
   public static final SoyErrorKind LEGACYDELTEMPLATENAMESPACE_REQUIRES_MODIFIABLE =
-      SoyErrorKind.of("\"legacydeltemplatenamespace\" requires \"modifiable\" to be set.");
+      SoyErrorKind.of(
+          "\"legacydeltemplatenamespace\" requires \"modifiable\" to be set.",
+          Impression
+              .ERROR_TEMPLATE_BASIC_NODE_BUILDER_LEGACYDELTEMPLATENAMESPACE_REQUIRES_MODIFIABLE);
 
   public static final SoyErrorKind USEVARIANTTYPE_REQUIRES_MODIFIABLE =
-      SoyErrorKind.of("\"usevarianttype\" requires \"modifiable\" to be set.");
+      SoyErrorKind.of(
+          "\"usevarianttype\" requires \"modifiable\" to be set.",
+          Impression.ERROR_TEMPLATE_BASIC_NODE_BUILDER_USEVARIANTTYPE_REQUIRES_MODIFIABLE);
 
   public static final SoyErrorKind MODIFIABLE_REQUIRES_PUBLIC_VISIBILITY =
-      SoyErrorKind.of("\"modifiable\" requires public visibility.");
+      SoyErrorKind.of(
+          "\"modifiable\" requires public visibility.",
+          Impression.ERROR_TEMPLATE_BASIC_NODE_BUILDER_MODIFIABLE_REQUIRES_PUBLIC_VISIBILITY);
 
   public static final SoyErrorKind MODIFIES_REQUIRES_PRIVATE_VISIBILITY =
-      SoyErrorKind.of("\"modifies\" requires private visibility.");
+      SoyErrorKind.of(
+          "\"modifies\" requires private visibility.",
+          Impression.ERROR_TEMPLATE_BASIC_NODE_BUILDER_MODIFIES_REQUIRES_PRIVATE_VISIBILITY);
 
   public static final SoyErrorKind VARIANT_REQUIRES_MODIFIES =
-      SoyErrorKind.of("\"variant\" requires \"modifiable\" to be set.");
+      SoyErrorKind.of(
+          "\"variant\" requires \"modifiable\" to be set.",
+          Impression.ERROR_TEMPLATE_BASIC_NODE_BUILDER_VARIANT_REQUIRES_MODIFIES);
 
   /** The "modifiable" attribute. */
   private boolean modifiable = false;

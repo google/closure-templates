@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -50,7 +51,10 @@ public final class SoyJsPluginUtils {
   private SoyJsPluginUtils() {}
 
   private static final SoyErrorKind UNEXPECTED_PLUGIN_ERROR =
-      SoyErrorKind.of(formatPlain("{3}"), StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          formatPlain("{3}"),
+          Impression.ERROR_SOY_JS_PLUGIN_UTILS_UNEXPECTED_PLUGIN_ERROR,
+          StyleAllowance.NO_PUNCTUATION);
 
   private static String formatPlain(String innerFmt) {
     return "Error in plugin implementation for {0} ''{1}''."

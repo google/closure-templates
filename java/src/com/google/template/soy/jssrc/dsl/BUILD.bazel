@@ -44,6 +44,7 @@ java_library(
         "//java/src/com/google/template/soy/javagencode:kythe",
         "//java/src/com/google/template/soy/jssrc/restricted",
         "//java/src/com/google/template/soy/soytree",
+        "//src/main/protobuf:soy_compiler_metrics_java_proto",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",

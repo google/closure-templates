@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -46,7 +47,9 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
         CommandTagAttributesHolder {
 
   private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
-      SoyErrorKind.of("The ''offset'' for plural must be a positive integer.");
+      SoyErrorKind.of(
+          "The ''offset'' for plural must be a positive integer.",
+          Impression.ERROR_MSG_PLURAL_NODE_OFFSET_NOT_POSITIVE_INTEGER);
 
   /** Fallback base plural var name. */
   public static final String FALLBACK_BASE_PLURAL_VAR_NAME = "NUM";

@@ -74,17 +74,29 @@ public final class CommandTagAttribute implements Copyable<CommandTagAttribute> 
           "Missing required attribute ''{0}'' in ''{1}''.",
           Impression.ERROR_COMMAND_TAG_ATTRIBUTE_MISSING_ATTRIBUTE);
   public static final SoyErrorKind UNSUPPORTED_ATTRIBUTE_KEY =
-      SoyErrorKind.of("Unsupported attribute ''{0}'' for ''{1}'' tag, expected one of {2}.");
+      SoyErrorKind.of(
+          "Unsupported attribute ''{0}'' for ''{1}'' tag, expected one of {2}.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_UNSUPPORTED_ATTRIBUTE_KEY);
   public static final SoyErrorKind UNSUPPORTED_ATTRIBUTE_KEY_SINGLE =
-      SoyErrorKind.of("Unsupported attribute ''{0}'' for ''{1}'' tag, expected ''{2}''.");
+      SoyErrorKind.of(
+          "Unsupported attribute ''{0}'' for ''{1}'' tag, expected ''{2}''.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_UNSUPPORTED_ATTRIBUTE_KEY_SINGLE);
   private static final SoyErrorKind EXPECTED_A_SINGLE_EXPRESSION =
-      SoyErrorKind.of("Expected a single expression for a {0} attribute.");
+      SoyErrorKind.of(
+          "Expected a single expression for a {0} attribute.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_EXPECTED_SINGLE_EXPRESSION);
   static final SoyErrorKind NAMESPACE_STRICTHTML_ATTRIBUTE =
-      SoyErrorKind.of("''stricthtml=\"false\"'' can only be set on individual templates.");
+      SoyErrorKind.of(
+          "''stricthtml=\"false\"'' can only be set on individual templates.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_STRICTHTML_FALSE_ON_FILE);
   static final SoyErrorKind EXPLICIT_DEFAULT_ATTRIBUTE =
-      SoyErrorKind.of("''{0}=\"{1}\"'' is the default, no need to set it.");
+      SoyErrorKind.of(
+          "''{0}=\"{1}\"'' is the default, no need to set it.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_DEFAULT_VALUE);
   static final SoyErrorKind CSS_PREFIX_AND_CSS_BASE =
-      SoyErrorKind.of("Cssbase and cssprefix cannot both be set at the same time.");
+      SoyErrorKind.of(
+          "Cssbase and cssprefix cannot both be set at the same time.",
+          Impression.ERROR_COMMAND_TAG_ATTRIBUTE_CSSBASE_CSSPREFIX_BOTH_SET);
 
   private static final Splitter SPLITTER = Splitter.on(',').trimResults();
 

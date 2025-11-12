@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
@@ -62,9 +63,12 @@ public final class JavaImplNode extends AbstractCommandNode
   public static final MethodType DEFAULT_TYPE = MethodType.STATIC;
 
   private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
-      SoyErrorKind.of("Invalid attribute ''{0}''.");
+      SoyErrorKind.of(
+          "Invalid attribute ''{0}''.", Impression.ERROR_JAVA_IMPL_NODE_INVALID_ATTRIBUTE);
   private static final SoyErrorKind MISSING_ATTR =
-      SoyErrorKind.of("Missing required attribute ''{0}''.");
+      SoyErrorKind.of(
+          "Missing required attribute ''{0}''.",
+          Impression.ERROR_JAVA_IMPL_NODE_MISSING_REQUIRED_ATTRIBUTE);
   private static final SoyErrorKind BAD_TYPE =
       SoyErrorKind.of(
           String.format(

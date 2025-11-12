@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.SoyErrorKind;
 import java.util.Optional;
 
@@ -38,7 +39,8 @@ public abstract class TemplateContentKind {
                   .addAll(BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.keySet())
                   .add("html<...>")
                   .build()
-              + ".");
+              + ".",
+          Impression.ERROR_TEMPLATE_CONTENT_KIND_INVALID_ATTRIBUTE_VALUE);
 
   /**
    * Parses and returns the kind for the given kind= attribute value. Or {@code null} if it is

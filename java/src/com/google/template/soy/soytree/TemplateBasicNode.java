@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -37,7 +38,8 @@ public final class TemplateBasicNode extends TemplateNode {
   public static final SoyErrorKind INVALID_USEVARIANTTYPE =
       SoyErrorKind.of(
           "Invalid type name \"{0}\" for attribute \"usevarianttype\". Must be \"number\", "
-              + "\"string\", or a proto enum.");
+              + "\"string\", or a proto enum.",
+          Impression.ERROR_TEMPLATE_BASIC_NODE_INVALID_USEVARIANTTYPE);
   public static final String ATTR_USEVARIANTTYPE = "usevarianttype";
   public static final String ATTR_VARIANT = "variant";
   public static final String ATTR_MODIFIES = "modifies";

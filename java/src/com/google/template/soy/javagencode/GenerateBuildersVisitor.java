@@ -40,6 +40,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.base.internal.KytheMode;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.javagencode.SoyFileNodeTransformer.FileInfo;
@@ -87,11 +88,13 @@ public final class GenerateBuildersVisitor
   private static final SoyErrorKind TYPE_COLLISION =
       SoyErrorKind.of(
           "Parameter ''{0}'' in {1} has different types in different templates. No parameter"
-              + " setter generated.");
+              + " setter generated.",
+          Impression.ERROR_GENERATE_BUILDERS_VISITOR_TYPE_COLLISION);
   private static final SoyErrorKind INDIRECT_PROTO =
       SoyErrorKind.of(
           "Parameter ''{0}'' in {1} depends on a proto or proto enum that is not a direct"
-              + " dependency of this library. No parameter setter generated.");
+              + " dependency of this library. No parameter setter generated.",
+          Impression.ERROR_GENERATE_BUILDERS_VISITOR_INDIRECT_PROTO);
   private static final SoyErrorKind TEMPLATE_NAME_COLLISION =
       SoyErrorKind.of(
           "When generating Soy Java Template Builders, the template: {0} generated the same Java"
@@ -101,7 +104,8 @@ public final class GenerateBuildersVisitor
               + ". This template was skipped during Soy java_builders generation. To use this API,"
               + " all Soy template names in a given file should be unique when converted to"
               + " UpperCamelCase (with non-alphanumeric characters stripped). The generated Java"
-              + " class name was: {1}.");
+              + " class name was: {1}.",
+          Impression.ERROR_GENERATE_BUILDERS_VISITOR_TEMPLATE_NAME_COLLISION);
   private static final SoyErrorKind PARAM_NAME_COLLISION =
       SoyErrorKind.of(
           "When generating Soy Java Template Builders, the param named {0} in template {1}"
@@ -111,25 +115,29 @@ public final class GenerateBuildersVisitor
               + ". Param: {0} is being skipped (no setters will be generated for this param). The"
               + " generated setter name was: {2}. To use this API, all parameter names for a given"
               + " template should be unique when converted to UpperCamelCase (with"
-              + " non-alphanumeric characters stripped).");
+              + " non-alphanumeric characters stripped).",
+          Impression.ERROR_GENERATE_BUILDERS_VISITOR_PARAM_NAME_COLLISION);
   private static final SoyErrorKind SETTER_SIGNATURE_COLLISION =
       SoyErrorKind.of(
           "When generating Soy Java Template Builders, the param named {0} in template {1}"
               + " generated a setter with the same signature as another setter for the same param: "
               + "`{2}`. This can happen with unions since one setter for each union member is "
               + "generated. In case of collisions, a setter for the first type, when read left-"
-              + "-to-right, is emitted.");
+              + "-to-right, is emitted.",
+          Impression.ERROR_GENERATE_BUILDERS_VISITOR_SETTER_SIGNATURE_COLLISION);
   private static final SoyErrorKind FILE_NAME_COLLISION =
       SoyErrorKind.of(
           "While generating Soy Java invocation builders, multiple files in this soy fileset"
               + " mapped to the same file name: {0}. To use this api, soy file names should be"
               + " unique when converted to UpperCamelCase (with non-alpha-numeric characters"
-              + " stripped).");
+              + " stripped).",
+          Impression.ERROR_GENERATE_BUILDERS_VISITOR_FILE_NAME_COLLISION);
   private static final SoyErrorKind FUTURE_NAME_COLLISION =
       SoyErrorKind.of(
           "Achievement unlocked. You have a template with parameters named {0} and"
               + " {0}Future, preventing a future setter from being created for the first"
-              + " parameter.");
+              + " parameter.",
+          Impression.ERROR_GENERATE_BUILDERS_VISITOR_FUTURE_NAME_COLLISION);
 
   private final ErrorReporter errorReporter;
   private final KytheMode kytheMode;

@@ -28,6 +28,7 @@ import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -39,9 +40,13 @@ import javax.annotation.Nullable;
 public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialNode {
 
   private static final SoyErrorKind DYNAMIC_TAG_NAME_IN_MSG_BLOCK =
-      SoyErrorKind.of("HTML tags within within ''msg'' blocks must use constant tag names.");
+      SoyErrorKind.of(
+          "HTML tags within within ''msg'' blocks must use constant tag names.",
+          Impression.ERROR_MSG_HTML_TAG_NODE_MUST_USE_CONSTANT_TAG_NAMES);
   private static final SoyErrorKind INVALID_ATTRIBUTE =
-      SoyErrorKind.of("''{0}'' attribute is not a constant.");
+      SoyErrorKind.of(
+          "''{0}'' attribute is not a constant.",
+          Impression.ERROR_MSG_HTML_TAG_NODE_ATTRIBUTE_NOT_CONSTANT);
 
   /**
    * Creates a {@link MsgHtmlTagNode} from a {@link HtmlTagNode}.

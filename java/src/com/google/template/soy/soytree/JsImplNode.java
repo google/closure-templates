@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
@@ -31,13 +32,16 @@ import java.util.List;
 public final class JsImplNode extends AbstractCommandNode
     implements ExternImplNode, CommandTagAttributesHolder {
   private static final SoyErrorKind INVALID_IMPL_ATTRIBUTE =
-      SoyErrorKind.of("''{0}'' is not a valid attribute.");
+      SoyErrorKind.of(
+          "''{0}'' is not a valid attribute.", Impression.ERROR_JS_IMPL_NODE_INVALID_ATTRIBUTE);
 
   private static final String NAMESPACE = "namespace";
   private static final String FUNCTION = "function";
   private static final String FIELDS = String.format("%s, %s", NAMESPACE, FUNCTION);
   private static final SoyErrorKind UNEXPECTED_ARGS =
-      SoyErrorKind.of("JS implementations require the following attributes: " + FIELDS + ".");
+      SoyErrorKind.of(
+          "JS implementations require the following attributes: " + FIELDS + ".",
+          Impression.ERROR_JS_IMPL_NODE_MISSING_REQUIRED_ATTRIBUTES);
 
   private final ImmutableList<CommandTagAttribute> attributes;
 

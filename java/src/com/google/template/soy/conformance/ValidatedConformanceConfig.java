@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.escape.Escaper;
 import com.google.common.escape.Escapers;
 import com.google.template.soy.basetree.Node;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.conformance.Requirement.RequirementTypeCase;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -72,7 +73,9 @@ public final class ValidatedConformanceConfig {
   private static Rule<? extends Node> forRequirement(Requirement requirement) {
     SoyErrorKind error =
         SoyErrorKind.of(
-            MESSAGE_FORMAT.escape(requirement.getErrorMessage()), StyleAllowance.values());
+            MESSAGE_FORMAT.escape(requirement.getErrorMessage()),
+            Impression.ERROR_VALIDATED_CONFORMANCE_CONFIG_FOR_REQUIREMENT,
+            StyleAllowance.values());
     switch (requirement.getRequirementTypeCase()) {
       case CUSTOM:
         return createCustomRule(requirement.getCustom().getJavaClass(), error);

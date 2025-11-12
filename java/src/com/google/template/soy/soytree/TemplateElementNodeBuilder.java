@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -35,10 +36,14 @@ public final class TemplateElementNodeBuilder
       ImmutableSet.of("autoescape", "stricthtml", "visibility");
 
   private static final SoyErrorKind BANNED_ATTRIBUTE_NAMES_ERROR =
-      SoyErrorKind.of("Attribute ''{0}'' is not allowed on Soy elements.");
+      SoyErrorKind.of(
+          "Attribute ''{0}'' is not allowed on Soy elements.",
+          Impression.ERROR_TEMPLATE_ELEMENT_NODE_BUILDER_ATTRIBUTE_NOT_ALLOWED);
 
   private static final SoyErrorKind INVALID_ELEMENT_KIND =
-      SoyErrorKind.of("Soy element kind must be html or html<...>.");
+      SoyErrorKind.of(
+          "Soy element kind must be html or html<...>.",
+          Impression.ERROR_TEMPLATE_ELEMENT_NODE_BUILDER_INVALID_KIND);
 
   /**
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.

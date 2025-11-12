@@ -30,6 +30,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -52,7 +53,8 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
       SoyErrorKind.of("Invalid param name ''ij'' (''ij'' is for injected data).");
   // TODO: Print out which line contained the declared variable.
   private static final SoyErrorKind PARAM_ALREADY_DECLARED =
-      SoyErrorKind.of("''{0}'' already declared.");
+      SoyErrorKind.of(
+          "''{0}'' already declared.", Impression.ERROR_TEMPLATE_NODE_BUILDER_ALREADY_DECLARED);
 
   /** Info from the containing Soy file's header declarations. */
   protected final SoyFileHeaderInfo soyFileHeaderInfo;
