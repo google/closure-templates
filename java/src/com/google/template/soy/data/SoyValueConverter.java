@@ -151,6 +151,7 @@ public final class SoyValueConverter {
    * values are converted into Soy values lazily and only once. The keys are converted eagerly.
    */
   private SoyMapImpl newSoyMapFromJavaMap(Map<?, ?> javaMap) {
+    // Use a LinkedHashMap to preserve insertion order.
     Map<SoyValue, SoyValueProvider> map = Maps.newLinkedHashMapWithExpectedSize(javaMap.size());
     for (Map.Entry<?, ?> entry : javaMap.entrySet()) {
       map.put(convert(entry.getKey()).resolve(), convertLazy(entry.getValue()));

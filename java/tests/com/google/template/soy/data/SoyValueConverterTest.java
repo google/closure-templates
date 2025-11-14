@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.collect.Streams.stream;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.junit.Assert.assertThrows;
@@ -26,15 +27,16 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for SoyValueConverter.
- */
+/** Unit tests for SoyValueConverter. */
 @RunWith(JUnit4.class)
 public class SoyValueConverterTest {
 
@@ -113,5 +115,20 @@ public class SoyValueConverterTest {
     mapWithNullKey.put(null, "");
     assertThrows(
         NullPointerException.class, () -> SoyValueConverter.INSTANCE.convert(mapWithNullKey));
+  }
+
+  @Test
+  public void testMapOrderIsPreserved() {
+    final Map<String, Integer> map = new LinkedHashMap<>();
+    final List<String> expected = new ArrayList<>();
+    for (int i = 0; i < 100; i++) {
+      String key = String.valueOf(i);
+      map.put(key, i);
+      expected.add(key);
+    }
+    SoyMap soyMap = (SoyMap) CONVERTER.convert(SoyValueConverter.markAsSoyMap(map));
+    assertThat(stream(soyMap.keys()).map(SoyValue::stringValue))
+        .containsExactlyElementsIn(expected)
+        .inOrder();
   }
 }
