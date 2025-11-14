@@ -27,6 +27,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.DoNotCall;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -72,56 +73,85 @@ public final class TypeNodeConverter
     implements TypeNodeVisitor<SoyType>, Function<TypeNode, SoyType> {
 
   private static final SoyErrorKind UNKNOWN_TYPE =
-      SoyErrorKind.of("Unknown type ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Unknown type ''{0}''.{1}",
+          Impression.ERROR_TYPE_NODE_CONVERTER_UNKNOWN_TYPE, StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind DUPLICATE_RECORD_FIELD =
-      SoyErrorKind.of("Duplicate field ''{0}'' in record declaration.");
+      SoyErrorKind.of(
+          "Duplicate field ''{0}'' in record declaration.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_DUPLICATE_RECORD_FIELD);
 
   private static final SoyErrorKind DUPLICATE_TEMPLATE_ARGUMENT =
-      SoyErrorKind.of("Duplicate argument ''{0}'' in template type declaration.");
+      SoyErrorKind.of(
+          "Duplicate argument ''{0}'' in template type declaration.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_DUPLICATE_TEMPLATE_ARGUMENT);
 
   private static final SoyErrorKind DUPLICATE_FUNCTION_PARAM =
-      SoyErrorKind.of("Duplicate parameter ''{0}'' in function type declaration.");
+      SoyErrorKind.of(
+          "Duplicate parameter ''{0}'' in function type declaration.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_DUPLICATE_FUNCTION_PARAM);
 
   private static final SoyErrorKind INVALID_LITERAL_TYPE =
-      SoyErrorKind.of("Not a valid literal type.");
+      SoyErrorKind.of(
+          "Not a valid literal type.", Impression.ERROR_TYPE_NODE_CONVERTER_INVALID_LITERAL_TYPE);
 
   private static final SoyErrorKind INVALID_TEMPLATE_RETURN_TYPE =
       SoyErrorKind.of(
           "Template types can only return html, attributes, string, js, css, uri, or"
-              + " trusted_resource_uri.");
+              + " trusted_resource_uri.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_INVALID_TEMPLATE_RETURN_TYPE);
 
   private static final SoyErrorKind UNEXPECTED_TYPE_PARAM =
       SoyErrorKind.of(
-          "Unexpected type parameter: ''{0}'' only has {1}", StyleAllowance.NO_PUNCTUATION);
+          "Unexpected type parameter: ''{0}'' only has {1}",
+          Impression.ERROR_TYPE_NODE_CONVERTER_UNEXPECTED_TYPE_PARAM,
+          StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind EXPECTED_TYPE_PARAM =
-      SoyErrorKind.of("Expected a type parameter: ''{0}'' has {1}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Expected a type parameter: ''{0}'' has {1}",
+          Impression.ERROR_TYPE_NODE_CONVERTER_EXPECTED_TYPE_PARAM, StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NOT_A_GENERIC_TYPE =
-      SoyErrorKind.of("''{0}'' is not a generic type.");
+      SoyErrorKind.of(
+          "''{0}'' is not a generic type.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_NOT_A_GENERIC_TYPE);
 
   private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
-      SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
+      SoyErrorKind.of(
+          "''{0}'' is a generic type, expected {1}.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_MISSING_GENERIC_TYPE_PARAMETERS);
 
   private static final SoyErrorKind VAR_ARGS_PARAM_NOT_LAST =
-      SoyErrorKind.of("Var args parameters must be the last parameter in a function.");
+      SoyErrorKind.of(
+          "Var args parameters must be the last parameter in a function.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_VAR_ARGS_PARAM_NOT_LAST);
 
   private static final SoyErrorKind VAR_ARGS_PARAM_NOT_LIST =
-      SoyErrorKind.of("Var args parameters must be a list.");
+      SoyErrorKind.of(
+          "Var args parameters must be a list.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_VAR_ARGS_PARAM_NOT_LIST);
 
   public static final SoyErrorKind SAFE_PROTO_TYPE =
-      SoyErrorKind.of("Please use Soy''s native ''{0}'' type instead of the ''{1}'' type.");
+      SoyErrorKind.of(
+          "Please use Soy''s native ''{0}'' type instead of the ''{1}'' type.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_SAFE_PROTO_TYPE);
 
   public static final SoyErrorKind INDEXED_BASE_NOT_NAMED =
-      SoyErrorKind.of("The base of an indexed type must be a named type.");
+      SoyErrorKind.of(
+          "The base of an indexed type must be a named type.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_INDEXED_BASE_NOT_NAMED);
 
   private static final SoyErrorKind BAD_INDEXED =
-      SoyErrorKind.of("Type ''{1}'' does not have field {0}.");
+      SoyErrorKind.of(
+          "Type ''{1}'' does not have field {0}.",
+          Impression.ERROR_TYPE_NODE_CONVERTER_BAD_INDEXED);
 
   public static final SoyErrorKind DASH_NOT_ALLOWED =
       SoyErrorKind.of(
           "parse error at ''-'': expected identifier",
+          Impression.ERROR_TYPE_NODE_CONVERTER_DASH_NOT_ALLOWED,
           StyleAllowance.NO_CAPS,
           StyleAllowance.NO_PUNCTUATION);
 

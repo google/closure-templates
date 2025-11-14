@@ -25,6 +25,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -155,25 +156,42 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   }
 
   private static final SoyErrorKind PROTO_ACCESS_NOT_SUPPORTED =
-      SoyErrorKind.of("Proto accessors are not supported in pysrc.");
+      SoyErrorKind.of(
+          "Proto accessors are not supported in pysrc.",
+          Impression.ERROR_TRANSLATE_TO_PY_EXPR_VISITOR_PROTO_ACCESS_NOT_SUPPORTED);
   private static final SoyErrorKind PROTO_INIT_NOT_SUPPORTED =
-      SoyErrorKind.of("Proto init is not supported in pysrc.");
+      SoyErrorKind.of(
+          "Proto init is not supported in pysrc.",
+          Impression.ERROR_TRANSLATE_TO_PY_EXPR_VISITOR_PROTO_INIT_NOT_SUPPORTED);
   private static final SoyErrorKind TOGGLE_IMPORT_NOT_SUPPORTED =
-      SoyErrorKind.of("Toggle imports are not supported in pysrc.");
+      SoyErrorKind.of(
+          "Toggle imports are not supported in pysrc.",
+          Impression.ERROR_TRANSLATE_TO_PY_EXPR_VISITOR_TOGGLE_IMPORT_NOT_SUPPORTED);
   private static final SoyErrorKind SOY_PY_SRC_FUNCTION_NOT_FOUND =
-      SoyErrorKind.of("Failed to find SoyPySrcFunction ''{0}''.");
+      SoyErrorKind.of(
+          "Failed to find SoyPySrcFunction ''{0}''.",
+          Impression.ERROR_TRANSLATE_TO_PY_EXPR_VISITOR_SOY_PY_SRC_FUNCTION_NOT_FOUND);
   private static final SoyErrorKind SOY_PY_SRC_METHOD_NOT_FOUND =
-      SoyErrorKind.of("Failed to find SoyPythonSourceFunction for method ''{0}''.");
+      SoyErrorKind.of(
+          "Failed to find SoyPythonSourceFunction for method ''{0}''.",
+          Impression.ERROR_TRANSLATE_TO_PY_EXPR_VISITOR_SOY_PY_SRC_METHOD_NOT_FOUND);
   private static final SoyErrorKind SOY_PY_SRC_FIELD_NOT_FOUND =
-      SoyErrorKind.of("Failed to find SoyPythonSourceFunction for field ''{0}''.");
+      SoyErrorKind.of(
+          "Failed to find SoyPythonSourceFunction for field ''{0}''.",
+          Impression.ERROR_TRANSLATE_TO_PY_EXPR_VISITOR_SOY_PY_SRC_FIELD_NOT_FOUND);
   private static final SoyErrorKind UNTYPED_BRACKET_ACCESS_NOT_SUPPORTED =
       SoyErrorKind.of(
           "Bracket access on values of unknown type is not supported in pysrc. "
-              + "The expression should be declared as a list or map.");
+              + "The expression should be declared as a list or map.",
+          Impression.ERROR_TRANSLATE_TO_PY_EXPR_VISITOR_UNTYPED_BRACKET_ACCESS_NOT_SUPPORTED);
   private static final SoyErrorKind EXTERNS_NOT_SUPPORTED =
-      SoyErrorKind.of("Externs are not supported in the Python runtime.");
+      SoyErrorKind.of(
+          "Externs are not supported in the Python runtime.",
+          Impression.ERROR_TRANSLATE_TO_PY_EXPR_VISITOR_EXTERNS_NOT_SUPPORTED);
   private static final SoyErrorKind INSTANCEOF_NOT_SUPPORTED =
-      SoyErrorKind.of("The `instanceof` operator is not supported in the Python runtime.");
+      SoyErrorKind.of(
+          "The `instanceof` operator is not supported in the Python runtime.",
+          Impression.ERROR_TRANSLATE_TO_PY_EXPR_VISITOR_INSTANCEOF_NOT_SUPPORTED);
 
   /**
    * Errors in this visitor generate Python source that immediately explodes. Users of Soy are

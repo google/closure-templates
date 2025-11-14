@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.ToggleRegistry;
@@ -41,7 +42,8 @@ final class ToggleImportProcessor implements ImportsPass.ImportProcessor {
 
   private static final SoyErrorKind TOGGLE_MODULE_IMPORT =
       SoyErrorKind.of(
-          "Module-level toggle imports are forbidden. Import individual toggles by name.");
+          "Module-level toggle imports are forbidden. Import individual toggles by name.",
+          Impression.ERROR_TOGGLE_IMPORT_PROCESSOR_TOGGLE_MODULE_IMPORT);
 
   ToggleImportProcessor(ToggleRegistry toggleRegistry, ErrorReporter errorReporter) {
     this.toggleRegistry = toggleRegistry;

@@ -21,6 +21,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -36,7 +37,8 @@ public final class XidPass implements CompilerFilePass {
   private static final SoyErrorKind STRING_OR_GLOBAL_REQUIRED =
       SoyErrorKind.of(
           "Argument to function ''xid'' must be a string literal or a (possibly) "
-              + "dotted identifier.");
+              + "dotted identifier.",
+          Impression.ERROR_XID_PASS_STRING_OR_GLOBAL_REQUIRED);
 
   private final ErrorReporter reporter;
 

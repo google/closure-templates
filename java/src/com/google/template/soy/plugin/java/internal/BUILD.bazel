@@ -35,6 +35,7 @@ java_library(
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared/restricted:annotations",
         "//java/src/com/google/template/soy/types",
+        "//src/main/protobuf:soy_compiler_metrics_java_proto",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",

@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -36,12 +37,14 @@ public final class TemplateBindingUtil {
   private static final SoyErrorKind PARAMETER_NAME_MISMATCH =
       SoyErrorKind.of(
           "Cannot bind parameter named `{0}` to template of type `{1}`; no such parameter.{2}",
+          Impression.ERROR_TEMPLATE_BINDING_UTIL_PARAMETER_NAME_MISMATCH,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind PARAMETER_TYPE_MISMATCH =
       SoyErrorKind.of(
           "Cannot bind parameter named `{0}` to template of type `{1}`; expected `{2}` but found"
-              + " `{3}`.");
+              + " `{3}`.",
+          Impression.ERROR_TEMPLATE_BINDING_UTIL_PARAMETER_TYPE_MISMATCH);
 
   public static SoyType bindParameters(
       SoyType base,

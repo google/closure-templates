@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -35,7 +36,9 @@ import java.util.function.Supplier;
 final class CheckTemplateVisibilityPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALLEE_NOT_VISIBLE =
-      SoyErrorKind.of("{0} has {1} access in {2}.");
+      SoyErrorKind.of(
+          "{0} has {1} access in {2}.",
+          Impression.ERROR_CHECK_TEMPLATE_VISIBILITY_PASS_CALLEE_NOT_VISIBLE);
 
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFull;

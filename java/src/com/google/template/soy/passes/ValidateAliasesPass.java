@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AliasDeclaration;
@@ -30,7 +31,9 @@ import com.google.template.soy.types.TypeRegistry;
 final class ValidateAliasesPass implements CompilerFilePass {
 
   private static final SoyErrorKind ALIAS_CONFLICTS_WITH_TYPE_NAME =
-      SoyErrorKind.of("Alias ''{0}'' conflicts with a type of the same name.");
+      SoyErrorKind.of(
+          "Alias ''{0}'' conflicts with a type of the same name.",
+          Impression.ERROR_VALIDATE_ALIASES_PASS_ALIAS_CONFLICTS_WITH_TYPE_NAME);
 
   private final ErrorReporter errorReporter;
 

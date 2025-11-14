@@ -23,6 +23,7 @@ import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -72,10 +73,14 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
 
   private static final SoyErrorKind NO_SUCH_NESTED_TYPE =
       SoyErrorKind.of(
-          "Nested symbol ''{0}'' does not exist in {1} {2}.{3}", StyleAllowance.NO_PUNCTUATION);
+          "Nested symbol ''{0}'' does not exist in {1} {2}.{3}",
+          Impression.ERROR_RESOLVE_DOTTED_IMPORTS_PASS_NO_SUCH_NESTED_TYPE,
+          StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind ENUM_MEMBERSHIP_ERROR =
-      SoyErrorKind.of("''{0}'' is not a member of enum ''{1}''.");
+      SoyErrorKind.of(
+          "''{0}'' is not a member of enum ''{1}''.",
+          Impression.ERROR_RESOLVE_DOTTED_IMPORTS_PASS_ENUM_MEMBERSHIP_ERROR);
 
   private final ErrorReporter errorReporter;
   private final TypeInterner typeRegistry;

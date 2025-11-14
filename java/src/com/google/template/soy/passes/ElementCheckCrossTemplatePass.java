@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
@@ -37,10 +38,14 @@ import java.util.stream.Stream;
 final class ElementCheckCrossTemplatePass implements CompilerFileSetPass {
 
   private static final SoyErrorKind BAD_CONTENT_IN_ROOT_ELM =
-      SoyErrorKind.of("Only attributes are allowed inside the root element.");
+      SoyErrorKind.of(
+          "Only attributes are allowed inside the root element.",
+          Impression.ERROR_ELEMENT_CHECK_CROSS_TEMPLATE_PASS_BAD_CONTENT_IN_ROOT_ELM);
 
   private static final SoyErrorKind WRONG_ATTRIBUTE_TYPE =
-      SoyErrorKind.of("Expected type of attribute to be {0}.");
+      SoyErrorKind.of(
+          "Expected type of attribute to be {0}.",
+          Impression.ERROR_ELEMENT_CHECK_CROSS_TEMPLATE_PASS_WRONG_ATTRIBUTE_TYPE);
 
   private final ErrorReporter errorReporter;
 

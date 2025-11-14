@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -36,10 +37,13 @@ final class ResolveNamesPass implements CompilerFilePass {
 
   private static final SoyErrorKind GLOBAL_MATCHES_VARIABLE =
       SoyErrorKind.of(
-          "Found global reference aliasing a local variable ''{0}'', did you mean ''${0}''?");
+          "Found global reference aliasing a local variable ''{0}'', did you mean ''${0}''?",
+          Impression.ERROR_RESOLVE_NAMES_PASS_GLOBAL_MATCHES_VARIABLE);
 
   private static final SoyErrorKind UNKNOWN_VARIABLE =
-      SoyErrorKind.of("Unknown variable.{0}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Unknown variable.{0}",
+          Impression.ERROR_RESOLVE_NAMES_PASS_UNKNOWN_VARIABLE, StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
 

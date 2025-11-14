@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -35,7 +36,9 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 final class CheckNonEmptyMsgNodesPass implements CompilerFilePass {
 
   private static final SoyErrorKind EMPTY_MSG_ERROR =
-      SoyErrorKind.of("Empty messages are forbidden.");
+      SoyErrorKind.of(
+          "Empty messages are forbidden.",
+          Impression.ERROR_CHECK_NON_EMPTY_MSG_NODES_PASS_EMPTY_MSG_ERROR);
   private final ErrorReporter errorReporter;
 
   CheckNonEmptyMsgNodesPass(ErrorReporter errorReporter) {

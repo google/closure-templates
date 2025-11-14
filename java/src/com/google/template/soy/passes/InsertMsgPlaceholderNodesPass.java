@@ -20,6 +20,7 @@ import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -57,12 +58,14 @@ final class InsertMsgPlaceholderNodesPass implements CompilerFilePass {
   private static final SoyErrorKind INVALID_PLACEHOLDER =
       SoyErrorKind.of(
           "''{0}'' attributes are only valid on placeholders inside of '''{'msg...'' tags.{1}",
+          Impression.ERROR_INSERT_MSG_PLACEHOLDER_NODES_PASS_INVALID_PLACEHOLDER,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind UNEXPECTED_COMMAND_IN_MSG =
       SoyErrorKind.of(
           "Unexpected soy command in '''{'msg ...'}''' block. Only message placeholder commands "
-              + "('{'print, '{'call and html tags) are allowed to be direct children of messages.");
+              + "('{'print, '{'call and html tags) are allowed to be direct children of messages.",
+          Impression.ERROR_INSERT_MSG_PLACEHOLDER_NODES_PASS_UNEXPECTED_COMMAND_IN_MSG);
   private final ErrorReporter errorReporter;
 
   InsertMsgPlaceholderNodesPass(ErrorReporter errorReporter) {

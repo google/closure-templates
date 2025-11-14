@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -41,7 +42,8 @@ final class CssImportProcessor implements ImportsPass.ImportProcessor {
 
   private static final SoyErrorKind CSS_MODULE_IMPORT =
       SoyErrorKind.of(
-          "Module-level css imports are forbidden. Import the classes object explicitly.");
+          "Module-level css imports are forbidden. Import the classes object explicitly.",
+          Impression.ERROR_CSS_IMPORT_PROCESSOR_CSS_MODULE_IMPORT);
 
   CssImportProcessor(CssRegistry cssRegistry, ErrorReporter errorReporter) {
     this.cssRegistry = cssRegistry;

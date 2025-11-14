@@ -28,6 +28,7 @@ import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.proto.Field;
@@ -55,7 +56,9 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
   private Map<String, String> extLocalToFqn;
 
   private static final SoyErrorKind PROTO_MODULE_IMPORT =
-      SoyErrorKind.of("Module-level proto imports are forbidden. Import each message explicitly.");
+      SoyErrorKind.of(
+          "Module-level proto imports are forbidden. Import each message explicitly.",
+          Impression.ERROR_PROTO_IMPORT_PROCESSOR_PROTO_MODULE_IMPORT);
 
   ProtoImportProcessor(
       SoyTypeRegistry typeRegistry, ErrorReporter errorReporter, boolean disableAllTypeChecking) {

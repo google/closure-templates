@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -51,13 +52,21 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 final class RewriteRemaindersPass implements CompilerFilePass {
 
   private static final SoyErrorKind REMAINDER_OUTSIDE_PLURAL =
-      SoyErrorKind.of("Special function ''remainder'' is for use in plural messages only.");
+      SoyErrorKind.of(
+          "Special function ''remainder'' is for use in plural messages only.",
+          Impression.ERROR_REWRITE_REMAINDERS_PASS_REMAINDER_OUTSIDE_PLURAL);
   private static final SoyErrorKind REMAINDER_PLURAL_EXPR_MISMATCH =
-      SoyErrorKind.of("Argument to ''remainder'' must be the same as the ''plural'' variable.");
+      SoyErrorKind.of(
+          "Argument to ''remainder'' must be the same as the ''plural'' variable.",
+          Impression.ERROR_REWRITE_REMAINDERS_PASS_REMAINDER_PLURAL_EXPR_MISMATCH);
   private static final SoyErrorKind REMAINDER_UNNECESSARY_AT_OFFSET_0 =
-      SoyErrorKind.of("''remainder'' is unnecessary since offset=0.");
+      SoyErrorKind.of(
+          "''remainder'' is unnecessary since offset=0.",
+          Impression.ERROR_REWRITE_REMAINDERS_PASS_REMAINDER_UNNECESSARY_AT_OFFSET_ZERO);
   private static final SoyErrorKind REMAINDER_WITH_PHNAME =
-      SoyErrorKind.of("Special function ''remainder'' cannot be used with ''phname''.");
+      SoyErrorKind.of(
+          "Special function ''remainder'' cannot be used with ''phname''.",
+          Impression.ERROR_REWRITE_REMAINDERS_PASS_REMAINDER_WITH_PHNAME);
 
   private final ErrorReporter errorReporter;
 

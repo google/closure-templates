@@ -32,6 +32,7 @@ import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -74,60 +75,74 @@ public final class PluginResolver {
   }
 
   private static final SoyErrorKind UNKNOWN_PLUGIN =
-      SoyErrorKind.of("Unknown {0} ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Unknown {0} ''{1}''.{2}",
+          Impression.ERROR_PLUGIN_RESOLVER_UNKNOWN_PLUGIN, StyleAllowance.NO_PUNCTUATION);
 
   static final SoyErrorKind DEPRECATED_PLUGIN =
       SoyErrorKind.deprecation(
           "{0} is deprecated: {1}", StyleAllowance.NO_PUNCTUATION, StyleAllowance.NO_CAPS);
 
   private static final SoyErrorKind INCORRECT_NUM_ARGS =
-      SoyErrorKind.of("{0} called with {1} arguments (expected {2}).");
+      SoyErrorKind.of(
+          "{0} called with {1} arguments (expected {2}).",
+          Impression.ERROR_PLUGIN_RESOLVER_INCORRECT_NUM_ARGS);
 
   private static final SoyErrorKind PLUGIN_NAME_NOT_ALLOWED =
       SoyErrorKind.of(
           "Plugin ''{0}'' is named ''{1}'' which is not allowed "
               + "because it conflicts with Soy''s {1}() literal syntax."
-          );
+          ,
+          Impression.ERROR_PLUGIN_RESOLVER_PLUGIN_NAME_NOT_ALLOWED);
 
   private static final SoyErrorKind DIFFERENT_IMPLS_REGISTERED =
       SoyErrorKind.of(
           "Plugin named ''{0}'' has two different implementations registered: "
-              + "''{1}'' and ''{2}''.");
+              + "''{1}'' and ''{2}''.",
+          Impression.ERROR_PLUGIN_RESOLVER_DIFFERENT_IMPLS_REGISTERED);
 
   private static final SoyErrorKind MISSING_FUNCTION_SIGNATURE =
       SoyErrorKind.of(
           "Plugin class ''{0}'' has no @SoyFunctionSignature annotation. "
               + "Classes implementing SoySourceFunction must be annotated with "
-              + "@SoyFunctionSignature.");
+              + "@SoyFunctionSignature.",
+          Impression.ERROR_PLUGIN_RESOLVER_MISSING_FUNCTION_SIGNATURE);
 
   private static final SoyErrorKind MISSING_METHOD_SIGNATURE =
       SoyErrorKind.of(
           "Plugin class ''{0}'' has no @SoyMethodSignature annotation. "
               + "Method classes implementing SoySourceFunction must be annotated with "
-              + "@SoyMethodSignature.");
+              + "@SoyMethodSignature.",
+          Impression.ERROR_PLUGIN_RESOLVER_MISSING_METHOD_SIGNATURE);
 
   private static final SoyErrorKind DIFFERENT_METHOD_IMPLS_REGISTERED =
       SoyErrorKind.of(
           "Plugin method named ''{0}'' with base type ''{1}'' has two different implementations"
-              + " registered: ''{2}'' and ''{3}''.");
+              + " registered: ''{2}'' and ''{3}''.",
+          Impression.ERROR_PLUGIN_RESOLVER_DIFFERENT_METHOD_IMPLS_REGISTERED);
 
   private static final SoyErrorKind DIFFERENT_FIELD_IMPLS_REGISTERED =
       SoyErrorKind.of(
           "Plugin field named ''{0}'' with base type ''{1}'' has two different implementations"
-              + " registered: ''{2}'' and ''{3}''.");
+              + " registered: ''{2}'' and ''{3}''.",
+          Impression.ERROR_PLUGIN_RESOLVER_DIFFERENT_FIELD_IMPLS_REGISTERED);
 
   private static final SoyErrorKind MULTIPLE_PLUGIN_INSTANCES =
       SoyErrorKind.of(
           "Plugin class ''{0}'' uses callInstanceMethod for methods on multiple classes {1}. "
-              + "SoyJavaSourceFunctions must only use a single class for callInstanceMethod.");
+              + "SoyJavaSourceFunctions must only use a single class for callInstanceMethod.",
+          Impression.ERROR_PLUGIN_RESOLVER_MULTIPLE_PLUGIN_INSTANCES);
 
   private static final SoyErrorKind FUNCTION_PRINT_DIRECTIVE_COLLISION =
-      SoyErrorKind.of("Plugin ''{0}'' named ''{1}'' collides with print directive ''{2}''.");
+      SoyErrorKind.of(
+          "Plugin ''{0}'' named ''{1}'' collides with print directive ''{2}''.",
+          Impression.ERROR_PLUGIN_RESOLVER_FUNCTION_PRINT_DIRECTIVE_COLLISION);
 
   private static final SoyErrorKind FUNCTION_NOT_CALLABLE =
       SoyErrorKind.of(
           "Function ''{0}'' cannot be called as a print directive."
-          );
+          ,
+          Impression.ERROR_PLUGIN_RESOLVER_FUNCTION_NOT_CALLABLE);
 
   /**
    * Whitelist for function name + print directive name collisions. We will not allow functions with

@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -31,10 +32,14 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 final class CheckSkipPass implements CompilerFilePass {
 
   private static final SoyErrorKind SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS =
-      SoyErrorKind.of("Skip element open tags must map to exactly one close tag.");
+      SoyErrorKind.of(
+          "Skip element open tags must map to exactly one close tag.",
+          Impression.ERROR_CHECK_SKIP_PASS_SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS);
 
   private static final SoyErrorKind SOY_SKIP_MUST_BE_DIRECT_CHILD_OF_TAG =
-      SoyErrorKind.of("Skip commands must be direct children of html tags.");
+      SoyErrorKind.of(
+          "Skip commands must be direct children of html tags.",
+          Impression.ERROR_CHECK_SKIP_PASS_SOY_SKIP_MUST_BE_DIRECT_CHILD_OF_TAG);
 
   private final ErrorReporter errorReporter;
 

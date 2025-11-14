@@ -172,6 +172,7 @@ java_library(
         "//java/src/com/google/template/soy/internal/proto",
         "//java/src/com/google/template/soy/shared/restricted:restricted_internal",
         "//java/src/com/google/template/soy/types",
+        "//src/main/protobuf:soy_compiler_metrics_java_proto",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_guava_guava",
     ],

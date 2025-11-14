@@ -26,6 +26,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -60,9 +61,13 @@ import javax.annotation.Nullable;
 final class RewriteShortFormCallsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind OVERFLOW =
-      SoyErrorKind.of("Overflowed short form call rewriting.");
+      SoyErrorKind.of(
+          "Overflowed short form call rewriting.",
+          Impression.ERROR_REWRITE_SHORT_FORM_CALLS_PASS_OVERFLOW);
   static final SoyErrorKind EXPECTED_NAMED_PARAMETERS =
-      SoyErrorKind.of("Expected named parameters.");
+      SoyErrorKind.of(
+          "Expected named parameters.",
+          Impression.ERROR_REWRITE_SHORT_FORM_CALLS_PASS_EXPECTED_NAMED_PARAMETERS);
 
   private final ErrorReporter errorReporter;
   private final ExprEquivalence exprEquivalence;

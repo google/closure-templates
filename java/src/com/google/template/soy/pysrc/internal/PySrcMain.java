@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -49,7 +50,8 @@ public final class PySrcMain {
 
   private static final SoyErrorKind DUPLICATE_NAMESPACE_ERROR =
       SoyErrorKind.of(
-          "Multiple files are providing the same namespace: {0}. Soy namespaces must be unique.");
+          "Multiple files are providing the same namespace: {0}. Soy namespaces must be unique.",
+          Impression.ERROR_PY_SRC_MAIN_DUPLICATE_NAMESPACE_ERROR);
 
   /** The scope object that manages the API call scope. */
   private final SoyScopedData.Enterable apiCallScope;

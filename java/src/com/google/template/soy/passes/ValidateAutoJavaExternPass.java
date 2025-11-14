@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.VarDefn;
@@ -49,15 +50,23 @@ import java.util.Set;
 class ValidateAutoJavaExternPass implements CompilerFilePass {
 
   private static final SoyErrorKind BAD_RETURN_TYPE =
-      SoyErrorKind.of("Provided type ''{0}'' is not assignable to declared type ''{1}''.");
+      SoyErrorKind.of(
+          "Provided type ''{0}'' is not assignable to declared type ''{1}''.",
+          Impression.ERROR_VALIDATE_AUTO_JAVA_EXTERN_PASS_BAD_RETURN_TYPE);
 
-  private static final SoyErrorKind DEAD_CODE = SoyErrorKind.of("Unreachable code.");
+  private static final SoyErrorKind DEAD_CODE =
+      SoyErrorKind.of(
+          "Unreachable code.", Impression.ERROR_VALIDATE_AUTO_JAVA_EXTERN_PASS_DEAD_CODE);
 
   private static final SoyErrorKind BAD_ASSIGNMENT =
-      SoyErrorKind.of("Assignment is only allowed on params or lets.");
+      SoyErrorKind.of(
+          "Assignment is only allowed on params or lets.",
+          Impression.ERROR_VALIDATE_AUTO_JAVA_EXTERN_PASS_BAD_ASSIGNMENT);
 
   private static final SoyErrorKind MISSING_RETURN =
-      SoyErrorKind.of("Function lacks ending return statement.");
+      SoyErrorKind.of(
+          "Function lacks ending return statement.",
+          Impression.ERROR_VALIDATE_AUTO_JAVA_EXTERN_PASS_MISSING_RETURN);
 
   private final ErrorReporter errorReporter;
 

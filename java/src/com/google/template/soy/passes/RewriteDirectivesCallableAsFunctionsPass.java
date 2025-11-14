@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -49,7 +50,8 @@ final class RewriteDirectivesCallableAsFunctionsPass implements CompilerFilePass
   private static final SoyErrorKind NOT_FIRST_PRINT_DIRECTIVE =
       SoyErrorKind.of(
           "Function ''{0}'' cannot be called as a print directive when preceded by print directive"
-              + " ''{1}''.");
+              + " ''{1}''.",
+          Impression.ERROR_REWRITE_DIRECTIVES_CALLABLE_AS_FUNCTIONS_PASS_NOT_FIRST_PRINT_DIRECTIVE);
 
   private final ErrorReporter errorReporter;
 

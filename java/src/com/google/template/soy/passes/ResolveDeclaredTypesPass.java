@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -65,13 +66,19 @@ final class ResolveDeclaredTypesPass extends AbstractTopologicallyOrderedPass {
   private TypeNodeConverter converter;
 
   private static final SoyErrorKind TYPE_NAME_BUILTIN_COLLISION =
-      SoyErrorKind.of("Type ''{0}'' name is already a built-in or imported type {1}.");
+      SoyErrorKind.of(
+          "Type ''{0}'' name is already a built-in or imported type {1}.",
+          Impression.ERROR_RESOLVE_DECLARED_TYPES_PASS_TYPE_NAME_BUILTIN_COLLISION);
 
   private static final SoyErrorKind TYPE_NAME_COLLISION =
-      SoyErrorKind.of("Type ''{0}'' is already defined in this file.");
+      SoyErrorKind.of(
+          "Type ''{0}'' is already defined in this file.",
+          Impression.ERROR_RESOLVE_DECLARED_TYPES_PASS_TYPE_NAME_COLLISION);
 
   private static final SoyErrorKind INTERSECTION_NOT_ALLOWED =
-      SoyErrorKind.of("An intersection type is not allowed here. Extract into a '{type}' instead.");
+      SoyErrorKind.of(
+          "An intersection type is not allowed here. Extract into a '{type}' instead.",
+          Impression.ERROR_RESOLVE_DECLARED_TYPES_PASS_INTERSECTION_NOT_ALLOWED);
 
   public ResolveDeclaredTypesPass(
       ErrorReporter errorReporter,

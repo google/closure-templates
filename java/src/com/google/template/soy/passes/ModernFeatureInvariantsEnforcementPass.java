@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.exemptions.NamespaceExemptions;
@@ -36,7 +37,9 @@ import com.google.template.soy.soytree.SoyNode;
 class ModernFeatureInvariantsEnforcementPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind UNIQUE_NS_REQUIRED =
-      SoyErrorKind.of("Feature {0} is only allowed in files with unique namespaces.");
+      SoyErrorKind.of(
+          "Feature {0} is only allowed in files with unique namespaces.",
+          Impression.ERROR_MODERN_FEATURE_INVARIANTS_ENFORCEMENT_PASS_UNIQUE_NS_REQUIRED);
 
   private final ErrorReporter errorReporter;
   private boolean error = false;

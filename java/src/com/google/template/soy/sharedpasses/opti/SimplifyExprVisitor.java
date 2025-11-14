@@ -20,6 +20,7 @@ import static com.google.template.soy.exprtree.ExprNodes.isNullishLiteral;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
@@ -77,7 +78,8 @@ import javax.annotation.Nullable;
  */
 final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
 
-  private static final SoyErrorKind SOY_DATA_ERROR = SoyErrorKind.of("Invalid value: {0}.");
+  private static final SoyErrorKind SOY_DATA_ERROR =
+      SoyErrorKind.of("Invalid value: {0}.", Impression.ERROR_SIMPLIFY_EXPR_VISITOR_SOY_DATA_ERROR);
 
   /** The PreevalVisitor for this instance (can reuse). */
   private final PreevalVisitor preevalVisitor;

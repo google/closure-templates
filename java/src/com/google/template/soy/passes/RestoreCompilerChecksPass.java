@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
@@ -36,13 +37,19 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 final class RestoreCompilerChecksPass implements CompilerFilePass {
 
   private static final SoyErrorKind MUST_BE_DOLLAR_IDENT =
-      SoyErrorKind.of("Name must begin with a ''$''.");
+      SoyErrorKind.of(
+          "Name must begin with a ''$''.",
+          Impression.ERROR_RESTORE_COMPILER_CHECKS_PASS_MUST_BE_DOLLAR_IDENT);
 
   private static final SoyErrorKind MUST_NOT_BE_DOLLAR_IDENT =
-      SoyErrorKind.of("Name must not begin with a ''$''.");
+      SoyErrorKind.of(
+          "Name must not begin with a ''$''.",
+          Impression.ERROR_RESTORE_COMPILER_CHECKS_PASS_MUST_NOT_BE_DOLLAR_IDENT);
 
   private static final SoyErrorKind MUST_BE_CONSTANT =
-      SoyErrorKind.of("Expected constant identifier.");
+      SoyErrorKind.of(
+          "Expected constant identifier.",
+          Impression.ERROR_RESTORE_COMPILER_CHECKS_PASS_MUST_BE_CONSTANT);
 
   private final ErrorReporter errorReporter;
 

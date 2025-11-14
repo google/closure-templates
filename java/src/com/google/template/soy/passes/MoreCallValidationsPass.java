@@ -26,6 +26,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -73,69 +74,103 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
   private static final SoyErrorKind ELEMENT_CALL_TO_HTML_TEMPLATE =
       SoyErrorKind.of(
           "Expected a template with kind 'html<?>' that is completely bound or only has html"
-              + " parameters, but found `{0}`.");
+              + " parameters, but found `{0}`.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_ELEMENT_CALL_TO_HTML_TEMPLATE);
 
   private static final SoyErrorKind ONLY_STRICT_HTML_TEMPLATES_ALLOWED =
       SoyErrorKind.of(
           "Only strict HTML templates are allowed in expressions, but template `{0}` was not"
-              + " strict HTML.");
+              + " strict HTML.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_ONLY_STRICT_HTML_TEMPLATES_ALLOWED);
 
   private static final SoyErrorKind ILLEGAL_USE =
-      SoyErrorKind.of("''legacyDynamicTag'' may only be used to name an HTML tag.");
+      SoyErrorKind.of(
+          "''legacyDynamicTag'' may only be used to name an HTML tag.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_ILLEGAL_USE);
 
   private static final SoyErrorKind NEED_WRAP =
-      SoyErrorKind.of("A dynamic tag name should be wrapped in the ''legacyDynamicTag'' function.");
+      SoyErrorKind.of(
+          "A dynamic tag name should be wrapped in the ''legacyDynamicTag'' function.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_NEED_WRAP);
 
   private static final SoyErrorKind ONLY_ONE_CLOSE_TAG =
-      SoyErrorKind.of("Element calls require exactly one close tag.");
+      SoyErrorKind.of(
+          "Element calls require exactly one close tag.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_ONLY_ONE_CLOSE_TAG);
 
   private static final SoyErrorKind NON_STATIC_ATTRIBUTE_NAME =
-      SoyErrorKind.of("Element call attribute names must be static.");
+      SoyErrorKind.of(
+          "Element call attribute names must be static.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_NON_STATIC_ATTRIBUTE_NAME);
 
   private static final SoyErrorKind NEGATIVE_ATTRIBUTE =
-      SoyErrorKind.of("Callee template does not allow attribute ''{0}''.");
+      SoyErrorKind.of(
+          "Callee template does not allow attribute ''{0}''.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_NEGATIVE_ATTRIBUTE);
 
   private static final SoyErrorKind NO_SUCH_ATTRIBUTE =
       SoyErrorKind.of(
           "Unrecognized attribute (does the called template specify ''@attribute *'' or is"
               + " ''extraRootElementAttributes'' already bound?).{0}",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_NO_SUCH_ATTRIBUTE,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind MISUSED_AT_ATTRIBUTE =
-      SoyErrorKind.of("Attributes with a leading @ should not have values.");
+      SoyErrorKind.of(
+          "Attributes with a leading @ should not have values.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_MISUSED_AT_ATTRIBUTE);
 
   static final SoyErrorKind BAD_ATTRIBUTE_NAME =
-      SoyErrorKind.of("Element attribute names must be lower hyphen case.");
+      SoyErrorKind.of(
+          "Element attribute names must be lower hyphen case.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_BAD_ATTRIBUTE_NAME);
 
   private static final SoyErrorKind NO_ATTRIBUTE_VALUE =
-      SoyErrorKind.of("Element call attributes must have values.");
+      SoyErrorKind.of(
+          "Element call attributes must have values.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_NO_ATTRIBUTE_VALUE);
 
   private static final SoyErrorKind NO_ATTRIBUTES_ON_SLOT =
       SoyErrorKind.of(
           "<parameter> elements cannot have attributes except slot, which must have a static"
-              + " value.");
+              + " value.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_NO_ATTRIBUTES_ON_SLOT);
 
   private static final SoyErrorKind SLOTS_ONLY_ONE_CLOSE_TAG =
-      SoyErrorKind.of("<parameter> elements cannot have more than one close tag.");
+      SoyErrorKind.of(
+          "<parameter> elements cannot have more than one close tag.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_SLOTS_ONLY_ONE_CLOSE_TAG);
 
   private static final SoyErrorKind SLOTS_ONLY_DIRECT_DESCENDANTS_OF_TEMPLATE_CALL =
-      SoyErrorKind.of("<parameter> elements can only be direct descendents of template calls.");
+      SoyErrorKind.of(
+          "<parameter> elements can only be direct descendents of template calls.",
+          Impression
+              .ERROR_MORE_CALL_VALIDATIONS_PASS_SLOTS_ONLY_DIRECT_DESCENDANTS_OF_TEMPLATE_CALL);
 
-  private static final SoyErrorKind DUPLICATE_PARAM = SoyErrorKind.of("Duplicate param ''{0}''.");
+  private static final SoyErrorKind DUPLICATE_PARAM =
+      SoyErrorKind.of(
+          "Duplicate param ''{0}''.", Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_DUPLICATE_PARAM);
 
   private static final SoyErrorKind PASSES_UNUSED_PARAM =
       SoyErrorKind.of(
           "''{0}'' is not a declared parameter of {1} or any indirect callee.{2}",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_PASSES_UNUSED_PARAM,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind MISSING_PARAM =
-      SoyErrorKind.of("Call missing required param ''{0}''.");
+      SoyErrorKind.of(
+          "Call missing required param ''{0}''.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_MISSING_PARAM);
 
   private static final SoyErrorKind MISSING_ATTRIBUTE =
-      SoyErrorKind.of("Call missing required attribute ''{0}''.");
+      SoyErrorKind.of(
+          "Call missing required attribute ''{0}''.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_MISSING_ATTRIBUTE);
 
   private static final SoyErrorKind ONLY_SLOTS_ALLOWED =
-      SoyErrorKind.of("Element calls require all children to be <parameter> elements.");
+      SoyErrorKind.of(
+          "Element calls require all children to be <parameter> elements.",
+          Impression.ERROR_MORE_CALL_VALIDATIONS_PASS_ONLY_SLOTS_ALLOWED);
 
   private final ErrorReporter errorReporter;
   private final boolean elementFunctionsWereRewritten;

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -49,7 +50,9 @@ import javax.annotation.Nullable;
 final class ResolveTemplateNamesPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS =
-      SoyErrorKind.of("The `data` attribute is only allowed on static calls.");
+      SoyErrorKind.of(
+          "The `data` attribute is only allowed on static calls.",
+          Impression.ERROR_RESOLVE_TEMPLATE_NAMES_PASS_DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS);
 
   private final ErrorReporter errorReporter;
 

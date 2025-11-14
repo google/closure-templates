@@ -33,6 +33,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basicfunctions.BasicFunctions;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -102,42 +103,64 @@ import javax.annotation.Nullable;
 final class ElementAttributePass implements CompilerFileSetPass {
 
   private static final SoyErrorKind DELTEMPLATE_USING_ELEMENT_CONTENT_KIND =
-      SoyErrorKind.of("Deltemplates cannot set kind=\"html<...>\".");
+      SoyErrorKind.of(
+          "Deltemplates cannot set kind=\"html<...>\".",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_DELTEMPLATE_USING_ELEMENT_CONTENT_KIND);
 
   private static final SoyErrorKind UNUSED_ATTRIBUTE =
-      SoyErrorKind.of("Declared @attribute unused in template element.");
+      SoyErrorKind.of(
+          "Declared @attribute unused in template element.",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_UNUSED_ATTRIBUTE);
 
   private static final SoyErrorKind ATTRIBUTE_USED_OUTSIDE_OF_TAG =
-      SoyErrorKind.of("Attributes may not be referenced explicitly.");
+      SoyErrorKind.of(
+          "Attributes may not be referenced explicitly.",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_ATTRIBUTE_USED_OUTSIDE_OF_TAG);
 
   private static final SoyErrorKind UNRECOGNIZED_ATTRIBUTE =
       SoyErrorKind.of(
           "''{0}'' is not a declared @attribute of the template.{1}",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_UNRECOGNIZED_ATTRIBUTE,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind PLAIN_ATTRIBUTE =
-      SoyErrorKind.of("HTML attribute masks Soy attribute. Did you mean ''{0}''?");
+      SoyErrorKind.of(
+          "HTML attribute masks Soy attribute. Did you mean ''{0}''?",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_PLAIN_ATTRIBUTE);
 
   private static final SoyErrorKind ATTRIBUTE_NOT_REQUIRED =
-      SoyErrorKind.of("@attribute ''{0}'' must be set as optional to be used here.");
+      SoyErrorKind.of(
+          "@attribute ''{0}'' must be set as optional to be used here.",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_ATTRIBUTE_NOT_REQUIRED);
 
   private static final SoyErrorKind ATTRIBUTE_PARAM_NOT_ALLOWED =
       SoyErrorKind.of(
-          "Attribute ''{0}'' can only be present on root elements of html<?> templates.");
+          "Attribute ''{0}'' can only be present on root elements of html<?> templates.",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_ATTRIBUTE_PARAM_NOT_ALLOWED);
 
   private static final SoyErrorKind BAD_ATTRIBUTE_TYPE =
-      SoyErrorKind.of("Attributes must be of type string or a sanitized type.");
+      SoyErrorKind.of(
+          "Attributes must be of type string or a sanitized type.",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_BAD_ATTRIBUTE_TYPE);
 
   private static final SoyErrorKind ROOT_TAG_KIND_MISMATCH =
-      SoyErrorKind.of("Expected root tag to be ''{0}''.");
+      SoyErrorKind.of(
+          "Expected root tag to be ''{0}''.",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_ROOT_TAG_KIND_MISMATCH);
 
   private static final SoyErrorKind DELEGATE_KIND_MISMATCH =
-      SoyErrorKind.of("Expected the called template to have root tag ''{0}'', found ''{1}''.");
+      SoyErrorKind.of(
+          "Expected the called template to have root tag ''{0}'', found ''{1}''.",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_DELEGATE_KIND_MISMATCH);
 
   private static final SoyErrorKind ATTRIBUTE_STAR_AND_EXPLICIT =
-      SoyErrorKind.of("Cannot specify a param named ''{0}'' along with ''attribute *''.");
+      SoyErrorKind.of(
+          "Cannot specify a param named ''{0}'' along with ''attribute *''.",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_ATTRIBUTE_STAR_AND_EXPLICIT);
   private static final SoyErrorKind EXTRA_ROOT_ELEMENT_ATTRIBUTES_TYPE =
-      SoyErrorKind.of("Param ''{0}'' must be optional and of type 'attributes'.");
+      SoyErrorKind.of(
+          "Param ''{0}'' must be optional and of type 'attributes'.",
+          Impression.ERROR_ELEMENT_ATTRIBUTE_PASS_EXTRA_ROOT_ELEMENT_ATTRIBUTES_TYPE);
 
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFromDeps;

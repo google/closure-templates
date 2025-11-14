@@ -30,6 +30,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.proto.Field;
@@ -49,7 +50,8 @@ public final class TypeRegistries {
 
   private static final SoyErrorKind PROTO_FQN =
       SoyErrorKind.of(
-          "Proto types must be imported rather than referenced by their fully qualified names.");
+          "Proto types must be imported rather than referenced by their fully qualified names.",
+          Impression.ERROR_TYPE_REGISTRIES_PROTO_FQN);
 
   private TypeRegistries() {}
 

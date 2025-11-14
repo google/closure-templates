@@ -35,6 +35,7 @@ import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorFormatter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -53,7 +54,8 @@ public final class SoyTypeRegistryBuilder {
 
   private static final SoyErrorKind PROTO_FQN_COLLISION =
       SoyErrorKind.of(
-          "Identical protobuf message FQN ''{0}'' found in multiple dependencies: {1} and {2}.");
+          "Identical protobuf message FQN ''{0}'' found in multiple dependencies: {1} and {2}.",
+          Impression.ERROR_SOY_TYPE_REGISTRY_BUILDER_PROTO_FQN_COLLISION);
 
   /** Creates a type registry with only the built-in types. Mostly used for testing. */
   public static SoyTypeRegistry create() {

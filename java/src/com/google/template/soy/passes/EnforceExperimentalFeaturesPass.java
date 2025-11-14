@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -40,7 +41,9 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
       ImmutableSet.of("testonly_throw_on_warnings");
 
   private static final SoyErrorKind INVALID_EXPERIMENTAL_FEATURE =
-      SoyErrorKind.of("Invalid Soy experimental feature(s): {0}.");
+      SoyErrorKind.of(
+          "Invalid Soy experimental feature(s): {0}.",
+          Impression.ERROR_ENFORCE_EXPERIMENTAL_FEATURES_PASS_INVALID_EXPERIMENTAL_FEATURE);
 
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;

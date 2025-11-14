@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -42,32 +43,41 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
       SoyErrorKind.of(
           "\"modifies\" can only be used in a file with a '{'modname'}' command, unless it is used "
               + "on a variant template. If this is a non-variant template, did you forget to add a "
-              + "'{'modname'}'? Or did you forget to mark this template as a variant?");
+              + "'{'modname'}'? Or did you forget to mark this template as a variant?",
+          Impression.ERROR_CHECK_MODIFIABLE_TEMPLATES_PASS_MODIFIES_WITHOUT_MODNAME);
 
   private static final SoyErrorKind MODIFIABLE_WITH_MODNAME =
       SoyErrorKind.of(
-          "\"modifiable\" templates cannot be placed in files with a '{'modname'}' command.");
+          "\"modifiable\" templates cannot be placed in files with a '{'modname'}' command.",
+          Impression.ERROR_CHECK_MODIFIABLE_TEMPLATES_PASS_MODIFIABLE_WITH_MODNAME);
 
   private static final SoyErrorKind INCOMPATIBLE_SIGNATURE =
       SoyErrorKind.of(
           "Template with signature `{0}` cannot be modified by template with "
-              + "incompatible signature `{1}`.");
+              + "incompatible signature `{1}`.",
+          Impression.ERROR_CHECK_MODIFIABLE_TEMPLATES_PASS_INCOMPATIBLE_SIGNATURE);
 
   private static final SoyErrorKind BAD_VARIANT_TYPE =
-      SoyErrorKind.of("Expected variant of type {0}, found type {1}.");
+      SoyErrorKind.of(
+          "Expected variant of type {0}, found type {1}.",
+          Impression.ERROR_CHECK_MODIFIABLE_TEMPLATES_PASS_BAD_VARIANT_TYPE);
 
   private static final SoyErrorKind MODDING_MULTIPLE_FILES =
       SoyErrorKind.of(
           "A single Soy file can only modify templates from a single external namespace. "
-              + "Namespaces: {0}.");
+              + "Namespaces: {0}.",
+          Impression.ERROR_CHECK_MODIFIABLE_TEMPLATES_PASS_MODDING_MULTIPLE_FILES);
 
   private static final SoyErrorKind UNRESOLVED_MODIFIES_EXPR =
       SoyErrorKind.of(
           "The \"modifies\" expression could not be statically resolved to a valid template "
-              + "literal.");
+              + "literal.",
+          Impression.ERROR_CHECK_MODIFIABLE_TEMPLATES_PASS_UNRESOLVED_MODIFIES_EXPR);
 
   private static final SoyErrorKind MODIFIES_NON_MODIFIABLE =
-      SoyErrorKind.of("Template in \"modifies\" expression must have `modifiable=\"true\"` set.");
+      SoyErrorKind.of(
+          "Template in \"modifies\" expression must have `modifiable=\"true\"` set.",
+          Impression.ERROR_CHECK_MODIFIABLE_TEMPLATES_PASS_MODIFIES_NON_MODIFIABLE);
 
   private final ErrorReporter errorReporter;
 

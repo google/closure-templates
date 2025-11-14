@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.joining;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -44,7 +45,9 @@ import java.util.stream.Collectors;
 public class FileDependencyOrderPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CYCLE =
-      SoyErrorKind.of("Dependency cycle between source files:\n{0}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Dependency cycle between source files:\n{0}",
+          Impression.ERROR_FILE_DEPENDENCY_ORDER_PASS_CYCLE, StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
   private final Consumer<ImmutableList<SoyFileNode>> stateSetter;

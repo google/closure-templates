@@ -31,6 +31,7 @@ import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -415,24 +416,36 @@ public enum BuiltinMethod implements SoyMethod {
 
   private static final SoyErrorKind GET_EXTENSION_BAD_ARG =
       SoyErrorKind.of(
-          "The parameter of method ''getExtension'' must be an imported extension symbol.");
+          "The parameter of method ''getExtension'' must be an imported extension symbol.",
+          Impression.ERROR_BUILTIN_METHOD_GET_EXTENSION_BAD_ARG);
   private static final SoyErrorKind PROTO_EXTENSION_DOES_NOT_EXIST =
       SoyErrorKind.of(
-          "Proto extension ''{0}'' does not extend ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
+          "Proto extension ''{0}'' does not extend ''{1}''.{2}",
+          Impression.ERROR_BUILTIN_METHOD_PROTO_EXTENSION_DOES_NOT_EXIST,
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind
       GET_READONLY_EXTENSION_MAY_ONLY_BE_CALLED_ON_MESSAGE_EXTENSIONS =
           SoyErrorKind.of(
               "getReadonlyExtension may only be called on singular message extensions.",
+              Impression
+                  .ERROR_BUILTIN_METHOD_GET_READONLY_EXTENSION_MAY_ONLY_BE_CALLED_ON_MESSAGE_EXTENSIONS,
               StyleAllowance.NO_CAPS);
   private static final SoyErrorKind HAS_EXTENSION_MAY_ONLY_BE_CALLED_ON_SINGULAR_EXTENSIONS =
       SoyErrorKind.of(
-          "hasExtension may only be called on singular extensions.", StyleAllowance.NO_CAPS);
+          "hasExtension may only be called on singular extensions.",
+          Impression.ERROR_BUILTIN_METHOD_HAS_EXTENSION_MAY_ONLY_BE_CALLED_ON_SINGULAR_EXTENSIONS,
+          StyleAllowance.NO_CAPS);
   private static final SoyErrorKind BIND_PARAMETER_MUST_BE_RECORD_LITERAL =
-      SoyErrorKind.of("Parameter to bind() must be a record literal.");
+      SoyErrorKind.of(
+          "Parameter to bind() must be a record literal.",
+          Impression.ERROR_BUILTIN_METHOD_BIND_PARAMETER_MUST_BE_RECORD_LITERAL);
   public static final SoyErrorKind METHOD_INVALID_PARAM_TYPES =
-      SoyErrorKind.of("Method ''{0}'' called with parameter types ({1}) but expected ({2}).");
+      SoyErrorKind.of(
+          "Method ''{0}'' called with parameter types ({1}) but expected ({2}).",
+          Impression.ERROR_BUILTIN_METHOD_METHOD_INVALID_PARAM_TYPES);
   private static final SoyErrorKind EMPTY_MAP_ACCESS =
-      SoyErrorKind.of("Accessing item in empty map.");
+      SoyErrorKind.of(
+          "Accessing item in empty map.", Impression.ERROR_BUILTIN_METHOD_EMPTY_MAP_ACCESS);
 
   public static final SoyMethod.Registry REGISTRY =
       new Registry() {

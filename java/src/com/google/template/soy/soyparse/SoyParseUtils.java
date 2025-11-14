@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 
@@ -27,13 +28,20 @@ import com.google.template.soy.error.SoyErrorKind;
 final class SoyParseUtils {
 
   private static final SoyErrorKind CALL_COLLIDES_WITH_NAMESPACE_ALIAS =
-      SoyErrorKind.of("Call collides with namespace alias ''{0}''.");
+      SoyErrorKind.of(
+          "Call collides with namespace alias ''{0}''.",
+          Impression.ERROR_SOY_PARSE_UTILS_CALL_COLLIDES_WITH_NAMESPACE_ALIAS);
   private static final SoyErrorKind INVALID_UNICODE_SEQUENCE =
-      SoyErrorKind.of("Invalid unicode sequence ''{0}''.");
+      SoyErrorKind.of(
+          "Invalid unicode sequence ''{0}''.",
+          Impression.ERROR_SOY_PARSE_UTILS_INVALID_UNICODE_SEQUENCE);
   private static final SoyErrorKind UNKNOWN_ESCAPE_CODE =
-      SoyErrorKind.of("Unknown escape code ''{0}''.");
+      SoyErrorKind.of(
+          "Unknown escape code ''{0}''.", Impression.ERROR_SOY_PARSE_UTILS_UNKNOWN_ESCAPE_CODE);
   private static final SoyErrorKind MISSING_CALLEE_NAMESPACE =
-      SoyErrorKind.of("Callee ''{0}'' should be relative to a namespace. Did you mean ''.{0}''?");
+      SoyErrorKind.of(
+          "Callee ''{0}'' should be relative to a namespace. Did you mean ''.{0}''?",
+          Impression.ERROR_SOY_PARSE_UTILS_MISSING_CALLEE_NAMESPACE);
 
   /** Unescapes a Soy string, according to JavaScript rules. */
   @SuppressWarnings("unused") // called in SoyFileParser.jj

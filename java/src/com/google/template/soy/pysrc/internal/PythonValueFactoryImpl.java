@@ -22,6 +22,7 @@ import static com.google.template.soy.pysrc.restricted.PyExprUtils.maybeProtect;
 import com.google.common.base.Throwables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -47,10 +48,15 @@ final class PythonValueFactoryImpl extends PythonValueFactory {
 
   private static final SoyErrorKind NULL_RETURN =
       SoyErrorKind.of(
-          formatPlain("{2}.applyForPythonSource returned null."), StyleAllowance.NO_PUNCTUATION);
+          formatPlain("{2}.applyForPythonSource returned null."),
+          Impression.ERROR_PYTHON_VALUE_FACTORY_IMPL_NULL_RETURN,
+          StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind UNEXPECTED_ERROR =
-      SoyErrorKind.of(formatPlain("{2}"), StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          formatPlain("{2}"),
+          Impression.ERROR_PYTHON_VALUE_FACTORY_IMPL_UNEXPECTED_ERROR,
+          StyleAllowance.NO_PUNCTUATION);
 
   private static String formatPlain(String innerFmt) {
     return "Error in plugin implementation for function ''{0}''."

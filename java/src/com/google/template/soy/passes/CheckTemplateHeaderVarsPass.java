@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
@@ -40,7 +41,8 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
   private static final SoyErrorKind INJECTED_PARAM_COLLISION =
       SoyErrorKind.of(
           "Injected param ''{0}'' conflicts with indirect param with the same name in template"
-              + " ''{1}''.");
+              + " ''{1}''.",
+          Impression.ERROR_CHECK_TEMPLATE_HEADER_VARS_PASS_INJECTED_PARAM_COLLISION);
 
   private final ErrorReporter errorReporter;
   private final Supplier<FileSetMetadata> templateRegistryFull;

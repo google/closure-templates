@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -45,7 +46,8 @@ public final class MsgSubstUnitPlaceholderNameUtils {
       SoyErrorKind.of(
           "Cannot generate noncolliding base names for vars. "
               + "Colliding expressions: ''{0}'' and ''{1}''. "
-              + "Add explicit base names with the ''phname'' attribute.");
+              + "Add explicit base names with the ''phname'' attribute.",
+          Impression.ERROR_MSG_SUBST_UNIT_PLACEHOLDER_NAME_UTILS_COLLIDING_EXPRESSIONS);
 
   // Disallow instantiation.
   private MsgSubstUnitPlaceholderNameUtils() {}

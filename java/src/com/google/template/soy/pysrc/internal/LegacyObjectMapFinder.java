@@ -16,6 +16,7 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -34,6 +35,7 @@ final class LegacyObjectMapFinder {
       SoyErrorKind.of(
           "legacy_object_map is not supported in pysrc. Use maps or records instead."
           ,
+          Impression.ERROR_LEGACY_OBJECT_MAP_FINDER_LEGACY_OBJECT_MAP_NOT_SUPPORTED,
           StyleAllowance.NO_CAPS);
 
   private final ErrorReporter errorReporter;

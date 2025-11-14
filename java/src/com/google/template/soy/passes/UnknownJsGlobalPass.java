@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -31,9 +32,12 @@ final class UnknownJsGlobalPass implements CompilerFilePass {
 
   private static final SoyErrorKind INCORRECT_UNKNOWN_JS_GLOBAL_USE =
       SoyErrorKind.of(
-          "The ''unknownJsGlobal'' function can only be used in legacy JS only templates.");
+          "The ''unknownJsGlobal'' function can only be used in legacy JS only templates.",
+          Impression.ERROR_UNKNOWN_JS_GLOBAL_PASS_INCORRECT_UNKNOWN_JS_GLOBAL_USE);
   private static final SoyErrorKind INVALID_JS_GLOBAL_VALUE =
-      SoyErrorKind.of("Parameters to ''unknownJsGlobal'' must be valid dotted identifiers.");
+      SoyErrorKind.of(
+          "Parameters to ''unknownJsGlobal'' must be valid dotted identifiers.",
+          Impression.ERROR_UNKNOWN_JS_GLOBAL_PASS_INVALID_JS_GLOBAL_VALUE);
 
   private final ErrorReporter errorReporter;
   private final boolean allowFunction;

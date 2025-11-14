@@ -37,6 +37,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.FunctionalInterfaceUtil;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TypeReference;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.data.PartialSoyTemplate;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyTemplate;
@@ -84,43 +85,71 @@ import javax.annotation.Nullable;
 class ValidateExternsPass implements CompilerFilePass {
 
   private static final SoyErrorKind ATTRIBUTE_REQUIRED =
-      SoyErrorKind.of("Attribute ''{0}'' is required.");
-  private static final SoyErrorKind UNKNOWN_TYPE = SoyErrorKind.of("Type ''{0}'' not loaded.");
+      SoyErrorKind.of(
+          "Attribute ''{0}'' is required.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_ATTRIBUTE_REQUIRED);
+  private static final SoyErrorKind UNKNOWN_TYPE =
+      SoyErrorKind.of(
+          "Type ''{0}'' not loaded.", Impression.ERROR_VALIDATE_EXTERNS_PASS_UNKNOWN_TYPE);
   private static final SoyErrorKind ARITY_MISMATCH =
-      SoyErrorKind.of("Implementation must match extern signature with {0} parameter(s).");
+      SoyErrorKind.of(
+          "Implementation must match extern signature with {0} parameter(s).",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_ARITY_MISMATCH);
   private static final SoyErrorKind INCOMPATIBLE_PARAM_TYPE =
-      SoyErrorKind.of("Soy type ''{1}'' is not coercible to Java type ''{0}''.");
+      SoyErrorKind.of(
+          "Soy type ''{1}'' is not coercible to Java type ''{0}''.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_INCOMPATIBLE_PARAM_TYPE);
   private static final SoyErrorKind INCOMPATIBLE_RETURN_TYPE =
-      SoyErrorKind.of("Java type ''{0}'' is not coercible to Soy type ''{1}''.");
+      SoyErrorKind.of(
+          "Java type ''{0}'' is not coercible to Soy type ''{1}''.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_INCOMPATIBLE_RETURN_TYPE);
   private static final SoyErrorKind OVERLOAD_RETURN_CONFLICT =
       SoyErrorKind.of(
-          "Overloaded extern must have the same return type as the earlier extern defined on {0}.");
+          "Overloaded extern must have the same return type as the earlier extern defined on {0}.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_OVERLOAD_RETURN_CONFLICT);
   private static final SoyErrorKind OVERLOAD_PARAM_CONFLICT =
       SoyErrorKind.of(
-          "Overloaded extern parameters are ambiguous with the earlier extern defined on {0}.");
+          "Overloaded extern parameters are ambiguous with the earlier extern defined on {0}.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_OVERLOAD_PARAM_CONFLICT);
   private static final SoyErrorKind JS_IMPL_OVERLOADS_MUST_MATCH =
-      SoyErrorKind.of("Overloads for the same extern symbol must have the same jsimpl.");
+      SoyErrorKind.of(
+          "Overloads for the same extern symbol must have the same jsimpl.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_JS_IMPL_OVERLOADS_MUST_MATCH);
   private static final SoyErrorKind NO_SUCH_JAVA_CLASS =
       SoyErrorKind.of(
           "Java implementation class not loaded."
-          );
+          ,
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_NO_SUCH_JAVA_CLASS);
   private static final SoyErrorKind NOT_PUBLIC =
-      SoyErrorKind.of("Both the Java class and method must be public.");
+      SoyErrorKind.of(
+          "Both the Java class and method must be public.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_NOT_PUBLIC);
   private static final SoyErrorKind NO_SUCH_JAVA_METHOD_NAME =
       SoyErrorKind.of(
-          "No method ''{0}'' exists on implementation class.{1}", StyleAllowance.NO_PUNCTUATION);
+          "No method ''{0}'' exists on implementation class.{1}",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_NO_SUCH_JAVA_METHOD_NAME,
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind JAVA_METHOD_SIG_MISMATCH =
       SoyErrorKind.of(
           "Method ''{0}'' of implementation class does not match the provided arguments. Available"
-              + " signatures: {1}.");
+              + " signatures: {1}.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_JAVA_METHOD_SIG_MISMATCH);
   private static final SoyErrorKind JAVA_METHOD_TYPE_MISMATCH =
-      SoyErrorKind.of("Attribute ''type'' should have value ''{0}''.");
+      SoyErrorKind.of(
+          "Attribute ''type'' should have value ''{0}''.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_JAVA_METHOD_TYPE_MISMATCH);
   private static final SoyErrorKind JAVA_METHOD_RETURN_TYPE_MISMATCH =
-      SoyErrorKind.of("Return type of method ''{0}'' must be one of [{1}].");
+      SoyErrorKind.of(
+          "Return type of method ''{0}'' must be one of [{1}].",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_JAVA_METHOD_RETURN_TYPE_MISMATCH);
   private static final SoyErrorKind IMPLICIT_PARAM_ORDER =
-      SoyErrorKind.of("Implicit Java parameter {0} must come at the end of the parameter list.");
+      SoyErrorKind.of(
+          "Implicit Java parameter {0} must come at the end of the parameter list.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_IMPLICIT_PARAM_ORDER);
   private static final SoyErrorKind GENERICS_DONT_MATCH =
-      SoyErrorKind.of("Declared type {0} does not match actual type {1}.");
+      SoyErrorKind.of(
+          "Declared type {0} does not match actual type {1}.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_GENERICS_DONT_MATCH);
 
   // Additions to this should be minimal as this circumvents Soy's compile time VE checks. Please
   private static final ImmutableSetMultimap<String, String> ALLOWED_VE_EXTERNS =

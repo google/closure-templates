@@ -25,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.CallableExprBuilder;
@@ -39,7 +40,9 @@ import java.util.Set;
 /** Parser helper class. */
 class CallArgs {
 
-  static final SoyErrorKind PARAM_MIX = SoyErrorKind.of("Mix of named and positional arguments.");
+  static final SoyErrorKind PARAM_MIX =
+      SoyErrorKind.of(
+          "Mix of named and positional arguments.", Impression.ERROR_CALL_ARGS_PARAM_MIX);
 
   private static final Identifier RECORD_SPREAD_KEY =
       Identifier.create("unused", SourceLocation.UNKNOWN);

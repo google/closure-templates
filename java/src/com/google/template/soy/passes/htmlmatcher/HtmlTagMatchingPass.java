@@ -21,6 +21,7 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -60,9 +61,13 @@ import javax.annotation.Nullable;
  */
 public final class HtmlTagMatchingPass {
   private static final SoyErrorKind INVALID_CLOSE_TAG =
-      SoyErrorKind.of("''{0}'' tag is a void element and must not specify a close tag.");
+      SoyErrorKind.of(
+          "''{0}'' tag is a void element and must not specify a close tag.",
+          Impression.ERROR_HTML_TAG_MATCHING_PASS_INVALID_CLOSE_TAG);
   private static final SoyErrorKind INVALID_SELF_CLOSING_TAG =
-      SoyErrorKind.of("''{0}'' tag is not allowed to be self-closing.");
+      SoyErrorKind.of(
+          "''{0}'' tag is not allowed to be self-closing.",
+          Impression.ERROR_HTML_TAG_MATCHING_PASS_INVALID_SELF_CLOSING_TAG);
   private static final String UNEXPECTED_CLOSE_TAG = "Unexpected HTML close tag.";
 
   private static final String UNEXPECTED_CLOSE_TAG_KNOWN =
@@ -118,10 +123,10 @@ public final class HtmlTagMatchingPass {
     this.inCondition = inCondition;
   }
 
-  private SoyErrorKind makeSoyErrorKind(String soyError) {
+  private SoyErrorKind makeSoyErrorKind(String soyError, Impression impression) {
     return SoyErrorKind.of(
-        soyError
-            + (parentBlockType != null ? String.format(BLOCK_QUALIFIER, parentBlockType) : ""));
+        soyError + (parentBlockType != null ? String.format(BLOCK_QUALIFIER, parentBlockType) : ""),
+        impression);
   }
 
   /**
@@ -194,11 +199,17 @@ public final class HtmlTagMatchingPass {
         if (annotationMap.get(openTag).size() == 1) {
           if (!tag.getTagName().isExcludedOptionalTag()) {
             errorReporter.report(
-                openTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_OPEN_TAG_ALWAYS));
+                openTag.getSourceLocation(),
+                makeSoyErrorKind(
+                    UNEXPECTED_OPEN_TAG_ALWAYS,
+                    Impression.ERROR_HTML_TAG_MATCHING_PASS_UNEXPECTED_OPEN_TAG_ALWAYS));
           }
         } else {
           errorReporter.report(
-              openTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_OPEN_TAG_SOMETIMES));
+              openTag.getSourceLocation(),
+              makeSoyErrorKind(
+                  UNEXPECTED_OPEN_TAG_SOMETIMES,
+                  Impression.ERROR_HTML_TAG_MATCHING_PASS_UNEXPECTED_OPEN_TAG_SOMETIMES));
         }
       }
     }
@@ -327,7 +338,10 @@ public final class HtmlTagMatchingPass {
         // This is for cases similar to {block}</p>{/block}
         if (stack.isEmpty() && !closeTag.getTagName().isExcludedOptionalTag()) {
           errorReporter.report(
-              closeTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_CLOSE_TAG));
+              closeTag.getSourceLocation(),
+              makeSoyErrorKind(
+                  UNEXPECTED_CLOSE_TAG,
+                  Impression.ERROR_HTML_TAG_MATCHING_PASS_UNEXPECTED_CLOSE_TAG));
           break;
         }
         prev = stack;
@@ -335,7 +349,9 @@ public final class HtmlTagMatchingPass {
           HtmlOpenTagNode nextOpenTag = prev.tagNode;
           if (nextOpenTag.getTagName().isStatic() && closeTag.getTagName().isWildCard()) {
             errorReporter.report(
-                closeTag.getTagName().getTagLocation(), makeSoyErrorKind(EXPECTED_TAG_NAME));
+                closeTag.getTagName().getTagLocation(),
+                makeSoyErrorKind(
+                    EXPECTED_TAG_NAME, Impression.ERROR_HTML_TAG_MATCHING_PASS_EXPECTED_TAG_NAME));
           }
           if (nextOpenTag.getTagName().equals(closeTag.getTagName())
               || (!nextOpenTag.getTagName().isStatic() && closeTag.getTagName().isWildCard())) {
@@ -355,7 +371,9 @@ public final class HtmlTagMatchingPass {
             if (!closeTag.getTagName().isExcludedOptionalTag()) {
               errorReporter.report(
                   closeTag.getSourceLocation(),
-                  makeSoyErrorKind(UNEXPECTED_CLOSE_TAG_KNOWN),
+                  makeSoyErrorKind(
+                      UNEXPECTED_CLOSE_TAG_KNOWN,
+                      Impression.ERROR_HTML_TAG_MATCHING_PASS_UNEXPECTED_CLOSE_TAG_KNOWN),
                   nextOpenTag.getTagName(),
                   nextOpenTag.getSourceLocation());
             }

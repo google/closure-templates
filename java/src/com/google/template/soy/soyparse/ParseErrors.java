@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -34,31 +35,40 @@ import java.util.regex.Pattern;
 
 /** Helpers for interpreting parse errors as soy errors. */
 final class ParseErrors {
-  private static final SoyErrorKind PLAIN_ERROR = SoyErrorKind.of("{0}", StyleAllowance.values());
+  private static final SoyErrorKind PLAIN_ERROR =
+      SoyErrorKind.of("{0}", Impression.ERROR_PARSE_ERRORS_PLAIN_ERROR, StyleAllowance.values());
 
   private static final Pattern EXTRACT_LOCATION = Pattern.compile("at line (\\d+), column (\\d+).");
 
   private static final SoyErrorKind FOUND_DOUBLE_BRACE =
-      SoyErrorKind.of("Soy '{{command}}' syntax is no longer supported. Use single braces.");
+      SoyErrorKind.of(
+          "Soy '{{command}}' syntax is no longer supported. Use single braces.",
+          Impression.ERROR_PARSE_ERRORS_FOUND_DOUBLE_BRACE);
   ;
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
-      SoyErrorKind.of("Unexpected closing tag.");
+      SoyErrorKind.of(
+          "Unexpected closing tag.", Impression.ERROR_PARSE_ERRORS_UNEXPECTED_CLOSE_TAG);
   private static final SoyErrorKind UNEXPECTED_EOF =
       SoyErrorKind.of(
-          "Unexpected end of file.  Did you forget to close an attribute value or a comment?");
+          "Unexpected end of file.  Did you forget to close an attribute value or a comment?",
+          Impression.ERROR_PARSE_ERRORS_UNEXPECTED_EOF);
   private static final SoyErrorKind UNEXPECTED_NEWLINE =
-      SoyErrorKind.of("Unexpected newline in Soy string.");
+      SoyErrorKind.of(
+          "Unexpected newline in Soy string.", Impression.ERROR_PARSE_ERRORS_UNEXPECTED_NEWLINE);
   private static final SoyErrorKind UNEXPECTED_PARAM_DECL =
       SoyErrorKind.of(
           "Unexpected parameter declaration. Param declarations must come before any code in "
-              + "your template.");
+              + "your template.",
+          Impression.ERROR_PARSE_ERRORS_UNEXPECTED_PARAM_DECL);
   private static final SoyErrorKind UNEXPECTED_RIGHT_BRACE =
-      SoyErrorKind.of("Unexpected ''}''; did you mean '''{'rb'}'''?");
+      SoyErrorKind.of(
+          "Unexpected ''}''; did you mean '''{'rb'}'''?",
+          Impression.ERROR_PARSE_ERRORS_UNEXPECTED_RIGHT_BRACE);
   private static final SoyErrorKind UNEXPECTED_TOKEN_MGR_ERROR =
       SoyErrorKind.of(
           "Unexpected fatal Soy error. Please file a bug with your Soy file and "
               + "we''ll take a look. (error code {0})\n{1}",
-          StyleAllowance.NO_PUNCTUATION);
+          Impression.ERROR_PARSE_ERRORS_UNEXPECTED_TOKEN_MGR_ERROR, StyleAllowance.NO_PUNCTUATION);
 
   private static final CharMatcher TOKENS_TO_QUOTE =
       CharMatcher.whitespace().or(CharMatcher.is(',')).or(CharMatcher.is(':')).precomputed();
@@ -259,7 +269,7 @@ final class ParseErrors {
       SoyErrorKind.of(
           "Invalid value for select ''case'', "
               + "expected an identifier (most commonly, a gender).{0}",
-          StyleAllowance.NO_PUNCTUATION);
+          Impression.ERROR_PARSE_ERRORS_SELECT_CASE_INVALID_VALUE, StyleAllowance.NO_PUNCTUATION);
 
   /** Validates an expression being used as a {@code case} label in a {@code select}. */
   static String validateSelectCaseLabel(ExprNode caseValue, ErrorReporter reporter) {

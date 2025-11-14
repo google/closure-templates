@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter.LocationBound;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -33,12 +34,13 @@ public class FunctionBindingUtil {
 
   private static final SoyErrorKind TOO_MANY_PARAMS =
       SoyErrorKind.of(
-          "Cannot bind {0} parameter(s) to function of type `{1}`.", StyleAllowance.NO_PUNCTUATION);
+          "Cannot bind {0} parameter(s) to function of type `{1}`.",
+          Impression.ERROR_FUNCTION_BINDING_UTIL_TOO_MANY_PARAMS, StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NOT_ASSIGNABLE =
       SoyErrorKind.of(
           "Argument of type `{0}` is not assignable to parameter of type `{1}`.",
-          StyleAllowance.NO_PUNCTUATION);
+          Impression.ERROR_FUNCTION_BINDING_UTIL_NOT_ASSIGNABLE, StyleAllowance.NO_PUNCTUATION);
 
   public static SoyType bind(
       SoyType baseType, ImmutableList<SoyType> argTypes, ImmutableList<LocationBound> argErrors) {

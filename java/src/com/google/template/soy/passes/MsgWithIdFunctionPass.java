@@ -24,6 +24,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -72,11 +73,13 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
       SoyErrorKind.of(
           "Function ''{0}'' must take a let variable containing a single msg "
               + "as its only argument.{1}",
+          Impression.ERROR_MSG_WITH_ID_FUNCTION_PASS_MSG_VARIABLE_NOT_IN_SCOPE,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind ALTERNATE_ID_NOT_ALLOWED =
       SoyErrorKind.of(
           "Messages with alternate ids are not allowed to use function ''{0}''.{1}",
+          Impression.ERROR_MSG_WITH_ID_FUNCTION_PASS_ALTERNATE_ID_NOT_ALLOWED,
           StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;

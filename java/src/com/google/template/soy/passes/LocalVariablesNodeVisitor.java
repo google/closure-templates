@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.Node;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -94,7 +95,9 @@ final class LocalVariablesNodeVisitor {
   static final class LocalVariables {
 
     private static final SoyErrorKind VARIABLE_ALREADY_DEFINED =
-        SoyErrorKind.of("{0} ''{1}'' conflicts with symbol defined at {2}.");
+        SoyErrorKind.of(
+            "{0} ''{1}'' conflicts with symbol defined at {2}.",
+            Impression.ERROR_LOCAL_VARIABLES_NODE_VISITOR_VARIABLE_ALREADY_DEFINED);
 
     private ErrorReporter errorReporter;
     private final Deque<Map<String, VarDefn>> currentScope = new ArrayDeque<>();

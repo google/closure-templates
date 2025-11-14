@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrorKind;
@@ -38,50 +39,61 @@ public final class ValidatorErrorReporter {
   private static final SoyErrorKind INVALID_RETURN_TYPE_WITH_METHOD =
       SoyErrorKind.of(
           formatWithExpectedAndActual("Return type cannot be represented in Soy.\nMethod: {5}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_INVALID_RETURN_TYPE_WITH_METHOD,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INVALID_RETURN_TYPE_NO_METHOD =
       SoyErrorKind.of(
           formatWithExpectedAndActual("Return type cannot be represented in Soy."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_INVALID_RETURN_TYPE_NO_METHOD,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INCOMPATIBLE_RETURN_TYPE_WITH_METHOD =
       SoyErrorKind.of(
           formatWithExpectedAndActual("Type mismatch on return type of {5}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_INCOMPATIBLE_RETURN_TYPE_WITH_METHOD,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INCOMPATIBLE_RETURN_TYPE_NO_METHOD =
       SoyErrorKind.of(
           formatWithExpectedAndActual("Type mismatch on return type."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_INCOMPATIBLE_RETURN_TYPE_NO_METHOD,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind PARAMETER_LENGTH_MISMATCH =
       SoyErrorKind.of(
           formatWithExpectedAndActual("Parameter length mismatch calling {5}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_PARAMETER_LENGTH_MISMATCH,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind PARAM_MISMATCH_ONE =
       SoyErrorKind.of(
           formatWithExpectedAndActual("Type mismatch on the {5} parameter of {6}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_PARAM_MISMATCH_ONE,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind PARAM_MISMATCH_MANY =
       SoyErrorKind.of(
           formatWithExpectedListAndActual("Type mismatch on the {5} parameter of {6}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_PARAM_MISMATCH_MANY,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NULL_PARAM =
       SoyErrorKind.of(
           formatWithExpectedAndActual("Passed null to the {5} parameter of {6}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_NULL_PARAM,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NULL_RETURN =
       SoyErrorKind.of(
-          formatPlain("{3}.applyForJavaSource returned null."), StyleAllowance.NO_PUNCTUATION);
+          formatPlain("{3}.applyForJavaSource returned null."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_NULL_RETURN,
+          StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NULL_METHOD =
       SoyErrorKind.of(
           formatPlain("Passed a null method to JavaValueFactory.{3}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_NULL_METHOD,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NULL_VALUES =
@@ -89,16 +101,19 @@ public final class ValidatorErrorReporter {
           formatPlain(
               "Passed a null JavaValue[] to JavaValueFactory.{3} "
                   + "while trying to call method: {4}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_NULL_VALUES,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INCOMPATIBLE_TYPES =
       SoyErrorKind.of(
           formatPlain("Invalid call to {3}, {4} is incompatible with {5}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_INCOMPATIBLE_TYPES,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind STATIC_MISMATCH =
       SoyErrorKind.of(
           formatPlain("{3} method {4} passed to JavaValueFactory.{5}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_STATIC_MISMATCH,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INTERFACE_MISMATCH =
@@ -106,6 +121,7 @@ public final class ValidatorErrorReporter {
           formatPlain(
               "MethodSignature.{3} used for a method {4}in an interface. "
                   + "Use MethodSignature.{5} instead."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_INTERFACE_MISMATCH,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INVALID_PLUGIN_METHOD =
@@ -113,15 +129,20 @@ public final class ValidatorErrorReporter {
           formatPlain(
               "Can''t find a public method with signature ''{3}''{4} "
                   + "in the plugin''s java deps."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_INVALID_PLUGIN_METHOD,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind WRONG_PLUGIN_METHOD_RETURN_TYPE =
       SoyErrorKind.of(
           formatPlain("Plugin runtime method {3} returns a {4}, not a {5}."),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_WRONG_PLUGIN_METHOD_RETURN_TYPE,
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind UNEXPECTED_ERROR =
-      SoyErrorKind.of(formatPlain("{3}"), StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          formatPlain("{3}"),
+          Impression.ERROR_VALIDATOR_ERROR_REPORTER_UNEXPECTED_ERROR,
+          StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter reporter;
   private final String fnName;

@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -50,7 +51,9 @@ import java.util.function.Supplier;
 /** Visitor for generating Python expressions for parse tree nodes. */
 public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>> {
   private static final SoyErrorKind UNKNOWN_SOY_PY_SRC_PRINT_DIRECTIVE =
-      SoyErrorKind.of("Unknown SoyPySrcPrintDirective ''{0}''.");
+      SoyErrorKind.of(
+          "Unknown SoyPySrcPrintDirective ''{0}''.",
+          Impression.ERROR_GEN_PY_EXPRS_VISITOR_UNKNOWN_SOY_PY_SRC_PRINT_DIRECTIVE);
 
   /** Injectable factory for creating an instance of this class. */
   public static final class GenPyExprsVisitorFactory {

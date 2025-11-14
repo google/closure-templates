@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -108,9 +109,13 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @VisibleForTesting LocalVariableStack localVarExprs;
 
   private static final SoyErrorKind DELEGATE_TEMPLATES_UNSUPPORTED =
-      SoyErrorKind.of("Deltemplates are not supported in python.");
+      SoyErrorKind.of(
+          "Deltemplates are not supported in python.",
+          Impression.ERROR_GEN_PY_CODE_VISITOR_DELEGATE_TEMPLATES_UNSUPPORTED);
   private static final SoyErrorKind MODIFIABLE_TEMPLATES_UNSUPPORTED =
-      SoyErrorKind.of("Modifiable templates are not supported in python.");
+      SoyErrorKind.of(
+          "Modifiable templates are not supported in python.",
+          Impression.ERROR_GEN_PY_CODE_VISITOR_MODIFIABLE_TEMPLATES_UNSUPPORTED);
 
   GenPyCodeVisitor(
       SoyPySrcOptions pySrcOptions,

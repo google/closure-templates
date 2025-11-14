@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.css.CssPrefixUtil;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -40,13 +41,16 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
 
   private static final SoyErrorKind PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME =
       SoyErrorKind.of(
-          "Package-relative class name ''{0}'' cannot be used with component expression.");
+          "Package-relative class name ''{0}'' cannot be used with component expression.",
+          Impression
+              .ERROR_RESOLVE_PACKAGE_RELATIVE_CSS_NAMES_PASS_PACKAGE_RELATIVE_CLASS_NAME_USED_WITH_COMPONENT_NAME);
   private static final SoyErrorKind NO_CSS_PACKAGE =
       SoyErrorKind.of(
           "No CSS package defined for package-relative class name ''{0}''. "
               + "CSS package prefixes are set via the ''cssbase'' attribute on the template, a "
               + "''cssbase'' attribute on the namespace, or the first ''requirecss'' package on "
-              + "the namespace.{1}.");
+              + "the namespace.{1}.",
+          Impression.ERROR_RESOLVE_PACKAGE_RELATIVE_CSS_NAMES_PASS_NO_CSS_PACKAGE);
 
   private final ErrorReporter errorReporter;
 

@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -47,18 +48,23 @@ final class KeyCommandPass implements CompilerFilePass {
   private static final SoyErrorKind KEY_ATTR_DIRECT_CHILD_OF_OPEN_TAG =
       SoyErrorKind.of(
           "The `key` command must be directly nested within an HTML open tag "
-              + "(e.g. `<div '{'key 'foo''}'></div>`).");
+              + "(e.g. `<div '{'key 'foo''}'></div>`).",
+          Impression.ERROR_KEY_COMMAND_PASS_KEY_ATTR_DIRECT_CHILD_OF_OPEN_TAG);
 
   private static final SoyErrorKind DUPLICATE_KEY_ATTR =
       SoyErrorKind.deprecation(
-          "The key attribute is deprecated. Instead, use the '{'key'}' command.");
+          "The key attribute is deprecated. Instead, use the '{'key'}' command.",
+          Impression.ERROR_KEY_COMMAND_PASS_DUPLICATE_KEY_ATTR);
 
   private static final SoyErrorKind UNSUPPORTED_TYPE =
-      SoyErrorKind.of("Unsupported type ''{0}'': keys must be of type string, number, or enum.");
+      SoyErrorKind.of(
+          "Unsupported type ''{0}'': keys must be of type string, number, or enum.",
+          Impression.ERROR_KEY_COMMAND_PASS_UNSUPPORTED_TYPE);
 
   private static final SoyErrorKind KEY_ELEMENT_AMBIGUOUS =
       SoyErrorKind.of(
-          "Key elements must have open tags that map to a single HTML close tag and vice versa.");
+          "Key elements must have open tags that map to a single HTML close tag and vice versa.",
+          Impression.ERROR_KEY_COMMAND_PASS_KEY_ELEMENT_AMBIGUOUS);
 
   private final boolean disableAllTypeChecking;
   private final ErrorReporter errorReporter;

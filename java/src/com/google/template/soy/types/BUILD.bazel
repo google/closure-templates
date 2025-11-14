@@ -28,6 +28,7 @@ java_library(
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/internal/proto",
         "//java/src/com/google/template/soy/internal/util",
+        "//src/main/protobuf:soy_compiler_metrics_java_proto",
         "//src/main/protobuf:template_metadata_java_proto",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",

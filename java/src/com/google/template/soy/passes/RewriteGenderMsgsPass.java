@@ -26,6 +26,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -51,13 +52,15 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
   private static final SoyErrorKind MORE_THAN_THREE_TOTAL_GENDERS =
       SoyErrorKind.of(
           "A message can only contain at most 3 genders between the ''genders'' attribute and "
-              + "''select'' command.");
+              + "''select'' command.",
+          Impression.ERROR_REWRITE_GENDER_MSGS_PASS_MORE_THAN_THREE_TOTAL_GENDERS);
 
   private static final SoyErrorKind MORE_THAN_TWO_GENDER_EXPRS_WITH_PLURAL =
       SoyErrorKind.of(
           "A msg with ''plural'' can contain at most 2 gender expressions between the "
               + "''genders'' attribute and ''select'' command (otherwise, combinatorial explosion "
-              + "would cause a gigantic generated message).");
+              + "would cause a gigantic generated message).",
+          Impression.ERROR_REWRITE_GENDER_MSGS_PASS_MORE_THAN_TWO_GENDER_EXPRS_WITH_PLURAL);
 
   /** Fallback base select var name. */
   private static final String FALLBACK_BASE_SELECT_VAR_NAME = "GENDER";

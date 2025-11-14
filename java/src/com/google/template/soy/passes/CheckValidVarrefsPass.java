@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableListMultimap.toImmutableListMul
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode.Kind;
@@ -39,10 +40,14 @@ import com.google.template.soy.types.UnionType;
 final class CheckValidVarrefsPass implements CompilerFilePass {
 
   private static final SoyErrorKind ILLEGAL_TYPE_OF_VARIABLE =
-      SoyErrorKind.of("Illegal use of symbol ''{0}''.");
+      SoyErrorKind.of(
+          "Illegal use of symbol ''{0}''.",
+          Impression.ERROR_CHECK_VALID_VARREFS_PASS_ILLEGAL_TYPE_OF_VARIABLE);
 
   private static final SoyErrorKind EXTERN_OVERLOAD =
-      SoyErrorKind.of("Cannot reference or bind overloaded functions.");
+      SoyErrorKind.of(
+          "Cannot reference or bind overloaded functions.",
+          Impression.ERROR_CHECK_VALID_VARREFS_PASS_EXTERN_OVERLOAD);
 
   private final ErrorReporter errorReporter;
   private ImmutableListMultimap<String, ExternNode> externIndex;

@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -62,37 +63,49 @@ import javax.annotation.Nullable;
 final class SoyElementPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind SOYELEMENT_CANNOT_BE_SKIPPED =
-      SoyErrorKind.of("Soy elements cannot be skipped.");
+      SoyErrorKind.of(
+          "Soy elements cannot be skipped.",
+          Impression.ERROR_SOY_ELEMENT_PASS_SOYELEMENT_CANNOT_BE_SKIPPED);
 
   private static final SoyErrorKind SOY_ELEMENT_MUST_HAVE_STATIC_TAG =
-      SoyErrorKind.of("Soy elements must have static tags.");
+      SoyErrorKind.of(
+          "Soy elements must have static tags.",
+          Impression.ERROR_SOY_ELEMENT_PASS_SOY_ELEMENT_MUST_HAVE_STATIC_TAG);
 
   private static final SoyErrorKind SOYELEMENT_CANNOT_WRAP_ITSELF_RECURSIVELY =
       SoyErrorKind.of(
-          "The root node of Soy elements must not recursively call itself. The cycle is ''{0}''.");
+          "The root node of Soy elements must not recursively call itself. The cycle is ''{0}''.",
+          Impression.ERROR_SOY_ELEMENT_PASS_SOYELEMENT_CANNOT_WRAP_ITSELF_RECURSIVELY);
 
   private static final SoyErrorKind SOYELEMENT_CANNOT_WRAP_SOY_ELEMENT =
-      SoyErrorKind.of("The root node of Soy elements must not be another Soy element.");
+      SoyErrorKind.of(
+          "The root node of Soy elements must not be another Soy element.",
+          Impression.ERROR_SOY_ELEMENT_PASS_SOYELEMENT_CANNOT_WRAP_SOY_ELEMENT);
 
   private static final SoyErrorKind ROOT_HAS_KEY_NODE =
       SoyErrorKind.of(
           "The root node of Soy elements must not have a key. "
-              + "Instead, consider wrapping the Soy element in a keyed tag node.");
+              + "Instead, consider wrapping the Soy element in a keyed tag node.",
+          Impression.ERROR_SOY_ELEMENT_PASS_ROOT_HAS_KEY_NODE);
 
   private static final SoyErrorKind SOY_ELEMENT_OPEN_TAG_CLOSE_AMBIGUOUS =
-      SoyErrorKind.of("Soy element open tags must map to exactly one close tag.");
+      SoyErrorKind.of(
+          "Soy element open tags must map to exactly one close tag.",
+          Impression.ERROR_SOY_ELEMENT_PASS_SOY_ELEMENT_OPEN_TAG_CLOSE_AMBIGUOUS);
 
   private static final SoyErrorKind SOY_ELEMENT_EXACTLY_ONE_TAG =
       SoyErrorKind.of(
           "Soy elements must contain exactly one top-level HTML element (e.g, span, div). Calls to"
               + " templates (but not deltemplates) that contain one top-level HTML element are also"
               + " allowed, but not as function calls. Replace function calls with call commands or"
-              + " element composition instead.");
+              + " element composition instead.",
+          Impression.ERROR_SOY_ELEMENT_PASS_SOY_ELEMENT_EXACTLY_ONE_TAG);
 
   private static final SoyErrorKind ELEMENT_TEMPLATE_EXACTLY_ONE_TAG =
       SoyErrorKind.of(
           "Templates with kind=\"html<?>\" must contain exactly one top-level HTML element (e.g,"
-              + " span, div).");
+              + " span, div).",
+          Impression.ERROR_SOY_ELEMENT_PASS_ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
 
   private static final HtmlElementMetadataP DEFAULT_HTML_METADATA =
       HtmlElementMetadataP.newBuilder().setIsHtmlElement(false).setIsVelogged(false).build();
