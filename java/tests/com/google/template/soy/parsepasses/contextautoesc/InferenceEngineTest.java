@@ -326,8 +326,7 @@ public final class InferenceEngineTest {
       if (print.getExpr().getChild(0) instanceof FunctionNode) {
         FunctionNode fn = (FunctionNode) print.getExpr().getChild(0);
         if (fn.getSoyFunction() instanceof AssertFunction) {
-          assertWithMessage(
-                  "expected print node at " + print.getSourceLocation() + " to have context")
+          assertWithMessage("expected print node at %s to have context", print.getSourceLocation())
               .that(contextString(inferences.getContextForNode(print)))
               .isEqualTo(((StringNode) fn.getChild(0)).getValue());
         }

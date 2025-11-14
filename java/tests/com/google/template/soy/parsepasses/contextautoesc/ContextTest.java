@@ -34,11 +34,11 @@ public class ContextTest {
     Context aContext = Context.parse(a);
     Context bContext = Context.parse(b);
     Context expectedContext = Context.parse(expected);
-    assertWithMessage("Union of " + aContext + " and " + bContext)
+    assertWithMessage("Union of %s and %s", aContext, bContext)
         .about(optionals())
         .that(Context.union(aContext, bContext))
         .hasValue(expectedContext);
-    assertWithMessage("Reverse union of " + bContext + " and " + aContext)
+    assertWithMessage("Reverse union of %s and %s", bContext, aContext)
         .about(optionals())
         .that(Context.union(bContext, aContext))
         .hasValue(expectedContext);
@@ -47,11 +47,11 @@ public class ContextTest {
   private static void assertUnionFails(String a, String b) {
     Context aContext = Context.parse(a);
     Context bContext = Context.parse(b);
-    assertWithMessage("Union of " + aContext + " and " + bContext)
+    assertWithMessage("Union of %s and %s", aContext, bContext)
         .about(optionals())
         .that(Context.union(aContext, bContext))
         .isEmpty();
-    assertWithMessage("Reverse union of " + bContext + " and " + aContext)
+    assertWithMessage("Reverse union of %s and %s", bContext, aContext)
         .about(optionals())
         .that(Context.union(bContext, aContext))
         .isEmpty();
