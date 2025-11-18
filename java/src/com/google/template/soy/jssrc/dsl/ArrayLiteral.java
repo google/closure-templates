@@ -50,6 +50,9 @@ public abstract class ArrayLiteral extends Expression {
       first = ctx.commaAfterFirst(first);
       ctx.appendOutputExpression(element);
     }
+    if (elements().size() < 2) {
+      ctx.noBreak();
+    }
     ctx.append(']');
   }
 }

@@ -62,6 +62,9 @@ public abstract class Call extends Operation {
       // need to be protected.
       ctx.appendOutputExpression(arg);
     }
+    if (args().isEmpty()) {
+      ctx.noBreak();
+    }
     ctx.append(')');
   }
 
