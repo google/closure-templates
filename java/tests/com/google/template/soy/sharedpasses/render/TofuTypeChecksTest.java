@@ -441,10 +441,8 @@ public class TofuTypeChecksTest {
   private static void assertIsInstance(SoyType type, SoyValue... values) {
     for (SoyValue value : values) {
       assertWithMessage(
-              "Expected value of type "
-                  + value.getClass().getName()
-                  + " to be an instance of Soy type "
-                  + type)
+              "Expected value of type %s to be an instance of Soy type %s",
+              value.getClass().getName(), type)
           .that(TofuTypeChecks.isInstance(type, value))
           .isTrue();
     }
@@ -453,10 +451,8 @@ public class TofuTypeChecksTest {
   private static void assertIsNotInstance(SoyType type, SoyValue... values) {
     for (SoyValue value : values) {
       assertWithMessage(
-              "Expected value of type "
-                  + value.getClass().getName()
-                  + " to NOT be an instance of Soy type "
-                  + type)
+              "Expected value of type %s to NOT be an instance of Soy type %s",
+              value.getClass().getName(), type)
           .that(TofuTypeChecks.isInstance(type, value))
           .isFalse();
     }

@@ -426,10 +426,10 @@ public final class SoyTreeUtilsTest {
     for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class)) {
       if (fn.getFunctionName().equals("assertIsConst")) {
         boolean isConstantExpr = SoyTreeUtils.isConstantExpr(fn.getChild(0));
-        assertWithMessage("assertion @ " + fn.getSourceLocation()).that(isConstantExpr).isTrue();
+        assertWithMessage("assertion @ %s", fn.getSourceLocation()).that(isConstantExpr).isTrue();
       } else if (fn.getFunctionName().equals("assertIsNonconst")) {
         boolean isConstantExpr = SoyTreeUtils.isConstantExpr(fn.getChild(0));
-        assertWithMessage("assertion @ " + fn.getSourceLocation()).that(isConstantExpr).isFalse();
+        assertWithMessage("assertion @ %s", fn.getSourceLocation()).that(isConstantExpr).isFalse();
       }
     }
   }

@@ -106,7 +106,7 @@ public final class GenCallCodeUtilsTest {
                 + "  {/param}\n"
                 + "{/call}\n");
     // NOTE: Soy generates a param### variable to store the output of the for loop.
-    assertWithMessage("Actual result: " + callExprText)
+    assertWithMessage("Actual result: %s", callExprText)
         .that(callExprText)
         .matches(
             Pattern.quote(

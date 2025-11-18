@@ -1473,7 +1473,7 @@ public final class ResolveExpressionTypesPassTest {
             fn -> {
               StringNode expected = (StringNode) fn.getChild(0);
               SoyType actualType = fn.getChild(1).getType();
-              assertWithMessage("assertion @ " + fn.getSourceLocation())
+              assertWithMessage("assertion @ %s", fn.getSourceLocation())
                   .that(actualType.toString())
                   .isEqualTo(expected.getValue());
             });

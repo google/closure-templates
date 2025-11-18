@@ -183,7 +183,7 @@ public final class ExprEquivalenceTest {
       };
 
   private void assertEquivalent(SourceLocation location, ExprNode left, ExprNode right) {
-    StandardSubjectBuilder assertion = assertWithMessage("assertion @ " + location);
+    StandardSubjectBuilder assertion = assertWithMessage("assertion @ %s", location);
     ExprEquivalence exprEquivalence = new ExprEquivalence();
     ExprEquivalence.Wrapper wrappedLeft = exprEquivalence.wrap(left);
     ExprEquivalence.Wrapper wrappedRight = exprEquivalence.wrap(right);
@@ -196,7 +196,7 @@ public final class ExprEquivalenceTest {
   }
 
   private static void assertNotEquivalent(SourceLocation location, ExprNode left, ExprNode right) {
-    StandardSubjectBuilder assertion = assertWithMessage("assertion @ " + location);
+    StandardSubjectBuilder assertion = assertWithMessage("assertion @ %s", location);
     // test symmetry
     ExprEquivalence exprEquivalence = new ExprEquivalence();
     ExprEquivalence.Wrapper wrappedLeft = exprEquivalence.wrap(left);
