@@ -48,9 +48,12 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   private static final SoyErrorKind SOYDOC_PARAM =
       SoyErrorKind.of(
           "SoyDoc params are not supported anymore. "
-              + "Use '{@param}' in the template header instead.");
+              + "Use '{@param}' in the template header instead.",
+          Impression.ERROR_TEMPLATE_NODE_BUILDER_SOYDOC_PARAM);
   private static final SoyErrorKind INVALID_PARAM_NAMED_IJ =
-      SoyErrorKind.of("Invalid param name ''ij'' (''ij'' is for injected data).");
+      SoyErrorKind.of(
+          "Invalid param name ''ij'' (''ij'' is for injected data).",
+          Impression.ERROR_TEMPLATE_NODE_BUILDER_INVALID_PARAM_NAMED_IJ);
   // TODO: Print out which line contained the declared variable.
   private static final SoyErrorKind PARAM_ALREADY_DECLARED =
       SoyErrorKind.of(

@@ -81,7 +81,10 @@ public final class PluginResolver {
 
   static final SoyErrorKind DEPRECATED_PLUGIN =
       SoyErrorKind.deprecation(
-          "{0} is deprecated: {1}", StyleAllowance.NO_PUNCTUATION, StyleAllowance.NO_CAPS);
+          "{0} is deprecated: {1}",
+          Impression.ERROR_PLUGIN_RESOLVER_DEPRECATED_PLUGIN,
+          StyleAllowance.NO_PUNCTUATION,
+          StyleAllowance.NO_CAPS);
 
   private static final SoyErrorKind INCORRECT_NUM_ARGS =
       SoyErrorKind.of(

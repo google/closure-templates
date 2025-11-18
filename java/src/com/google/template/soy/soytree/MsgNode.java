@@ -98,7 +98,8 @@ public final class MsgNode extends AbstractBlockCommandNode
       SoyErrorKind.of(
           "The example set on this placeholder is incompatible with other examples for "
               + "the same placeholder. If a placeholder occurs multiple times in a msg, then all "
-              + "examples must be the same.");
+              + "examples must be the same.",
+          Impression.ERROR_MSG_NODE_INCOMPATIBLE_PLACEHOLDER_EXAMPLES);
 
   // Note that the first set of whitespace is reluctant.
   private static final Pattern LINE_BOUNDARY_PATTERN = Pattern.compile("\\s*?(\\n|\\r)\\s*");
