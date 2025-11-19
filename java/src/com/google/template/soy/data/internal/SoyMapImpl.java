@@ -23,6 +23,7 @@ import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
@@ -41,16 +42,26 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public final class SoyMapImpl extends SoyMap {
   public static final SoyMapImpl EMPTY = new SoyMapImpl(ImmutableMap.of());
 
+  /**
+   * Creates a SoyMap wrapping a mutable map, for use only in {autoimpl} where mutable map methods
+   * are supported.
+   */
+  @Nonnull
+  public static SoyMapImpl mutable(Map<SoyValue, SoyValueProvider> providerMap) {
+    if (providerMap instanceof ImmutableMap) {
+      providerMap = new HashMap<>(providerMap);
+    }
+    return forProviderMap(providerMap);
+  }
+
   /** Creates a SoyDict implementation for a particular underlying provider map. */
   @Nonnull
-  public static SoyMapImpl forProviderMap(
-      Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
+  public static SoyMapImpl forProviderMap(Map<SoyValue, SoyValueProvider> providerMap) {
     return new SoyMapImpl(providerMap);
   }
 
   @Nonnull
-  public static SoyMapImpl forProviderMapNoNullKeys(
-      Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
+  public static SoyMapImpl forProviderMapNoNullKeys(Map<SoyValue, SoyValueProvider> providerMap) {
     for (SoyValue key : providerMap.keySet()) {
       if (key == null || key.isNullish()) {
         throw new IllegalArgumentException(
@@ -60,7 +71,7 @@ public final class SoyMapImpl extends SoyMap {
     return new SoyMapImpl(providerMap);
   }
 
-  private SoyMapImpl(Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
+  private SoyMapImpl(Map<SoyValue, SoyValueProvider> providerMap) {
     checkNotNull(providerMap);
     if (providerMap.containsKey(null)) {
       // This shouldn't happen.
@@ -70,7 +81,7 @@ public final class SoyMapImpl extends SoyMap {
   }
 
   /** Map containing each data provider. */
-  private final Map<? extends SoyValue, ? extends SoyValueProvider> providerMap;
+  private final Map<SoyValue, SoyValueProvider> providerMap;
 
   @Override
   public int size() {
@@ -79,7 +90,7 @@ public final class SoyMapImpl extends SoyMap {
 
   @Override
   @Nonnull
-  public Iterable<? extends SoyValue> keys() {
+  public Iterable<SoyValue> keys() {
     return providerMap.keySet();
   }
 
@@ -99,9 +110,27 @@ public final class SoyMapImpl extends SoyMap {
     return providerMap.get(key);
   }
 
+  @Override
+  @Nullable
+  public Object clear() {
+    providerMap.clear();
+    return null; // Void.
+  }
+
+  @Override
+  public boolean delete(SoyValue key) {
+    return providerMap.remove(key) != null;
+  }
+
+  @Override
+  public SoyMap set(SoyValue key, SoyValueProvider value) {
+    providerMap.put(key, value);
+    return this;
+  }
+
   @Nonnull
   @Override
-  public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
+  public Map<SoyValue, SoyValueProvider> asJavaMap() {
     return providerMap;
   }
 

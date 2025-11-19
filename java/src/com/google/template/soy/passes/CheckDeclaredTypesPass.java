@@ -29,6 +29,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.MutableListType;
+import com.google.template.soy.types.MutableMapType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
@@ -96,7 +97,7 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
             n -> {
               if (n.isTypeResolved()) {
                 SoyType type = n.getResolvedType();
-                if (type instanceof MutableListType) {
+                if (type instanceof MutableListType || type instanceof MutableMapType) {
                   errorReporter.report(n.sourceLocation(), MUTABLE_TYPE);
                 }
               }

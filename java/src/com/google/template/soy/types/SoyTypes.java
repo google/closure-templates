@@ -274,6 +274,9 @@ public final class SoyTypes {
     for (SoyType type : types) {
       result = (result == null) ? type : computeLowestCommonType(typeRegistry, result, type);
     }
+    if (result == null) {
+      return UnknownType.getInstance();
+    }
     return result;
   }
 
