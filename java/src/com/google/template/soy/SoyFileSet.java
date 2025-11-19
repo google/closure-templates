@@ -42,6 +42,7 @@ import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorFormatter;
 import com.google.template.soy.error.ErrorFormatterImpl;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.MetricReporter;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrors;
@@ -629,6 +630,7 @@ public final class SoyFileSet {
   private final boolean optimize;
   private final ImmutableSet<SourceLogicalPath> generatedPathsToCheck;
   private final MethodChecker javaMethodChecker;
+  private final MetricReporter metricReporter = new MetricReporter();
 
   /** For reporting errors during parsing. */
   private ErrorReporter errorReporter;
@@ -716,6 +718,11 @@ public final class SoyFileSet {
       reportWarnings();
       return rv;
     } catch (SoyCompilationException | SoyInternalCompilerException e) {
+      if (e instanceof SoyCompilationException) {
+        metricReporter.reportMetrics((SoyCompilationException) e);
+      } else {
+        metricReporter.reportMetrics((SoyInternalCompilerException) e);
+      }
       throw e;
     } catch (RuntimeException e) {
       if (errorReporter != null && errorReporter.hasErrorsOrWarnings()) {
@@ -727,6 +734,7 @@ public final class SoyFileSet {
         throw e;
       }
     } finally {
+      metricReporter.emit();
       synchronized (this) {
         isCompiling = false;
       }
@@ -1335,6 +1343,7 @@ public final class SoyFileSet {
       // if we are reporting errors we should report warnings at the same time.
       Iterable<SoyError> errors =
           Iterables.concat(errorReporter.getErrors(), errorReporter.getWarnings());
+      // metricReporter.reportMetricsFromSoyErrors(ImmutableList.copyOf(errors));
       // clear the field to ensure that error reporters can't leak between compilations
       errorReporter = null;
       throw new SoyCompilationException(errors, getErrorFormatterWithSnippets());
@@ -1350,11 +1359,16 @@ public final class SoyFileSet {
     if (warnings.isEmpty()) {
       return;
     }
+
     // this is a custom feature used by the integration test suite.
     if (generalOptions.getExperimentalFeatures().contains("testonly_throw_on_warnings")) {
       errorReporter = null;
       throw new SoyCompilationException(warnings, getErrorFormatterWithSnippets());
     }
+    // report warnings in the case that there are no errors.
+    // must be after testonly_throw_on_warnings check above to avoid double reporting.
+    metricReporter.reportMetrics(warnings);
+
     String formatted = SoyErrors.formatErrors(warnings, getErrorFormatterWithSnippets());
     if (warningSink != null) {
       try {

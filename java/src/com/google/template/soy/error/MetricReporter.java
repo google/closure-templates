@@ -20,7 +20,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.ByteSpan;
 import com.google.template.soy.compilermetrics.Impression;
@@ -37,20 +36,12 @@ import java.util.List;
 /** Reports forge metrics for Soy compilation errors. */
 public final class MetricReporter {
   List<Metric> metrics = new ArrayList<>();
-  public static final String METRICS_FILE_NAME = "SoyCompilerMetrics.pb";
+  public static final String METRICS_FILE_NAME = "SoyCompiler.pb";
   public static final String CUSTOM_METRICS_DIR_ENV_NAME = "CUSTOM_METRICS_DIR";
 
   public MetricReporter() {}
 
-  /**
-   * Reports metrics to the custom metrics directory specified by the CUSTOM_metricsDir environment
-   * variable.
-   *
-   * @param metrics The metrics to report.
-   */
-  public void reportMetrics(List<Metric> metrics) {
-    this.metrics.addAll(metrics);
-  }
+
 
   public Metrics getMetricsProto() {
     return Metrics.newBuilder().addAllMetric(metrics).build();
@@ -62,13 +53,8 @@ public final class MetricReporter {
    *
    * @param message The message of the error.
    */
-  public void reportUnexpectedDiagnosticError(String message) {
-    reportMetric(
-        Metric.newBuilder()
-            .setImpression(Impression.MAIN_UNEXPECTED_DIAGNOSTIC)
-            .setCategory(Category.ERROR)
-            .setMessageText(message)
-            .build());
+  private void reportUnexpectedDiagnosticError(String message) {
+    reportMetric(createUnexpectedDiagnosticMetric(message));
   }
 
   /**
@@ -77,33 +63,57 @@ public final class MetricReporter {
    *
    * @param metric metric to report.
    */
-  public void reportMetric(Metric metric) {
+  private void reportMetric(Metric metric) {
     metrics.add(metric);
   }
 
   /**
-   * Reports metrics to the custom metrics directory specified by the CUSTOM_metricsDir environment
-   * variable.
+   * Reports metrics for a list of Soy errors.
    *
    * @param errors The soy errors to convert to metrics and report.
    */
-  public void reportMetricsFromSoyErrors(List<SoyError> errors) {
+  public void reportMetrics(List<SoyError> errors) {
     if (errors.isEmpty()) {
       return;
     }
-    reportMetrics(getMetrics(errors));
+    this.metrics.addAll(
+        errors.stream()
+            .filter(soyError -> soyError.errorKind().getImpression() != null)
+            .map(this::createMetric)
+            .collect(toImmutableList()));
   }
 
   /**
-   * Converts a list of Soy errors to metrics.
+   * Reports metrics for a Soy compilation exception.
    *
-   * @param errors The soy errors to convert to metrics.
+   * @param sce The Soy compilation exception to convert to metrics.
    */
-  private ImmutableList<Metric> getMetrics(List<SoyError> errors) {
-    return errors.stream()
-        .filter(soyError -> soyError.errorKind().getImpression() != null)
-        .map(this::createMetric)
-        .collect(toImmutableList());
+  public void reportMetrics(SoyCompilationException sce) {
+    reportMetrics(sce.getErrors());
+    reportUnexpectedDiagnosticError(sce.getMessage());
+  }
+
+  /**
+   * Reports metrics for a Soy internal compiler exception.
+   *
+   * @param sce The Soy internal compiler exception to convert to metrics.
+   */
+  public void reportMetrics(SoyInternalCompilerException sce) {
+    reportMetrics(sce.getErrors());
+    reportUnexpectedDiagnosticError(sce.getMessage());
+  }
+
+  /**
+   * Creates a metric for an unexpected diagnostic error.
+   *
+   * @param message The message of the error.
+   */
+  private static Metric createUnexpectedDiagnosticMetric(String message) {
+    return Metric.newBuilder()
+        .setImpression(Impression.MAIN_UNEXPECTED_DIAGNOSTIC)
+        .setCategory(Category.ERROR)
+        .setMessageText(message)
+        .build();
   }
 
   /**

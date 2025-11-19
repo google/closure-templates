@@ -106,7 +106,7 @@ java_library(
     name = "metric_reporter",
     srcs = ["MetricReporter.java"],
     deps = [
-        ":soy_error_api",
+        ":error_reporter",
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//src/main/protobuf:diagnostic_category_java_proto",
