@@ -41,12 +41,6 @@ public final class MetricReporter {
 
   public MetricReporter() {}
 
-
-
-  public Metrics getMetricsProto() {
-    return Metrics.newBuilder().addAllMetric(metrics).build();
-  }
-
   /**
    * Reports an unexpected diagnostic error to the custom metrics directory specified by the
    * CUSTOM_metricsDir environment variable.
@@ -54,17 +48,7 @@ public final class MetricReporter {
    * @param message The message of the error.
    */
   private void reportUnexpectedDiagnosticError(String message) {
-    reportMetric(createUnexpectedDiagnosticMetric(message));
-  }
-
-  /**
-   * Reports an unexpected diagnostic error to the custom metrics directory specified by the
-   * CUSTOM_metricsDir environment variable.
-   *
-   * @param metric metric to report.
-   */
-  private void reportMetric(Metric metric) {
-    metrics.add(metric);
+    metrics.add(createUnexpectedDiagnosticMetric(message));
   }
 
   /**
@@ -174,7 +158,7 @@ public final class MetricReporter {
     }
     Path path = Path.of(metricsDir, METRICS_FILE_NAME);
     try (FileOutputStream fos = new FileOutputStream(path.toString(), true)) {
-      getMetricsProto().writeTo(fos);
+      Metrics.newBuilder().addAllMetric(metrics).build().writeTo(fos);
     } catch (IOException e) {
       throw new AssertionError("Failed to write metrics file", e);
     }
