@@ -30,6 +30,7 @@ java_library(
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/soytree:metadata",
         "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/types",
         "//src/main/protobuf:conformance_java_proto",
         "//src/main/protobuf:soy_compiler_metrics_java_proto",
         "@com_google_auto_value_auto_value",

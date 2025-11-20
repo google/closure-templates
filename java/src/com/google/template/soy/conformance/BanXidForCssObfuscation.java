@@ -29,12 +29,15 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallParamNode;
+import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.StringType;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -87,6 +90,11 @@ final class BanXidForCssObfuscation extends Rule<TemplateNode> {
     private boolean shouldBanXid(SoyNode node) {
       if (node instanceof CallParamNode
           && CLASS_PARAM_PATTERN.matcher(((CallParamNode) node).getKey().identifier()).matches()) {
+        if (node instanceof CallParamValueNode) {
+          // Only ban inside of a string-typed value, e.g. {param classes: 'abc' + xid('x') /}
+          SoyType type = ((CallParamValueNode) node).getExpr().getType();
+          return type == null || type.isAssignableFromStrict(StringType.getInstance());
+        }
         return true;
       }
       if (node instanceof HtmlAttributeNode
