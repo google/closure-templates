@@ -1379,9 +1379,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         }
         valueTypes.add(value.getType());
       }
-      SoyType commonKeyType = computeLowestCommonType(typeRegistry, keyTypes);
-      SoyType commonValueType = computeLowestCommonType(typeRegistry, valueTypes);
-      node.setType(typeRegistry.getOrCreateMapType(commonKeyType, commonValueType));
+      node.setType(
+          getOrCreateMapType(
+              computeLowestCommonType(typeRegistry, keyTypes),
+              computeLowestCommonType(typeRegistry, valueTypes)));
 
       tryApplySubstitution(node);
     }
@@ -1432,7 +1433,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
       // TODO: Catch duplicate keys whenever possible. This is important to support when we make the
       // map from list constructor syntax less clunky (e.g. by supporting tuples, see b/182212609).
-      node.setType(typeRegistry.getOrCreateMapType(keyType, valueType));
+      node.setType(getOrCreateMapType(keyType, valueType));
       tryApplySubstitution(node);
     }
 
@@ -3282,6 +3283,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           ? typeRegistry.getOrCreateMutableMapType(
               UnknownType.getInstance(), UnknownType.getInstance())
           : MapType.empty();
+    }
+
+    private SoyType getOrCreateMapType(SoyType keyType, SoyType valueType) {
+      return ResolveExpressionTypesPass.this.inAutoExtern
+          ? typeRegistry.getOrCreateMutableMapType(keyType, valueType)
+          : typeRegistry.getOrCreateMapType(keyType, valueType);
     }
 
     /** Checks the argument type. Returns false if an incorrect arg type error was reported. */

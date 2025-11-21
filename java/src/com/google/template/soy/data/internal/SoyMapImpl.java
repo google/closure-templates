@@ -43,24 +43,59 @@ public final class SoyMapImpl extends SoyMap {
 
   /** Creates a SoyDict implementation for a particular underlying provider map. */
   @Nonnull
-  public static SoyMapImpl forProviderMap(
-      Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
-    return new SoyMapImpl(providerMap);
+  public static SoyMapImpl forProviderMap(Map<SoyValue, ? extends SoyValueProvider> providerMap) {
+    if (!(providerMap instanceof ImmutableMap)) {
+      // Since mutable methods exist, we need to guard the underlying data structure to make sure
+      // that mutable methods don't get past the type system.
+      providerMap = ImmutableMap.copyOf(providerMap);
+    }
+
+    // We allow callers to pass a Map<SoyValue, SoyValue> or Map<SoyValue, SoyValueProvider>, but
+    // the underlying type allows either value type to be added to the map.
+    // In practice, only mutable maps can add values, and those are guaranteed to only add SoyValue
+    // (the narrower type), which is always safe; you'll never have a caller passing a map with a
+    // narrow type and finding a value with a wider type.
+    @SuppressWarnings("unchecked")
+    var map = (Map<SoyValue, SoyValueProvider>) providerMap;
+    return new SoyMapImpl(map);
+  }
+
+  @Nonnull
+  public static SoyMapImpl forMutableProviderMap(
+      Map<SoyValue, ? extends SoyValueProvider> providerMap) {
+    if (providerMap instanceof ImmutableMap) {
+      throw new IllegalArgumentException("Immutable map passed to mutable method");
+    }
+    // See above for rationale.
+    @SuppressWarnings("unchecked")
+    var map = (Map<SoyValue, SoyValueProvider>) providerMap;
+    return new SoyMapImpl(map);
   }
 
   @Nonnull
   public static SoyMapImpl forProviderMapNoNullKeys(
-      Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
+      Map<SoyValue, ? extends SoyValueProvider> providerMap) {
+    assertNoNullKeys(providerMap);
+    return forProviderMap(providerMap);
+  }
+
+  @Nonnull
+  public static SoyMapImpl forMutableProviderMapNoNullKeys(
+      Map<SoyValue, ? extends SoyValueProvider> providerMap) {
+    assertNoNullKeys(providerMap);
+    return forMutableProviderMap(providerMap);
+  }
+
+  private static void assertNoNullKeys(Map<SoyValue, ? extends SoyValueProvider> providerMap) {
     for (SoyValue key : providerMap.keySet()) {
       if (key == null || key.isNullish()) {
         throw new IllegalArgumentException(
             String.format("null key in entry: null=%s", providerMap.get(key)));
       }
     }
-    return new SoyMapImpl(providerMap);
   }
 
-  private SoyMapImpl(Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
+  private SoyMapImpl(Map<SoyValue, SoyValueProvider> providerMap) {
     checkNotNull(providerMap);
     if (providerMap.containsKey(null)) {
       // This shouldn't happen.
@@ -70,7 +105,7 @@ public final class SoyMapImpl extends SoyMap {
   }
 
   /** Map containing each data provider. */
-  private final Map<? extends SoyValue, ? extends SoyValueProvider> providerMap;
+  private final Map<SoyValue, ? extends SoyValueProvider> providerMap;
 
   @Override
   public int size() {
@@ -101,7 +136,7 @@ public final class SoyMapImpl extends SoyMap {
 
   @Nonnull
   @Override
-  public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
+  public Map<SoyValue, ? extends SoyValueProvider> asJavaMap() {
     return providerMap;
   }
 
