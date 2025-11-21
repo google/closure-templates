@@ -34,7 +34,9 @@ import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 
 /**
@@ -287,6 +289,20 @@ public final class SharedRuntime {
   @Nonnull
   public static SoyMap constructMapFromIterator(Iterator<? extends SoyValueProvider> iterator) {
     ImmutableMap.Builder<SoyValue, SoyValueProvider> map = ImmutableMap.builder();
+    populateMapFromIterator(iterator, map::put);
+    return SoyMapImpl.forProviderMap(map.buildKeepingLast());
+  }
+
+  @Nonnull
+  public static SoyMap constructMutableMapFromIterator(
+      Iterator<? extends SoyValueProvider> iterator) {
+    LinkedHashMap<SoyValue, SoyValueProvider> map = new LinkedHashMap<>();
+    populateMapFromIterator(iterator, map::put);
+    return SoyMapImpl.forMutableProviderMap(map);
+  }
+
+  private static void populateMapFromIterator(
+      Iterator<? extends SoyValueProvider> iterator, BiConsumer<SoyValue, SoyValueProvider> putFn) {
     int i = 0;
     while (iterator.hasNext()) {
       SoyValueProvider item = iterator.next();
@@ -297,11 +313,9 @@ public final class SharedRuntime {
       SoyValueProvider valueProvider = record.getFieldProvider(RecordProperty.VALUE);
       checkMapFromListConstructorCondition(
           SoyMap.isAllowedKeyType(key) && valueProvider != null, recordEntry, i);
-      map.put(key, valueProvider);
+      putFn.accept(key, valueProvider);
       i++;
     }
-
-    return SoyMapImpl.forProviderMap(map.buildKeepingLast());
   }
 
   public static void checkMapFromListConstructorCondition(
