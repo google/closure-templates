@@ -60,11 +60,7 @@ public final class MetricReporter {
     if (errors.isEmpty()) {
       return;
     }
-    this.metrics.addAll(
-        errors.stream()
-            .filter(soyError -> soyError.errorKind().getImpression() != null)
-            .map(this::createMetric)
-            .collect(toImmutableList()));
+    this.metrics.addAll(errors.stream().map(this::createMetric).collect(toImmutableList()));
   }
 
   /**
@@ -107,7 +103,10 @@ public final class MetricReporter {
    */
   private Metric createMetric(SoyError soyError) {
     Impression impression = soyError.errorKind().getImpression();
-    Preconditions.checkArgument(impression != null, "SoyErrorKind does not have a metric.");
+    Preconditions.checkArgument(
+        impression != null,
+        "SoyErrorKind does not have a impression. Please add an impression to the Impressions enum"
+            + " in soy_compiler_metrics.proto, and set the impression in the SoyErrorKind.");
 
     SourceLocation location = soyError.location();
     boolean locationIsKnown = location.isKnown();
