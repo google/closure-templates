@@ -89,6 +89,7 @@ public final class Metadata {
   private static final SoyErrorKind DUPLICATE_DELEGATE_TEMPLATES_IN_MOD =
       SoyErrorKind.of(
           "Delegate/Modifies template ''{0}'' already defined in mod {1}: {2}",
+          Impression.ERROR_METADATA_DELEGATE_TEMPLATE_ALREADY_DEFINED_IN_MOD,
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME =
       SoyErrorKind.of(

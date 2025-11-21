@@ -73,7 +73,8 @@ public final class JavaImplNode extends AbstractCommandNode
       SoyErrorKind.of(
           String.format(
               "Valid values for ''%s'' are %s.",
-              TYPE, ALLOWED_TYPES.stream().collect(joining("'', ''", "''", "''"))));
+              TYPE, ALLOWED_TYPES.stream().collect(joining("'', ''", "''", "''"))),
+          Impression.ERROR_JAVA_IMPL_NODE_BAD_TYPE);
 
   private final ImmutableList<CommandTagAttribute> attributes;
 

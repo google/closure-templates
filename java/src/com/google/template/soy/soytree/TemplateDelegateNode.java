@@ -46,7 +46,8 @@ public final class TemplateDelegateNode extends TemplateNode {
   private static final SoyErrorKind INVALID_VARIANT_EXPR =
       SoyErrorKind.of(
           "Invalid variant expression with kind {0}; must be a string, int, or proto enum"
-              + " literal.");
+              + " literal.",
+          Impression.ERROR_TEMPLATE_DELEGATE_NODE_INVALID_VARIANT_EXPR);
 
   public static final String VARIANT_ATTR = "variant";
 

@@ -22,8 +22,6 @@ message Metric {
   optional Impression impression = 7;
 }
 
-// TODO(b/456548951): Add SoyCompilerCustomMetrics proto.
-
 message Metrics {
   repeated Metric metric = 1;
 }
@@ -35,6 +33,7 @@ message Metrics {
 // Convention: Error impressions begin with "ERROR_", warning impressions, begin
 // with "WARNING_", feature impressions begin with "FEATURE_".
 enum Impression {
+  // Next ID: 573
   UNKNOWN_IMPRESSION = 0;
 
   // Unexpected diagnostic caught in the main module of the app.
@@ -346,6 +345,7 @@ enum Impression {
   // java_src/soy/java/com/google/template/soy/soytree/JavaImplNode.java
   ERROR_JAVA_IMPL_NODE_INVALID_ATTRIBUTE = 261;
   ERROR_JAVA_IMPL_NODE_MISSING_REQUIRED_ATTRIBUTE = 262;
+  ERROR_JAVA_IMPL_NODE_BAD_TYPE = 571;
 
   // java_src/soy/java/com/google/template/soy/soytree/JsImplNode.java
   ERROR_JS_IMPL_NODE_INVALID_ATTRIBUTE = 263;
@@ -357,6 +357,7 @@ enum Impression {
 
   // java_src/soy/java/com/google/template/soy/soytree/Metadata.java
   ERROR_METADATA_TEMPLATE_ALREADY_DEFINED = 267;
+  ERROR_METADATA_DELEGATE_TEMPLATE_ALREADY_DEFINED_IN_MOD = 572;
   ERROR_METADATA_DELTEMPLATE_ALREADY_DEFINED = 268;
 
   // java_src/soy/java/com/google/template/soy/soytree/MsgHtmlTagNode.java
@@ -369,6 +370,7 @@ enum Impression {
   // java_src/soy/java/com/google/template/soy/soytree/TemplateDelegateNode.java
   ERROR_TEMPLATE_DELEGATE_NODE_INVALID_VARIANT_IDENTIFIER = 272;
   ERROR_TEMPLATE_DELEGATE_NODE_INVALID_VARIANT_INTEGER = 273;
+  ERROR_TEMPLATE_DELEGATE_NODE_INVALID_VARIANT_EXPR = 570;
 
   // java_src/soy/java/com/google/template/soy/soytree/TemplateElementNodeBuilder.java
   ERROR_TEMPLATE_ELEMENT_NODE_BUILDER_ATTRIBUTE_NOT_ALLOWED = 274;
