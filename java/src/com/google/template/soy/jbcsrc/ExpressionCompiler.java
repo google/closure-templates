@@ -768,7 +768,7 @@ final class ExpressionCompiler {
           SoyExpression.forSoyValue(
               node.getType(),
               MethodRefs.MAP_IMPL_FOR_PROVIDER_MAP_NO_NULL_KEYS.invoke(
-                  BytecodeUtils.newImmutableMap(keys, values, /* allowDuplicates= */ true)));
+                  BytecodeUtils.newImmutableMap(keys, values)));
       if (isConstantContext
           && Expression.areAllConstant(keys)
           && Expression.areAllConstant(values)) {

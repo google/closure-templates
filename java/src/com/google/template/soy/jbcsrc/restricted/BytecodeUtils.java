@@ -1103,26 +1103,22 @@ public final class BytecodeUtils {
     return paramStore;
   }
 
-  public static Expression newImmutableMap(
-      List<Expression> keys, List<Expression> values, boolean allowDuplicates) {
-    // We can only call ImmutableList.of if we disallow duplicates or there are 1 or 0 keys
-    if (keys.size() < MethodRefs.IMMUTABLE_MAP_OF.size()
-        && (keys.size() <= 1 || !allowDuplicates)) {
-      List<Expression> kvps = new ArrayList<>();
-      for (int i = 0; i < keys.size(); i++) {
-        kvps.add(keys.get(i));
-        kvps.add(values.get(i));
-      }
-      return MethodRefs.IMMUTABLE_MAP_OF.get(keys.size()).invoke(kvps);
+  public static Expression newImmutableMap(List<Expression> keys, List<Expression> values) {
+    if (keys.isEmpty()) {
+      return MethodRefs.IMMUTABLE_MAP_EMPTY.invoke();
     }
+
+    // We can only call ImmutableMap.of if there is a single key, because soy allows duplicate keys
+    // and ImmutableMap.of does not.
+    if (keys.size() == 1) {
+      return MethodRefs.IMMUTABLE_MAP_OF.invoke(ImmutableList.of(keys.get(0), values.get(0)));
+    }
+
     var builder = MethodRefs.IMMUTABLE_MAP_BUILDER_WITH_EXPECTED_SIZE.invoke(constant(keys.size()));
     for (int i = 0; i < keys.size(); i++) {
       builder = builder.invoke(MethodRefs.IMMUTABLE_MAP_BUILDER_PUT, keys.get(i), values.get(i));
     }
-    return builder.invoke(
-        allowDuplicates
-            ? MethodRefs.IMMUTABLE_MAP_BUILDER_BUILD_KEEPING_LAST
-            : MethodRefs.IMMUTABLE_MAP_BUILDER_BUILD_OR_THROW);
+    return builder.invoke(MethodRefs.IMMUTABLE_MAP_BUILDER_BUILD_KEEPING_LAST);
   }
 
   public static Expression asArray(Type arrayType, ImmutableList<? extends Expression> elements) {
