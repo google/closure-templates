@@ -28,19 +28,9 @@ public final class SoyErrorKindTest {
   private static final String MESSAGE = "Error kind.";
 
   @Test
-  public void errorWithoutImpression_hasNullImpression() {
-    assertThat(SoyErrorKind.of(MESSAGE).getImpression()).isNull();
-  }
-
-  @Test
   public void errorWithImpression_hasCorrectImpression() {
     assertThat(SoyErrorKind.of(MESSAGE, Impression.MAIN_UNEXPECTED_DIAGNOSTIC).getImpression())
         .isEqualTo(Impression.MAIN_UNEXPECTED_DIAGNOSTIC);
-  }
-
-  @Test
-  public void deprecationErrorWithoutImpression_hasNullImpression() {
-    assertThat(SoyErrorKind.deprecation(MESSAGE).getImpression()).isNull();
   }
 
   @Test

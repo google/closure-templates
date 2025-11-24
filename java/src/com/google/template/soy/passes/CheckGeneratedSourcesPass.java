@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -37,7 +38,8 @@ public class CheckGeneratedSourcesPass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "Encountered a generated Soy source file but "
               +
-              "compiler was not invoked with --allow_unblessed_generated_files.");
+              "compiler was not invoked with --allow_unblessed_generated_files.",
+          Impression.ERROR_CHECK_GENERATED_SOURCES_PASS_UNBLESSED_GENERATED_FILE);
 
   private static final Pattern BLESS_COMMENT = Pattern.compile("@SoySourceGenerator=[\\w\\-/]+\\b");
 

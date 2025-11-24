@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +30,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class ErrorReporterImplTest {
 
-  private static final SoyErrorKind ERROR = SoyErrorKind.of("Oh noes.");
+  private static final SoyErrorKind ERROR =
+      SoyErrorKind.of("Oh noes.", Impression.MAIN_UNEXPECTED_DIAGNOSTIC);
 
   @Test
   public void testCheckpoint() {
