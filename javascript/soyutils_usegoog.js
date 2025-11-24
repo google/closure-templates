@@ -984,7 +984,7 @@ const $$updatePreserveWhitespaceStack = function(
 const BLOCK_TAGS_RE_ =
     /^\/?(address|blockquote|dd|div|dl|dt|h[1-6]|hr|li|ol|p|pre|table|tr|ul)$/;
 // LINT.ThenChange(
-//     ../../../third_party/java_src/soy/java/com/google/template/soy/basicfunctions/HtmlToText.java,
+//     ../../../third_party/java_src/soy/java/com/google/template/soy/data/HtmlToText.java,
 //     ../../../third_party/java_src/soy/python/runtime/sanitize.py:htmlToText)
 
 
