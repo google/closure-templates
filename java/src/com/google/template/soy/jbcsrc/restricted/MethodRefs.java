@@ -163,8 +163,12 @@ public final class MethodRefs {
   public static final MethodRef IMMUTABLE_LIST_COPY_OF_ITERABLE =
       createNonPure(ImmutableList.class, "copyOf", Iterable.class).asNonJavaNullable();
 
-  /** a list of all the ImmutableList.of overloads, indexed by number of entries. */
-  public static final ImmutableList<MethodRef> IMMUTABLE_MAP_OF;
+  public static final MethodRef IMMUTABLE_MAP_EMPTY =
+      createPure(ImmutableMap.class, "of").asCheap();
+
+  /** The ImmutableMap.of overload for a single pair of arguments. */
+  public static final MethodRef IMMUTABLE_MAP_OF =
+      createPure(ImmutableMap.class, "of", Object.class, Object.class).asNonJavaNullable();
 
   public static final MethodRef IMMUTABLE_MAP_BUILDER_WITH_EXPECTED_SIZE =
       MethodRef.createNonPure(ImmutableMap.class, "builderWithExpectedSize", int.class);
@@ -172,8 +176,6 @@ public final class MethodRefs {
       MethodRef.createNonPure(ImmutableMap.Builder.class, "put", Object.class, Object.class);
   public static final MethodRef IMMUTABLE_MAP_BUILDER_BUILD_KEEPING_LAST =
       MethodRef.createNonPure(ImmutableMap.Builder.class, "buildKeepingLast");
-  public static final MethodRef IMMUTABLE_MAP_BUILDER_BUILD_OR_THROW =
-      MethodRef.createNonPure(ImmutableMap.Builder.class, "buildOrThrow");
 
   static {
     Map<Integer, MethodRef> immutableListOfMethods = new TreeMap<>();
@@ -197,26 +199,6 @@ public final class MethodRefs {
     }
     IMMUTABLE_LIST_OF_ARRAY = immutableListOfArray;
     IMMUTABLE_LIST_OF = ImmutableList.copyOf(immutableListOfMethods.values());
-
-    Map<Integer, MethodRef> immutableMapOfMethods = new TreeMap<>();
-    for (java.lang.reflect.Method m : ImmutableMap.class.getMethods()) {
-      if (m.getName().equals("of")) {
-        Class<?>[] params = m.getParameterTypes();
-        MethodRef ref = MethodRef.create(m, MethodPureness.PURE).asNonJavaNullable();
-        if (params.length > 0 && params[params.length - 1].isArray()) {
-          // skip the one that takes an array in the final position
-          immutableListOfArray = ref;
-          continue;
-        }
-        int arity = params.length;
-        if (arity == 0) {
-          // the zero arg one is 'cheap'
-          ref = ref.asCheap();
-        }
-        immutableMapOfMethods.put(arity / 2, ref);
-      }
-    }
-    IMMUTABLE_MAP_OF = ImmutableList.copyOf(immutableMapOfMethods.values());
   }
 
   public static final MethodRef INTEGER_DATA_FOR_VALUE =
