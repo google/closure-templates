@@ -3087,6 +3087,7 @@ exports = {
   $$isAttribute,
   $$isReadonly,
   $$createSoyJsInteropSlot,
+  HtmlOutputBuffer,
   SoyJsInteropRenderable,
 };
 // -----------------------------------------------------------------------------
