@@ -1348,7 +1348,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       int numChildren = node.numChildren();
       checkState(numChildren % 2 == 0);
       if (numChildren == 0) {
-        node.setType(MapType.empty());
+        node.setType(getOrCreateEmptyMapType());
         if (inferringParam) {
           errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty map");
         }
@@ -3275,6 +3275,13 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       return MapType.of(
           keys.isEmpty() ? UnknownType.getInstance() : typeRegistry.getOrCreateUnionType(keys),
           values.isEmpty() ? UnknownType.getInstance() : typeRegistry.getOrCreateUnionType(values));
+    }
+
+    private SoyType getOrCreateEmptyMapType() {
+      return ResolveExpressionTypesPass.this.inAutoExtern
+          ? typeRegistry.getOrCreateMutableMapType(
+              UnknownType.getInstance(), UnknownType.getInstance())
+          : MapType.empty();
     }
 
     /** Checks the argument type. Returns false if an incorrect arg type error was reported. */
