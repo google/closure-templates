@@ -24,7 +24,7 @@ import com.google.template.soy.soytree.SoyTypeP;
  *
  * <p>Note: This map type is designed for working with proto maps or ES6 Maps.
  */
-public final class MapType extends AbstractMapType {
+public class MapType extends AbstractMapType {
 
   /** Special instance used to track empty maps. Only valid with == equality. */
   private static final MapType EMPTY =
@@ -46,7 +46,7 @@ public final class MapType extends AbstractMapType {
   /** The declared type of item values in this map. */
   private final SoyType valueType;
 
-  private MapType(SoyType keyType, SoyType valueType) {
+  protected MapType(SoyType keyType, SoyType valueType) {
     this.keyType = Preconditions.checkNotNull(keyType);
     this.valueType = Preconditions.checkNotNull(valueType);
   }
