@@ -361,6 +361,15 @@ public class SoyTypesTest {
   }
 
   @Test
+  public void testMutableMapAssignability() {
+    assertThatSoyType("map<string, string>").isAssignableFromStrict("mutable_map<string, string>");
+    assertThatSoyType("map<string, string>").isAssignableFromLoose("mutable_map<string, ?>");
+    assertThatSoyType("map<string, string>").isNotAssignableFromLoose("mutable_map<string, int>");
+    assertThatSoyType("mutable_map<string, string>").isNotAssignableFromLoose("map<string, ?>");
+    assertThatSoyType("mutable_map<string, string>").isNotAssignableFromLoose("map<string, int>");
+  }
+
+  @Test
   public void testNamed() {
     SoyTypeRegistry registry =
         new TestTypeRegistry()
@@ -577,7 +586,9 @@ public class SoyTypesTest {
   public void testMapTypeEquality() {
     assertThatSoyType("map<string,any>").isEqualTo("map<string,any>");
     assertThatSoyType("map<string,any>").isNotEqualTo("map<int,any>");
-    assertThatSoyType("map<string,any>").isNotEqualTo("map<int,any>");
+    assertThatSoyType("map<string,int>").isNotEqualTo("map<string,any>");
+
+    assertThatSoyType("mutable_map<string,int>").isNotEqualTo("map<string,int>");
   }
 
   @Test
