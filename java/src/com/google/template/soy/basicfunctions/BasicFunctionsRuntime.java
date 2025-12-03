@@ -939,4 +939,24 @@ public final class BasicFunctionsRuntime {
     List<SoyValue> impl = (List<SoyValue>) list.asJavaList();
     return listSplice(impl, start, count, insert);
   }
+
+  @CanIgnoreReturnValue
+  public static UndefinedData mapClear(SoyMap map) {
+    map.asJavaMap().clear();
+    return UndefinedData.INSTANCE;
+  }
+
+  @CanIgnoreReturnValue
+  public static boolean mapDelete(SoyMap map, SoyValue key) {
+    return map.asJavaMap().remove(key) != null;
+  }
+
+  @CanIgnoreReturnValue
+  public static SoyMap mapSet(SoyMap map, SoyValue key, SoyValue value) {
+    // It's always safe to add a SoyValue, regardless of the type V that extends SoyValueProvider.
+    @SuppressWarnings("unchecked")
+    var mutableMap = (Map<SoyValue, SoyValue>) map.asJavaMap();
+    mutableMap.put(key, value);
+    return map;
+  }
 }

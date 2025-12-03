@@ -23,6 +23,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseAnd;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseOr;
 import static com.google.template.soy.shared.internal.SharedRuntime.bitwiseXor;
 import static com.google.template.soy.shared.internal.SharedRuntime.constructMapFromIterator;
+import static com.google.template.soy.shared.internal.SharedRuntime.constructMutableMapFromIterator;
 import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
 import static com.google.template.soy.shared.internal.SharedRuntime.equal;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
@@ -159,6 +160,7 @@ import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.MutableListType;
+import com.google.template.soy.types.MutableMapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.ibm.icu.util.ULocale;
@@ -461,7 +463,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       }
       map.put(key, value);
     }
-    return SoyMapImpl.forProviderMap(map);
+    return node.getType() instanceof MutableMapType
+        ? SoyMapImpl.forMutableProviderMap(map)
+        : SoyMapImpl.forProviderMap(map);
   }
 
   @Override
@@ -469,7 +473,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     ExprNode listExpr = node.getListExpr();
     SoyValue listValue = visit(listExpr);
     try {
-      return constructMapFromIterator(listValue.javaIterator());
+      return node.getType() instanceof MutableMapType
+          ? constructMutableMapFromIterator(listValue.javaIterator())
+          : constructMapFromIterator(listValue.javaIterator());
     } catch (IllegalArgumentException e) {
       throw RenderException.create(
           e.getMessage() + " at " + node.getListExpr().getSourceLocation(), e);
