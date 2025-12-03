@@ -402,7 +402,7 @@ public final class MsgDefaultConstantFactory {
                 + end
                 + ", but it also is configured to come after "
                 + finalResult.get(start)
-                + ". Order constratins cannot be transitive");
+                + ". Order constraints cannot be transitive");
       }
     }
     return finalResult;

@@ -76,7 +76,7 @@ public final class MsgDefaultConstantFactoryTest {
         .hasMessageThat()
         .contains(
             "Expected placeholder PlaceholderName{b} is supposed to come before PlaceholderName{a},"
-                + " but it also is configured to come after [PlaceholderName{d}]. Order constratins"
+                + " but it also is configured to come after [PlaceholderName{d}]. Order constraints"
                 + " cannot be transitive");
   }
 
