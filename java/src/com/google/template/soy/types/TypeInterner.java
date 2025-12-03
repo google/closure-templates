@@ -82,6 +82,19 @@ public interface TypeInterner {
   }
 
   /**
+   * Factory function which creates a mutable map type, given a key and value type. This folds map
+   * types with identical key/value types together, so asking for the same key/value type twice will
+   * return a pointer to the same type object.
+   *
+   * @param keyType The key type of the map.
+   * @param valueType The value type of the map.
+   * @return The map type.
+   */
+  default MapType getOrCreateMutableMapType(SoyType keyType, SoyType valueType) {
+    return intern(MutableMapType.of(keyType, valueType));
+  }
+
+  /**
    * Factory function which creates a union type, given the member types. This folds identical union
    * types together.
    *

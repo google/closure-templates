@@ -217,6 +217,14 @@ public final class TypeNodeConverter
                 }
               })
           .put(
+              "mutable_map",
+              new GenericTypeInfo(2) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.getOrCreateMutableMapType(types.get(0), types.get(1));
+                }
+              })
+          .put(
               "ve",
               new GenericTypeInfo(1) {
                 @Override

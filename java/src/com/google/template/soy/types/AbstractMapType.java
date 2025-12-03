@@ -26,6 +26,12 @@ public abstract class AbstractMapType extends SoyType {
   /** Returns the type for values in this map. */
   public abstract SoyType getValueType();
 
+  /**
+   * Whether the map is empty **and immutable**.
+   *
+   * @return true if the map is immutable and permantently empty, false if the map contains any
+   *     items and/or it is mutable.
+   */
   public abstract boolean isEmpty();
 
   @Override
