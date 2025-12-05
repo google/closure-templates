@@ -53,6 +53,8 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
+import com.google.template.soy.msgs.GrammaticalGender;
+import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.PluginInstances;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -155,7 +157,7 @@ public final class TemplateTester {
     return ParamStore.fromRecord(asRecord(params));
   }
 
-  static final class CompiledTemplateSubject extends Subject {
+  public static final class CompiledTemplateSubject extends Subject {
     private final String actual;
     private final List<SoyFunction> soyFunctions = new ArrayList<>();
     private final List<SoySourceFunction> soySourceFunctions = new ArrayList<>();
@@ -167,6 +169,8 @@ public final class TemplateTester {
     private SoyCssRenamingMap cssRenamingMap = SoyCssRenamingMap.EMPTY;
     private SoyIdRenamingMap xidRenamingMap = SoyCssRenamingMap.EMPTY;
     private RenderContext defaultContext;
+    private SoyMsgBundle soyMsgBundle = SoyMsgBundle.EMPTY;
+    private GrammaticalGender viewerGrammaticalGender = GrammaticalGender.UNSPECIFIED;
 
     private CompiledTemplateSubject(FailureMetadata failureMetadata, String subject) {
       super(failureMetadata, subject);
@@ -215,22 +219,35 @@ public final class TemplateTester {
       return this;
     }
 
-    CompiledTemplateSubject logsOutput(String expected) {
+    @CanIgnoreReturnValue
+    public CompiledTemplateSubject withMsgBundle(SoyMsgBundle msgBundle) {
+      this.soyMsgBundle = msgBundle;
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public CompiledTemplateSubject withViewerGrammaticalGender(GrammaticalGender viewerGender) {
+      this.viewerGrammaticalGender = viewerGender;
+      return this;
+    }
+
+    public CompiledTemplateSubject logsOutput(String expected) {
       compile();
       return rendersAndLogs("", expected, ParamStore.EMPTY_INSTANCE, defaultContext);
     }
 
-    CompiledTemplateSubject rendersAs(String expected) {
+    public CompiledTemplateSubject rendersAs(String expected) {
       compile();
       return rendersAndLogs(expected, "", ParamStore.EMPTY_INSTANCE, defaultContext);
     }
 
-    CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params) {
+    public CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params) {
       compile();
       return rendersAndLogs(expected, "", asParams(params), defaultContext);
     }
 
-    CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params, Map<String, ?> ij) {
+    public CompiledTemplateSubject rendersAs(
+        String expected, Map<String, ?> params, Map<String, ?> ij) {
       compile();
       return rendersAndLogs(
           expected,
@@ -239,12 +256,12 @@ public final class TemplateTester {
           defaultContext.toBuilder().withIj(SoyInjector.fromStringMap(ij)).build());
     }
 
-    CompiledTemplateSubject failsToRenderWith(Class<? extends Throwable> expected) {
+    public CompiledTemplateSubject failsToRenderWith(Class<? extends Throwable> expected) {
       return failsToRenderWith(expected, ImmutableMap.of());
     }
 
     @CanIgnoreReturnValue
-    CompiledTemplateSubject failsToRenderWith(
+    public CompiledTemplateSubject failsToRenderWith(
         Class<? extends Throwable> expected, Map<String, ?> params) {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
@@ -410,6 +427,8 @@ public final class TemplateTester {
                 .withPluginInstances(PluginInstances.of(pluginInstances.buildOrThrow()))
                 .withCssRenamingMap(cssRenamingMap)
                 .withXidRenamingMap(xidRenamingMap)
+                .withMessageBundle(soyMsgBundle)
+                .withViewerGrammaticalGender(viewerGrammaticalGender)
                 .build();
       }
     }
