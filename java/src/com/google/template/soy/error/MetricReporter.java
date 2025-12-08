@@ -121,7 +121,7 @@ public final class MetricReporter {
     } else {
       length = 0;
     }
-    String fileName = location.getFileName();
+    String fileName = location.getFilePath().realPath();
     if (fileName == null) {
       fileName = "";
     }
