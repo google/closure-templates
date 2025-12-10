@@ -102,10 +102,6 @@ message Requirement {
     repeated string when_attribute_possibly_missing = 3;
   }
 
-  message BanXidForCssObfuscation {
-    // Bans the usage of xid for css obfuscation
-  }
-
   message Custom {
     // Required: the fully-qualified name of the Java class providing the
     // custom conformance check. The class must implement
@@ -113,7 +109,7 @@ message Requirement {
     string java_class = 1;
   }
 
-  reserved 1, 6, 12, 13;
+  reserved 1, 6, 12, 13, 14;
   oneof requirement_type {
     BannedCssSelector banned_css_selector = 2;
     BannedFunction banned_function = 3;
@@ -121,7 +117,6 @@ message Requirement {
     BannedRawText banned_raw_text = 5;
     Custom custom = 7;
     BannedHtmlTag banned_html_tag = 11;
-    BanXidForCssObfuscation ban_xid_for_css_obfuscation = 14;
   }
 
   // Required: The message to report when a requirement is violated.

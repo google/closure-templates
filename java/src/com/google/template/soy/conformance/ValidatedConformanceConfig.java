@@ -103,8 +103,6 @@ public final class ValidatedConformanceConfig {
             bannedHtmlTag.getWhenAttributePossiblyMissingList(),
             bannedHtmlTag.getExemptAttributeList(),
             error);
-      case BAN_XID_FOR_CSS_OBFUSCATION:
-        return new BanXidForCssObfuscation(error);
       case REQUIREMENTTYPE_NOT_SET:
         throw new AssertionError(
             "unexpected requirement type: " + requirement.getRequirementTypeCase());
