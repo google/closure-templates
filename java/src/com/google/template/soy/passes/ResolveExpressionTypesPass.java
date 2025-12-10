@@ -1322,7 +1322,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       for (ExprNode child : node.getChildren()) {
         String key = node.getKey(i).identifier();
         if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
-          SoyType spreadType = child.getType();
+          SoyType spreadType = child.getType().getEffectiveType();
           if (spreadType instanceof RecordType) {
             for (Member member : ((RecordType) spreadType).getMembers()) {
               members.put(member.name(), member);

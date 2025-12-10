@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
@@ -252,7 +253,7 @@ final class ResolveDeclaredTypesPass extends AbstractTopologicallyOrderedPass {
   }
 
   /** A SoyTypeRegistry that we add all `{type}` named types to as we traverse the AST. */
-  private static class AccumulatingTypeRegistry extends DelegatingSoyTypeRegistry {
+  static class AccumulatingTypeRegistry extends DelegatingSoyTypeRegistry {
 
     private final Map<String, SoyType> localTypes = new HashMap<>();
 
@@ -260,6 +261,7 @@ final class ResolveDeclaredTypesPass extends AbstractTopologicallyOrderedPass {
       super(delegate);
     }
 
+    @CanIgnoreReturnValue
     public boolean addTypeAlias(String alias, NamedType type) {
       SoyType previous = localTypes.put(alias, type);
       return previous == null;

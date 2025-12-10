@@ -23,11 +23,13 @@ import static com.google.template.soy.passes.TypeNarrowingConditionVisitor.insta
 import static com.google.template.soy.testing.SharedTestUtils.buildAstStringWithPreview;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.passes.ResolveDeclaredTypesPass.AccumulatingTypeRegistry;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.IfCondNode;
@@ -53,7 +55,9 @@ import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -63,6 +67,7 @@ import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.List;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -83,8 +88,13 @@ public final class ResolveExpressionTypesPassTest {
         }
       };
 
-  private static final SoyTypeRegistry TYPE_REGISTRY = SoyTypeRegistryBuilder.create();
   private static final Joiner NEWLINE = Joiner.on('\n');
+  private SoyTypeRegistry typeRegistry;
+
+  @Before
+  public void setUp() {
+    typeRegistry = SoyTypeRegistryBuilder.create();
+  }
 
   @Test
   public void testOptionalParamTypes() {
@@ -364,7 +374,7 @@ public final class ResolveExpressionTypesPassTest {
         SoyFileSetParserBuilder.forFileContents(
                 constructFileSource(
                     "{@param? l: [a :int]|null}", "{assertType('int', $l?.a ?? 0)}"))
-            .typeRegistry(TYPE_REGISTRY)
+            .typeRegistry(typeRegistry)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
             .fileSet();
@@ -415,15 +425,24 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testRecordLiteralAsRecord() {
+    typeRegistry = new AccumulatingTypeRegistry(typeRegistry);
+    ((AccumulatingTypeRegistry) typeRegistry)
+        .addTypeAlias(
+            "Rec1",
+            NamedType.create(
+                "Rec1", "unused", RecordType.of(ImmutableMap.of("key", StringType.getInstance()))));
+
     assertTypes(
         "{@param pi: int}",
         "{@param pf: float}",
+        "{@param pa: Rec1}",
         "{let $record: record(a: $pi, b: $pf)/}",
         "{assertType('[a: int, b: float]', $record)}",
         "{assertType('[a: int, b: float]', record(...$record))}",
         "{assertType('[a: int, b: float]', record(a: $pi, ...$record))}",
         "{assertType('[a: int, b: float]', record(a: $pf, ...$record))}",
         "{assertType('[a: float, b: float]', record(...$record, a: $pf))}",
+        "{assertType('[key: string, a: float]', record(...$pa, a: $pf))}",
         "");
   }
 
@@ -433,7 +452,7 @@ public final class ResolveExpressionTypesPassTest {
     SoyFileSetParserBuilder.forFileContents(
             constructFileSource("{let $record: record(a: 1, a: 2)/}"))
         .errorReporter(reporter)
-        .typeRegistry(TYPE_REGISTRY)
+        .typeRegistry(typeRegistry)
         .parse()
         .fileSet();
     assertThat(Iterables.getOnlyElement(reporter.getErrors()).message())
@@ -1398,7 +1417,7 @@ public final class ResolveExpressionTypesPassTest {
         SoyFileParser.parseType(
             type, SourceFilePath.forTest("com.google.foo.bar.FakeSoyFunction"), errorReporter);
     return TypeNodeConverter.builder(errorReporter)
-        .setTypeRegistry(TYPE_REGISTRY)
+        .setTypeRegistry(typeRegistry)
         .build()
         .getOrCreateType(parsed);
   }
@@ -1451,7 +1470,7 @@ public final class ResolveExpressionTypesPassTest {
     ErrorReporter errorReporter = ErrorReporter.create();
     SoyFileSetParserBuilder.forFileContents(fileContent)
         .errorReporter(errorReporter)
-        .typeRegistry(TYPE_REGISTRY)
+        .typeRegistry(typeRegistry)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(errorReporter.getErrors().get(0).message()).isEqualTo(expectedError);
@@ -1461,6 +1480,7 @@ public final class ResolveExpressionTypesPassTest {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(constructFileSource(lines))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .typeRegistry(typeRegistry)
             .parse()
             .fileSet();
     assertTypes(soyTree);
