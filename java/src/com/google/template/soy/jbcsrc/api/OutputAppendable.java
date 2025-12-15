@@ -200,7 +200,7 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
 
   private void setLoggingAttrs(@Nullable SoyLogger.LoggingAttrs loggingAttrs) {
     if (this.loggingAttrs != null) {
-      googleLogger.atWarning().withStackTrace(StackSize.SMALL).log(
+      googleLogger.atWarning().withStackTrace(StackSize.LARGE).log(
           "a logger configured logging attrs that were not rendered onto an element. Your {velog}"
               + " command must not be wrapping an element, this is undefined behavior.");
     }
