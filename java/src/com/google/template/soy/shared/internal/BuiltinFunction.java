@@ -68,7 +68,8 @@ public enum BuiltinFunction implements SoyFunction {
   HAS_CONTENT("hasContent"),
   IS_TRUTHY_NON_EMPTY("isTruthyNonEmpty"),
   NEW_SET("Set"),
-  FLUSH_PENDING_LOGGING_ATTRIBUTES("$$flushPendingLoggingAttributes");
+  FLUSH_PENDING_LOGGING_ATTRIBUTES("$$flushPendingLoggingAttributes"),
+  OBJECT_PROPERTY("objectProperty");
 
   /** The function name. */
   private final String functionName;
@@ -116,6 +117,8 @@ public enum BuiltinFunction implements SoyFunction {
         throw new UnsupportedOperationException();
       case VE_DEF:
         return ImmutableSet.of(2, 3, 4);
+      case OBJECT_PROPERTY:
+        return ImmutableSet.of(2);
     }
     throw new AssertionError(this);
   }
@@ -170,6 +173,7 @@ public enum BuiltinFunction implements SoyFunction {
       case HAS_CONTENT:
       case IS_TRUTHY_NON_EMPTY:
       case NEW_SET:
+      case OBJECT_PROPERTY:
         return true;
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case EVAL_TOGGLE:

@@ -3076,6 +3076,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         case SOY_SERVER_KEY:
         case XID:
         case RECORD_JS_ID:
+        case OBJECT_PROPERTY:
           // arg validation is already handled by the XidPass
           node.setType(StringType.getInstance());
           break;
@@ -3363,7 +3364,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           && node.getSoyFunction() != BuiltinFunction.XID
           && node.getSoyFunction() != BuiltinFunction.RECORD_JS_ID
           && node.getSoyFunction() != BuiltinFunction.VE_DEF
-          && node.getSoyFunction() != BuiltinFunction.EVAL_TOGGLE) {
+          && node.getSoyFunction() != BuiltinFunction.EVAL_TOGGLE
+          && node.getSoyFunction() != BuiltinFunction.OBJECT_PROPERTY) {
         notAllowed(node);
       }
       super.visitFunctionNode(node);

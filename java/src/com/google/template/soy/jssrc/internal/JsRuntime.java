@@ -187,6 +187,10 @@ public final class JsRuntime {
       GoogRequire.createWithAlias(
           "google3.javascript.template.soy.element_lib_idom", "element_lib_idom");
 
+  private static final GoogRequire REFLECT_REQUIRE = GoogRequire.create("goog.reflect");
+
+  public static final Expression OBJECT_PROPERTY = REFLECT_REQUIRE.dotAccess("objectProperty");
+
   /**
    * A constant for the template parameter {@code opt_data}.
    *

@@ -86,6 +86,11 @@ is omitted, it defaults to 1. If the `start` argument is omitted, it defaults to
 This function behaves identically to the Python `range` builtin function, or the
 Closure `goog.array.range` function.
 
+### `objectProperty(prop, object)` {#objectProperty}
+
+Turns into `goog.reflect.objectProperty()` in JS backends. Passes the first
+argument through in all other backends.
+
 ## Math Functions
 
 ### `round(number[, numDigitsAfterDecimalPoint])` {#round}

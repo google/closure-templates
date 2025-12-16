@@ -1018,6 +1018,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return BooleanData.forValue(visit(node.getParam(0)).isTruthyNonEmpty());
         case NEW_SET:
           return visitNewSetFunction(node);
+        case OBJECT_PROPERTY:
+          return visit(node.getParam(0));
         case MSG_WITH_ID:
         case REMAINDER:
         case FLUSH_PENDING_LOGGING_ATTRIBUTES:

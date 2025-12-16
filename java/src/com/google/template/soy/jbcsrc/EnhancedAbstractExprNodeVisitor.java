@@ -122,6 +122,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitNewSetFunction(node);
         case FLUSH_PENDING_LOGGING_ATTRIBUTES:
           return visitFlushPendingLoggingAttributesFunction(node);
+        case OBJECT_PROPERTY:
+          return visit(node.getParam(0));
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler

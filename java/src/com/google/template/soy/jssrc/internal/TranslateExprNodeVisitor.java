@@ -42,6 +42,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME
 import static com.google.template.soy.jssrc.internal.JsRuntime.IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.MARK_TEMPLATE;
+import static com.google.template.soy.jssrc.internal.JsRuntime.OBJECT_PROPERTY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
@@ -1161,6 +1162,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return hasContent(visit(node.getParam(0)));
         case NEW_SET:
           return visitNewSetFunction(node);
+        case OBJECT_PROPERTY:
+          return OBJECT_PROPERTY.call(visit(node.getParam(0)), visit(node.getParam(1)));
         case FLUSH_PENDING_LOGGING_ATTRIBUTES:
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:

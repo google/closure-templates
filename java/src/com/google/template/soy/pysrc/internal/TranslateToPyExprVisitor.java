@@ -735,6 +735,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case PROTO_INIT:
         errorReporter.report(node.getSourceLocation(), PROTO_INIT_NOT_SUPPORTED);
         return ERROR;
+      case OBJECT_PROPERTY:
+        return visit(node.getParam(0));
     }
     throw new AssertionError();
   }
