@@ -2126,6 +2126,10 @@ final class ExpressionCompiler {
             args.add(parameters.getRenderContext().getRenderCssHelper());
           } else if (paramType.className().equals("com.ibm.icu.util.ULocale")) {
             args.add(parameters.getRenderContext().getULocale());
+          } else if (paramType
+              .className()
+              .equals("com.google.template.soy.jbcsrc.shared.ContextStore")) {
+            args.add(parameters.getRenderContext());
           } else {
             SoyType soyType = functionType.getParameters().get(soyArgIndex).getType();
             SoyExpression soyArg = params.get(soyArgIndex);
