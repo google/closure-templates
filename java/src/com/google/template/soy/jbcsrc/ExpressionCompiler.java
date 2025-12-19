@@ -2429,7 +2429,7 @@ final class ExpressionCompiler {
     @Override
     protected Boolean visitMethodCallNode(MethodCallNode node) {
       var method = node.getSoyMethod();
-      if (method == BuiltinMethod.BIND) {
+      if (method == BuiltinMethod.BIND || method == BuiltinMethod.FUNCTION_BIND) {
         return areAllChildrenConstant(node);
       }
       return false;
@@ -2562,7 +2562,8 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitMethodCallNode(MethodCallNode node) {
-      if (node.getMethodName().toString().equals("bind")) {
+      var method = node.getSoyMethod();
+      if (method == BuiltinMethod.BIND || method == BuiltinMethod.FUNCTION_BIND) {
         return anyChildMatches(node);
       }
       return true;
@@ -2600,6 +2601,10 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitPluginFunction(FunctionNode node) {
+      if (!node.hasStaticName() && this.visit(node.getNameExpr())) {
+        return true;
+      }
+
       Object fn = node.getSoyFunction();
       if (fn instanceof SoyJavaSourceFunction) {
         PluginAnalyzer.PluginMetadata metadata = PluginAnalyzer.analyze((SoyJavaSourceFunction) fn);

@@ -417,15 +417,13 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     for (ConstNode constant : node.getConstants()) {
       registerLocalConstant(constant);
     }
+    ImmutableSet<ExternNode> externsToCodeGen =
+        node.getExterns().stream().filter(this::registerLocalExtern).collect(toImmutableSet());
 
     for (SoyNode child : node.getChildren()) {
-      if (child instanceof ConstNode) {
-        // Install all constant references in the topLevelSymbols map so that templates can find
-        // them
-        registerLocalConstant((ConstNode) child);
-      } else if (child instanceof TypeDefNode) {
+      if (child instanceof TypeDefNode) {
         visit(child);
-      } else if (child instanceof ExternNode) {
+      } else if (child instanceof ExternNode && externsToCodeGen.contains(child)) {
         visit(child);
       }
     }
@@ -1593,10 +1591,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     String externName = node.getIdentifier().originalName();
-    // Skip if we handled this impl already, e.g. a prev extern overload.
-    if (templateTranslationContext.soyToJsVariableMappings().has(externName)) {
-      return;
-    }
 
     if (node.getJsImpl().isPresent()) {
       JsImplNode js = node.getJsImpl().get();
@@ -1610,7 +1604,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         externReference = GOOG_MODULE_GET.call(stringLiteral(js.module())).dotAccess(js.function());
       }
       jsCodeBuilder.addGoogRequire(externRequire);
-      templateTranslationContext.soyToJsVariableMappings().put(externName, externReference);
 
       if (node.isExported()) {
         SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
@@ -1656,10 +1649,33 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsCodeBuilder.append(
           topLevelAssignment(
               node, node.isExported(), partialName, jsDocBuilder, imputesSpan, function));
+    }
+  }
+
+  private boolean registerLocalExtern(ExternNode node) {
+    String externName = node.getIdentifier().originalName();
+    // Skip if we handled this impl already, e.g. a prev extern overload.
+    if (templateTranslationContext.soyToJsVariableMappings().has(externName)) {
+      return false;
+    }
+    if (node.getJsImpl().isPresent()) {
+      JsImplNode js = node.getJsImpl().get();
+      GoogRequire externRequire;
+      Expression externReference;
+      if (jsSrcOptions.shouldGenerateGoogModules()) {
+        externRequire = GoogRequire.createWithAlias(js.module(), js.module().replace('.', '$'));
+        externReference = dottedIdNoRequire(externRequire.alias()).dotAccess(js.function());
+      } else {
+        externReference = GOOG_MODULE_GET.call(stringLiteral(js.module())).dotAccess(js.function());
+      }
+      templateTranslationContext.soyToJsVariableMappings().put(externName, externReference);
+    } else {
+      String partialName = node.getVar().name();
       templateTranslationContext
           .soyToJsVariableMappings()
           .put(externName, topLevelLhs(node, node.isExported(), partialName, null));
     }
+    return true;
   }
 
   @CheckReturnValue

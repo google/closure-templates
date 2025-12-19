@@ -202,6 +202,18 @@ final class LocalVariablesNodeVisitor {
         localVariables.define(template.asVarDefn(), template);
       }
 
+      // Allow forward references between externs.
+      for (ExternNode extern : node.getExterns()) {
+        VarDefn var = extern.getVar();
+        VarDefn preexisting = localVariables.lookup(var.refName());
+        if (preexisting instanceof SymbolVar
+            && ((SymbolVar) preexisting).getSymbolKind() == SymbolKind.EXTERN) {
+          // Allow multiple externs with the same name.
+          continue;
+        }
+        localVariables.define(var, node);
+      }
+
       super.visitSoyFileNode(node);
       if (cleanUpFileScope()) {
         localVariables.exitScope();
@@ -231,19 +243,6 @@ final class LocalVariablesNodeVisitor {
     @Override
     protected void visitTypeDefNode(TypeDefNode node) {
       super.visitTypeDefNode(node);
-    }
-
-    @Override
-    protected void visitExternNode(ExternNode node) {
-      super.visitExternNode(node);
-      VarDefn var = node.getVar();
-      VarDefn preexisting = localVariables.lookup(var.refName());
-      if (preexisting instanceof SymbolVar
-          && ((SymbolVar) preexisting).getSymbolKind() == SymbolKind.EXTERN) {
-        // Allow multiple externs with the same name.
-        return;
-      }
-      localVariables.define(var, node);
     }
 
     @Override
