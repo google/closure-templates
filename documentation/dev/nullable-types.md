@@ -12,6 +12,9 @@ with `null` and `undefined` in your templates.
 
 ## Static type narrowing in conditional blocks
 
+**Note**: Conditionals in Soy follow the rules of Javascript truthiness. See
+https://developer.mozilla.org/en-US/docs/Glossary/Truthy.
+
 When a template contains an optional parameter (`@param?`), if the compiler can
 prove the parameter cannot be `undefined` it will change the expression type to
 be non-optional. For example:
