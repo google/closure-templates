@@ -400,7 +400,10 @@ function emitLoggingCommands(element, logger) {
   if (element instanceof Element) {
     const newElements = visit(element, logger);
     if (element.parentNode !== null) {
-      replaceChild(element.parentNode, element, newElements);
+      const replacement =
+          replaceChild(element.parentNode, element, newElements) ??
+          document.createDocumentFragment();
+      return replacement;
     }
     if (newElements.length === 1) {
       return newElements[0];
@@ -485,20 +488,25 @@ function visit(element, logger) {
  *
  * @param {!Node} parent
  * @param {!Node} oldChild
- * @param {!Array<!Element|!DocumentFragment>} newChildren
+ * @param {!ReadonlyArray<!Element|!DocumentFragment>} newChildren
+ * @return {!Element|!DocumentFragment|null} DocumentFragment if more than one
+ *     newChild; newChild[0] or null otherwise.
  */
 function replaceChild(parent, oldChild, newChildren) {
   if (newChildren.length === 0) {
     parent.removeChild(oldChild);
+    return null;
   } else if (newChildren.length === 1) {
     if (oldChild !== newChildren[0]) {
       parent.replaceChild(newChildren[0], oldChild);
     }
+    return newChildren[0];
   } else {
-    for (const newChild of newChildren) {
-      parent.insertBefore(newChild, oldChild);
-    }
+    const fragment = document.createDocumentFragment();
+    fragment.append(...newChildren);
+    parent.insertBefore(fragment, oldChild);
     parent.removeChild(oldChild);
+    return fragment;
   }
 }
 
