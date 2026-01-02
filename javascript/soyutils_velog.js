@@ -261,6 +261,11 @@ class Metadata {
 /** @package */ const FUNCTION_ATTR = 'data-soyloggingfunction-';
 /** @private */ const SAFE_ATTR_PREFIXES = [
 
+/**
+ * Tag name used for fragments.
+ */
+const WRAPPER_ELEMENT_TAG_NAME = 'VELOG';
+
 /** Sets up the global metadata object before rendering any templates. */
 function setUpLogging() {
   assert(
@@ -388,38 +393,76 @@ function $$getLoggingFunctionAttribute(name, args, attr) {
 }
 
 /**
- * For a given rendered HTML element, go through the DOM tree and emits logging
- * commands if necessary. This method also discards visual elements that are'
- * marked as log only (counterfactual).
+ * For a given rendered HTML element, go through the DOM tree and emit logging
+ * commands if necessary. This method also discards visual elements that are
+ * marked as log only (counterfactual) and promotes `<velog>` element children
+ * to be direct siblings.
+ *
+ * Returns the same element or a fragment with children that replaced it. If the
+ * provided {@link element} is replaced with new elements, the caller is
+ * responsible for using the returned {@link !DocumentFragment} as the
+ * replacement for the element.
  *
  * @param {!Element|!DocumentFragment} element The rendered HTML element.
  * @param {!Logger} logger The logger that actually does stuffs.
- * @return {!Element|!DocumentFragment}
+ * @return {!Element|!DocumentFragment} The same element or a fragment with the
+ *     nodes that replaced it.
  */
 function emitLoggingCommands(element, logger) {
+  const newElements = doLogEmit(element, logger);
+  if (newElements.length === 1) {
+    return newElements[0];
+  }
+  const fragment = document.createDocumentFragment();
+  for (const child of newElements) {
+    fragment.appendChild(child);
+  }
+  return fragment;
+}
+
+/**
+ * For a given rendered HTML element, go through the DOM tree and emit logging
+ * commands if necessary. This method also discards visual elements that are
+ * marked as log only (counterfactual) and promotes `<velog>` element children
+ * to be direct siblings.
+ *
+ * Does replacements of the provided {@link element} in-place, returning an
+ * array with itself or elements that replaced it.
+ *
+ * @param {!Element|!DocumentFragment} element The rendered HTML element.
+ * @param {!Logger} logger The logger that actually does stuffs.
+ * @return {!ReadonlyArray<!Element|!DocumentFragment>} The same input element
+ *     or a list of elements that replaced it.
+ */
+function doLogEmit(element, logger) {
   if (element instanceof Element) {
     const newElements = visit(element, logger);
     if (element.parentNode !== null) {
       replaceChild(element.parentNode, element, newElements);
     }
-    if (newElements.length === 1) {
-      return newElements[0];
-    }
-    const fragment = document.createDocumentFragment();
-    for (const child of newElements) {
-      fragment.appendChild(child);
-    }
-    return fragment;
+    return newElements;
   } else {
-    const children = Array.from(element.childNodes);
-    for (let i = 0; i < children.length; i++) {
-      const child = children[i];
-      if (child instanceof Element) {
-        const newChildren = visit(child, logger);
-        replaceChild(element, child, newChildren);
-      }
+    emitCommandsForRange(element, Array.from(element.childNodes), logger);
+    return [element];
+  }
+}
+
+/**
+ * Emit logging commands for a subset of children of a given parent. All
+ * mutations are done in-place.
+ *
+ * @param {!Element|!DocumentFragment} parent The parent element.
+ * @param {!ReadonlyArray<!Node>} children The subset of
+ *     elements that are children of {@link parent}.
+ * @param {!Logger} logger The logger that actually does stuffs.
+ */
+function emitCommandsForRange(parent, children, logger) {
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    if (child instanceof Element) {
+      const newChildren = visit(child, logger);
+      replaceChild(parent, child, newChildren);
     }
-    return element;
   }
 }
 
@@ -467,7 +510,7 @@ function visit(element, logger) {
     return [];
   }
   let result = [element];
-  if (element.tagName !== 'VELOG') {
+  if (element.tagName !== WRAPPER_ELEMENT_TAG_NAME) {
     element.removeAttribute(ELEMENT_ATTR);
   } else if (element.childNodes) {
     result = Array.from(element.childNodes);
@@ -797,6 +840,7 @@ exports = {
   $$getLoggingAttribute,
   $$getLoggingFunctionAttribute,
   getLoggingAttributeEntry,
+  WRAPPER_ELEMENT_TAG_NAME,
   ELEMENT_ATTR,
   FUNCTION_ATTR,
   ElementMetadata,
@@ -807,6 +851,8 @@ exports = {
   $$VisualElement,
   $$VisualElementData,
   emitLoggingCommands,
+  emitCommandsForRange,
+  doLogEmit,
   setMetadataTestOnly,
   setUpLogging,
   tearDownLogging,
