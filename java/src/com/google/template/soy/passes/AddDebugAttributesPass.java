@@ -142,10 +142,10 @@ final class AddDebugAttributesPass implements CompilerFilePass {
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof BlockNode) {
-        visitBlock((BlockNode) node);
-      } else if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode<?>) node);
+      if (node instanceof BlockNode block) {
+        visitBlock(block);
+      } else if (node instanceof ParentSoyNode<?> parent) {
+        visitChildren(parent);
       }
     }
 
