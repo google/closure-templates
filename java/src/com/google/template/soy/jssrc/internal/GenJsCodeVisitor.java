@@ -37,6 +37,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_MODULE_GET;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
+import static com.google.template.soy.jssrc.internal.JsRuntime.IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_VARIANT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
@@ -1809,6 +1810,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               ? Id.create(getPositionalParamName(param))
               : genCodeForParamAccess(paramName, param);
       JsType jsType = getJsTypeForParamTypeCheck(paramType);
+
+      if (param.isInjected() && param.type().getKind() == SoyType.Kind.PROTO) {
+        declarations.add(
+            IJ_DATA
+                .dotAccess("__protoMaterializers", true)
+                .dotAccess(paramName, true)
+                .nullSafeCall()
+                .asStatement());
+      }
+
       // TODO(lukes): for positional style params we should switch to inline defaults in the
       // declaration and let the JS VM handle this.
       if (param.hasDefault()) {
