@@ -27,6 +27,7 @@ import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.logging.SoyLogger;
+import com.google.template.soy.logging.SoyLogger.LoggingAttrs;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Function;
@@ -173,7 +174,7 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
     }
     var enterData = logger.enter(statement);
     appendDebugOutput(enterData.debugHtml());
-    var loggingAttrs = enterData.loggingAttrs().orElse(null);
+    LoggingAttrs loggingAttrs = enterData.loggingAttrs().orElse(null);
     if (loggingAttrs != null && depth > 0) {
       loggingAttrs = null; // we cannot render them when logonly is set, so drop them now.
     }
@@ -199,7 +200,7 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
   }
 
   private void setLoggingAttrs(@Nullable SoyLogger.LoggingAttrs loggingAttrs) {
-    if (this.loggingAttrs != null) {
+    if (loggingAttrs != null && loggingAttrs.hasOverlappingAttributes(this.loggingAttrs)) {
       googleLogger.atWarning().withStackTrace(StackSize.LARGE).log(
           "a logger configured logging attrs that were not rendered onto an element. Your {velog}"
               + " command must not be wrapping an element, this is undefined behavior.");
