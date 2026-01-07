@@ -38,6 +38,9 @@ type is allowed, in which case standard
 [boolean coercion](http://go/soy/reference/coercions?polyglot=call-command#boolean-coercions)
 is used.
 
+Warning: This will always return true for `SafeHtmlProto` and other proto types,
+even if they contain an empty string.
+
 ### `checkNotNull(value)` {#checkNotNull}
 
 Throws a runtime exception if the given value is `null` or `undefined` and
