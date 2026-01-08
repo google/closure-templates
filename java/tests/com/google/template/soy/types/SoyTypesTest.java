@@ -531,12 +531,23 @@ public class SoyTypesTest {
           private final ImmutableMap<String, SoyType> namedTypes =
               ImmutableMap.of(
                   "Rec1",
-                  NamedType.create("Rec1", NS, parseType("[a: string]", baseRegistry)),
+                  NamedType.create(
+                      "Rec1",
+                      NS,
+                      SourceFilePath.create("test", "test"),
+                      parseType("[a: string]", baseRegistry)),
                   "Rec2",
-                  NamedType.create("Rec2", NS, parseType("[b: string]", baseRegistry)),
+                  NamedType.create(
+                      "Rec2",
+                      NS,
+                      SourceFilePath.create("test", "test"),
+                      parseType("[b: string]", baseRegistry)),
                   "Rec3",
                   NamedType.create(
-                      "Rec3", NS, parseType("[a: string, b: string, c: string]", baseRegistry)));
+                      "Rec3",
+                      NS,
+                      SourceFilePath.create("test", "test"),
+                      parseType("[a: string, b: string, c: string]", baseRegistry)));
 
           @Override
           public SoyType getType(String typeName) {
@@ -1346,7 +1357,10 @@ public class SoyTypesTest {
 
     @CanIgnoreReturnValue
     TestTypeRegistry addNamed(String name, String typeString) {
-      return addType(name, NamedType.create(name, NS, parseType(typeString, this)));
+      return addType(
+          name,
+          NamedType.create(
+              name, NS, SourceFilePath.create("test", "test"), parseType(typeString, this)));
     }
 
     @CanIgnoreReturnValue
