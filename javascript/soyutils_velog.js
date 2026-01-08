@@ -451,19 +451,37 @@ function doLogEmit(element, logger) {
  * Emit logging commands for a subset of children of a given parent. All
  * mutations are done in-place.
  *
+ * If any child is replaced with new elements, the resulting array is returned.
+ *
  * @param {!Element|!DocumentFragment} parent The parent element.
  * @param {!ReadonlyArray<!Node>} children The subset of
  *     elements that are children of {@link parent}.
  * @param {!Logger} logger The logger that actually does stuffs.
+ * @return {?Array<!Node>} `null` if no replacements were made, otherwise
+ *     an array with the new nodes. This can be used to replace the original
+ *     {@link children} array.
  */
 function emitCommandsForRange(parent, children, logger) {
+  /** @type {?Array<!Node>} */
+  let result = null;
   for (let i = 0; i < children.length; i++) {
     const child = children[i];
-    if (child instanceof Element) {
-      const newChildren = visit(child, logger);
-      replaceChild(parent, child, newChildren);
+    if (!(child instanceof Element)) {
+      continue;
     }
+
+    const newChildren = visit(child, logger);
+    if (newChildren.length === 1 && newChildren[0] === child) {
+      continue;
+    }
+
+    if (!result) {
+      result = children.slice(0, i);
+    }
+    result.push(...newChildren);
+    replaceChild(parent, child, newChildren);
   }
+  return result;
 }
 
 /**
