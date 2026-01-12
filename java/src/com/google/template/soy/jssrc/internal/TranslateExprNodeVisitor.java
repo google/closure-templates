@@ -45,6 +45,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.MARK_TEMPLATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OBJECT_PROPERTY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CAST_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EMPTY_TO_UNDEFINED;
@@ -114,6 +115,7 @@ import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.TypeLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -226,7 +228,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private final JavaScriptValueFactoryImpl javascriptValueFactory;
   private final ErrorReporter errorReporter;
   private final TemplateAliases templateAliases;
-  private final ScopedJsTypeRegistry jsTypeRegistry;
+  protected final ScopedJsTypeRegistry jsTypeRegistry;
   private final SourceMapHelper sourceMapHelper;
 
   public TranslateExprNodeVisitor(
@@ -903,8 +905,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitAsOpNode(AsOpNode node) {
-    // TODO(b/156780590): Implement.
-    return visit(node.getChild(0));
+    TypeLiteralNode type = (TypeLiteralNode) node.getChild(1);
+    JsType jsType = jsTypeFor(type.getType());
+    return visit(node.getChild(0)).castAs(jsType.typeExpr(), jsType.googRequires());
   }
 
   @Override
@@ -996,7 +999,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitAssertNonNullOpNode(AssertNonNullOpNode node) {
-    return visit(Iterables.getOnlyElement(node.getChildren()));
+    return SOY_CAST_NOT_NULL.call(visit(Iterables.getOnlyElement(node.getChildren())));
   }
 
   private Expression protoInitFieldValue(

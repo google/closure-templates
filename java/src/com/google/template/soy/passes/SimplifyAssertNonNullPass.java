@@ -49,7 +49,7 @@ final class SimplifyAssertNonNullPass implements CompilerFilePass {
     for (AssertNonNullOpNode node :
         SoyTreeUtils.getAllNodesOfType(file, AssertNonNullOpNode.class)) {
 
-      if (node.getParent() instanceof DataAccessNode) {
+      if (node.getParent() instanceof DataAccessNode && node.getParent().getChildIndex(node) == 0) {
         ExprNode firstChild = node.getChild(0);
         if (firstChild instanceof AbstractParentExprNode) {
           ((AbstractParentExprNode) firstChild).setType(node.getType());

@@ -151,12 +151,12 @@ final class IdomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
 
   @Override
   protected JsType jsTypeForStrict(SoyType type) {
-    return JsType.forIdomSrcState().get(type);
+    return jsTypeRegistry.getWithDelegate(JsType.forIdomSrcState(), type);
   }
 
   @Override
   protected JsType jsTypeFor(SoyType type) {
-    return JsType.forIdomSrc().get(type);
+    return jsTypeRegistry.getWithDelegate(JsType.forIdomSrc(), type);
   }
 
   @Override

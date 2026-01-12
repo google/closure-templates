@@ -413,6 +413,24 @@ const $$checkNotNull = function(val) {
 
 
 /**
+ * Tells the closure compiler that the value is not null, like the "!" operator
+ * in TypeScript.
+ *
+ * @param {T} val The value to check
+ * @return {T_NOT_UNDEFINED} val if is isn't null
+ * @template T
+ * @template T_NOT_UNDEFINED :=
+ *     cond(isUnknown(T), unknown(),
+ *       mapunion(T, (X) =>
+ *         cond(eq(X, 'undefined'), none(), cond(eq(X, 'null'), none(), X))))
+ * =:
+ */
+const $$castNotNull = function(val) {
+  return val;
+};
+
+
+/**
  * Parses the given string into a base 10 integer. Returns null if parse is
  * unsuccessful.
  * @param {?string} str The string to parse
@@ -2983,6 +3001,7 @@ exports = {
   $$assignDefaults,
   $$getMapKeys,
   $$checkNotNull,
+  $$castNotNull,
   $$parseInt,
   $$equals,
   $$isFunction,
