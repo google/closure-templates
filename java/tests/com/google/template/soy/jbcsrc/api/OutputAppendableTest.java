@@ -160,4 +160,15 @@ public final class OutputAppendableTest {
         .exitLoggableElement();
     assertThat(buffer.toString()).isEqualTo("<a data-foo=\"bar\"></a>");
   }
+
+  // @GoogleInternal // our log testing infra is not open source
+  // @Test
+  // public void testLoggingAttrs_failedToFlush() throws IOException {
+  //   logged.expectLiteral(
+  //       "a logger configured logging attrs that were not rendered onto an element. Your {velog}"
+  //           + " command must not be wrapping an element, this is undefined behavior.");
+  //   OutputAppendable.create(new StringBuilder(), LOGGER)
+  //       .enterLoggableElement(LOGGING_ATTRS)
+  //       .exitLoggableElement();
+  // }
 }

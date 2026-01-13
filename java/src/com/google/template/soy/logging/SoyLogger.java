@@ -55,6 +55,13 @@ public interface SoyLogger {
 
     abstract boolean hasAnchorAttributes();
 
+    public boolean hasOverlappingAttributes(LoggingAttrs other) {
+      if (other == null) {
+        return false;
+      }
+      return attrs().keySet().stream().anyMatch(other.attrs()::containsKey);
+    }
+
     /** Writes the attributes to the output appendable. */
     public void writeTo(boolean isAnchorTag, Appendable outputAppendable) throws IOException {
       if (hasAnchorAttributes() && !isAnchorTag) {
