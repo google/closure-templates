@@ -1205,7 +1205,9 @@ abstract class Context {
       return ScriptType.JAVASCRIPT;
     }
     // https://developer.mozilla.org/en-US/docs/Web/API/Speculation_Rules_API
-    if (Ascii.equalsIgnoreCase(type, "speculationrules")) {
+    // https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap
+    if (Ascii.equalsIgnoreCase(type, "speculationrules")
+        || Ascii.equalsIgnoreCase(type, "importmap")) {
       return ScriptType.JSON;
     }
     MediaType parsed;
