@@ -1342,6 +1342,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsDocBuilder.addGoogRequires(returnType.googRequires());
     if (node.getVisibility() == Visibility.PRIVATE) {
       jsDocBuilder.addAnnotation("private");
+    } else if (node.getVisibility() == Visibility.PACKAGE) {
+      jsDocBuilder.addAnnotation("package");
     }
   }
 
