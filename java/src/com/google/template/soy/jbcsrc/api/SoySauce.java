@@ -27,6 +27,7 @@ import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.jbcsrc.shared.ContextStore.ContextNode;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -136,6 +137,13 @@ public interface SoySauce {
 
     @CanIgnoreReturnValue
     Renderer setIj(SoyInjector data);
+
+    /**
+     * Sets the values that are initially provided by the context API. This is meant for use by
+     * frameworks to allow rendering of a page to happen via multiple soy renders.
+     */
+    @CanIgnoreReturnValue
+    Renderer setInitialContextNode(ContextNode initialContextNode);
 
     /**
      * Sets the plugin instances that will be used to for plugins that are implemented with {@code

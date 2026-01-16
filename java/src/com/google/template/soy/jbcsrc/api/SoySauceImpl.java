@@ -38,6 +38,7 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
+import com.google.template.soy.jbcsrc.shared.ContextStore.ContextNode;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.SoyLogger;
@@ -155,6 +156,7 @@ public final class SoySauceImpl implements SoySauce {
     private SoyInjector ij;
     private boolean dataSetInConstructor;
     private GrammaticalGender viewerGrammaticalGender = GrammaticalGender.UNSPECIFIED;
+    private ContextNode initialContextNode = ContextNode.createRoot();
 
     RendererImpl(
         String templateName,
@@ -184,7 +186,8 @@ public final class SoySauceImpl implements SoySauce {
           debugSoyTemplateInfo,
           cssTracker,
           jsIdTracker,
-          viewerGrammaticalGender);
+          viewerGrammaticalGender,
+          initialContextNode);
     }
 
     private ParamStore mapAsParamStore(Map<String, ?> source) {
@@ -207,6 +210,13 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public RendererImpl setIj(SoyInjector ij) {
       this.ij = checkNotNull(ij);
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public Renderer setInitialContextNode(ContextNode initialContextNode) {
+      this.initialContextNode = initialContextNode;
       return this;
     }
 

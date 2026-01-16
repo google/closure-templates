@@ -84,7 +84,6 @@ public final class RenderContext implements ContextStore {
 
   private final SoyCssTracker cssTracker;
   private final SoyJsIdTracker jsIdTracker;
-  private final ContextNode contextStore = ContextNode.createRoot();
 
   /**
    * Stores memoized {const} values, which in SSR are actually request-scoped values, not Java
@@ -114,7 +113,8 @@ public final class RenderContext implements ContextStore {
       boolean debugSoyTemplateInfo,
       @Nullable SoyCssTracker cssTracker,
       @Nullable SoyJsIdTracker jsIdTracker,
-      GrammaticalGender viewerGrammaticalGender) {
+      GrammaticalGender viewerGrammaticalGender,
+      ContextNode initialContext) {
     this.templates = templates;
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.pluginInstances = pluginInstances;
@@ -127,6 +127,7 @@ public final class RenderContext implements ContextStore {
     this.cssTracker = cssTracker;
     this.jsIdTracker = jsIdTracker;
     this.viewerGrammaticalGender = viewerGrammaticalGender;
+    this.currentContext = initialContext;
     verify(viewerGrammaticalGender != null);
   }
 
@@ -661,7 +662,8 @@ public final class RenderContext implements ContextStore {
           debugSoyTemplateInfo,
           cssTracker,
           jsIdTracker,
-          viewerGrammaticalGender);
+          viewerGrammaticalGender,
+          ContextNode.createRoot());
     }
   }
 }

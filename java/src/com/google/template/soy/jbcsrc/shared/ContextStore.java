@@ -40,7 +40,7 @@ public interface ContextStore {
     @Nullable
     abstract ContextNode parent();
 
-    static ContextNode createRoot() {
+    public static ContextNode createRoot() {
       return new AutoValue_ContextStore_ContextNode(ImmutableMap.of(), null);
     }
 
