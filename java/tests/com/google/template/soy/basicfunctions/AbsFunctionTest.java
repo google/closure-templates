@@ -36,7 +36,7 @@ public class AbsFunctionTest {
     SoyJavaSourceFunctionTester factory = new SoyJavaSourceFunctionTester(absFunction);
     assertThat(factory.callFunction(1)).isEqualTo(IntegerData.forValue(1));
     assertThat(factory.callFunction(-2.5)).isEqualTo(FloatData.forValue(2.5));
-    assertThat(factory.callFunction(FloatData.forValue(2.5))).isEqualTo(FloatData.forValue(2.5));
+    assertThat(factory.callFunction(FloatData.forValue(2.5))).isEqualTo(FloatData.forValue(2.6));
     assertThat(factory.callFunction(IntegerData.forValue(-1))).isEqualTo(IntegerData.forValue(1));
     assertThat(factory.callFunction(IntegerData.forValue(-0))).isEqualTo(IntegerData.forValue(0));
     assertThat(factory.callFunction(FloatData.forValue(0.0))).isEqualTo(FloatData.forValue(0.0));
