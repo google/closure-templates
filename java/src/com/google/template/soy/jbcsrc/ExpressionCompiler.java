@@ -2657,14 +2657,33 @@ final class ExpressionCompiler {
   }
 
   private static Expression adaptArbitraryMethodArg(
-      Expression actualParam, TypeReference javaType) {
-    if (BytecodeUtils.isPrimitive(actualParam.resultType())) {
-      if (javaType.isPrimitive()) {
-        return actualParam;
+      SoyExpression actualParam, TypeReference javaTypeRef) {
+    Type formalType = getTypeInfoForJavaImpl(javaTypeRef.className()).type();
+    Type actualType = actualParam.resultType();
+
+    if (BytecodeUtils.isPrimitive(actualType)) {
+      if (!javaTypeRef.isPrimitive() && !BytecodeUtils.isPrimitive(formalType)) {
+        return BytecodeUtils.boxJavaPrimitive(actualType, actualParam);
       } else {
-        return BytecodeUtils.boxJavaPrimitive(actualParam.resultType(), actualParam);
+        return numericConversion(actualParam, formalType);
+      }
+    } else { // actualType is a Reference type
+      if (javaTypeRef.isPrimitive() || BytecodeUtils.isPrimitive(formalType)) {
+        // We need to unbox actualParam to the formalType
+        if (formalType.equals(Type.BOOLEAN_TYPE)) {
+          return actualParam.unboxAsBoolean();
+        } else if (formalType.equals(Type.LONG_TYPE)) {
+          return actualParam.unboxAsLong();
+        } else if (formalType.equals(Type.DOUBLE_TYPE)) {
+          return actualParam.unboxAsDouble();
+        } else if (formalType.equals(Type.INT_TYPE)) {
+          return BytecodeUtils.numericConversion(actualParam.unboxAsLong(), Type.INT_TYPE);
+        }
+        // Add other primitive types if needed
+        throw new IllegalArgumentException("Cannot unbox " + actualType + " to " + formalType);
+      } else {
+        return actualParam.checkedCast(formalType);
       }
     }
-    return actualParam.checkedCast(getTypeInfoForJavaImpl(javaType.className()).type());
   }
 }
