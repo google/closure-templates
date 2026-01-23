@@ -32,10 +32,15 @@ public interface ContextStore {
   @Nullable
   public SoyValue getContextValue(String key);
 
+  public ContextNode getCurrentContext();
+
   /** One context node. */
   @AutoValue
   abstract static class ContextNode {
-    abstract ImmutableMap<String, SoyValue> values();
+    abstract ImmutableMap<
+            String,
+            SoyValue>
+        values();
 
     @Nullable
     abstract ContextNode parent();
@@ -45,7 +50,7 @@ public interface ContextStore {
     }
 
     @Nullable
-    SoyValue getContextValue(String key) {
+    public SoyValue getContextValue(String key) {
       if (values().containsKey(key)) {
         return values().get(key);
       }
@@ -84,6 +89,11 @@ public interface ContextStore {
     @Nullable
     public SoyValue getContextValue(String key) {
       return currentContext.getContextValue(key);
+    }
+
+    @Override
+    public ContextNode getCurrentContext() {
+      return currentContext;
     }
   }
 }

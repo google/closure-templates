@@ -564,6 +564,11 @@ public final class RenderContext implements ContextStore {
     return currentContext.getContextValue(key);
   }
 
+  @Override
+  public ContextNode getCurrentContext() {
+    return currentContext;
+  }
+
   /** A builder for configuring the context. */
   @VisibleForTesting
   public static final class Builder {
