@@ -34,6 +34,8 @@ public interface ContextStore {
 
   public ContextNode getCurrentContext();
 
+  public void restoreContext(ContextNode contextSnapshot);
+
   /** One context node. */
   @AutoValue
   abstract static class ContextNode {
@@ -94,6 +96,11 @@ public interface ContextStore {
     @Override
     public ContextNode getCurrentContext() {
       return currentContext;
+    }
+
+    @Override
+    public void restoreContext(ContextNode contextSnapshot) {
+      this.currentContext = contextSnapshot;
     }
   }
 }

@@ -569,6 +569,11 @@ public final class RenderContext implements ContextStore {
     return currentContext;
   }
 
+  @Override
+  public void restoreContext(ContextNode contextSnapshot) {
+    currentContext = contextSnapshot;
+  }
+
   /** A builder for configuring the context. */
   @VisibleForTesting
   public static final class Builder {
