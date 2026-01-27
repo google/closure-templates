@@ -143,7 +143,7 @@ public final class SoyCmdLineParser extends CmdLineParser {
       String parameter = params.getParameter(0);
       // An empty string should be an empty list, not a list containing the empty item
       if (!parameter.isEmpty()) {
-        for (String item : parameter.split(",")) {
+        for (String item : parameter.split("[\\s,]+")) {
           setter.addValue(parseItem(item));
         }
       }
