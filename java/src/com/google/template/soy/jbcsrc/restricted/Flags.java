@@ -22,7 +22,7 @@ public final class Flags {
    * Controls extra debug checks in the compiler that are generally redundant with bytecode
    * verification. Currently only enabled in tests.
    */
-  public static final boolean DEBUG = Boolean.getBoolean("soy_jbcsrc_debug_mode");
+  public static final boolean DEBUG = true;
 
   private Flags() {}
 }
