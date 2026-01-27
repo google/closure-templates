@@ -66,40 +66,49 @@ message SoyTypeP {
     VE_DATA = 14;
     GBIGINT = 16;
   }
+
   message LiteralTypeP {
     oneof value {
       // Currently only string literals supported.
       string string_value = 1;
     }
   }
+
   message HtmlTypeP {
     bool is_element = 1;
     string tag_name = 4;
     bool allow_extra_attributes = 2;
     repeated string reserved_attributes = 3;
   }
+
   message RecordTypeP {
     repeated RecordMemberP members = 1;
   }
+
   message RecordMemberP {
     string name = 1;
     bool optional = 2;
     SoyTypeP type = 3;
   }
+
   message LegacyObjectMapTypeP {
     SoyTypeP key = 1;
     SoyTypeP value = 2;
   }
+
   message MapTypeP {
     SoyTypeP key = 1;
     SoyTypeP value = 2;
   }
+
   message UnionTypeP {
     repeated SoyTypeP member = 1;
   }
+
   message IntersectionTypeP {
     repeated SoyTypeP member = 1;
   }
+
   message TemplateTypeP {
     repeated ParameterP parameter = 3;
     SoyTypeP return_type = 4;
@@ -110,33 +119,41 @@ message SoyTypeP {
 
     reserved 1, 2;
   }
+
   message NamedTypeP {
     string name = 1;
     string namespace = 2;
   }
+
   message IndexedTypeP {
     SoyTypeP type = 1;
     SoyTypeP property = 2;
   }
+
   message PickTypeP {
     SoyTypeP type = 1;
     SoyTypeP keys = 2;
   }
+
   message OmitTypeP {
     SoyTypeP type = 1;
     SoyTypeP keys = 2;
   }
+
   message ExcludeTypeP {
     SoyTypeP type = 1;
     SoyTypeP excluded_types = 2;
   }
+
   message ExtractTypeP {
     SoyTypeP type = 1;
     SoyTypeP extracted_types = 2;
   }
+
   message NonNullableTypeP {
     SoyTypeP type = 1;
   }
+
   // discriminated union of the different type categories
   oneof TypeKind {
     PrimitiveTypeP primitive = 1;
@@ -219,7 +236,6 @@ message JavaImplP {
   MethodType method_type = 5;
 }
 
-// A single declared template parameter
 message ParameterP {
   enum KindP {
     DEFAULT = 0;
