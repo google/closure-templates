@@ -38,12 +38,15 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.Metadata.TemplateMetadataImpl;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.ExcludeType;
+import com.google.template.soy.types.ExtractType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.GbigintType;
 import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.MessageType;
+import com.google.template.soy.types.NonNullableType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.OmitType;
@@ -586,6 +589,26 @@ public final class TemplateMetadataSerializer {
             break;
         }
         break;
+      case EXCLUDE:
+        return typeRegistry.intern(
+            ExcludeType.create(
+                fromProto(proto.getExclude().getType(), typeRegistry, filePath, errorReporter),
+                fromProto(
+                    proto.getExclude().getExcludedTypes(), typeRegistry, filePath, errorReporter)));
+      case EXTRACT:
+        return typeRegistry.intern(
+            ExtractType.create(
+                fromProto(proto.getExtract().getType(), typeRegistry, filePath, errorReporter),
+                fromProto(
+                    proto.getExtract().getExtractedTypes(),
+                    typeRegistry,
+                    filePath,
+                    errorReporter)));
+      case NON_NULLABLE:
+        return typeRegistry.intern(
+            NonNullableType.create(
+                fromProto(
+                    proto.getNonNullable().getType(), typeRegistry, filePath, errorReporter)));
       case TYPEKIND_NOT_SET:
         // fall-through
     }

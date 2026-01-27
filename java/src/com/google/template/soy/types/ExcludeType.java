@@ -40,7 +40,10 @@ public abstract class ExcludeType extends ComputedType {
 
   @Override
   protected void doToProto(SoyTypeP.Builder builder) {
-    getEffectiveType().doToProto(builder);
+    builder
+        .getExcludeBuilder()
+        .setType(getType().toProto())
+        .setExcludedTypes(getExcluded().toProto());
   }
 
   @Override

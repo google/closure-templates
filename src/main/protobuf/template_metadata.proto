@@ -126,6 +126,17 @@ message SoyTypeP {
     SoyTypeP type = 1;
     SoyTypeP keys = 2;
   }
+  message ExcludeTypeP {
+    SoyTypeP type = 1;
+    SoyTypeP excluded_types = 2;
+  }
+  message ExtractTypeP {
+    SoyTypeP type = 1;
+    SoyTypeP extracted_types = 2;
+  }
+  message NonNullableTypeP {
+    SoyTypeP type = 1;
+  }
   // discriminated union of the different type categories
   oneof TypeKind {
     PrimitiveTypeP primitive = 1;
@@ -149,6 +160,9 @@ message SoyTypeP {
     IndexedTypeP indexed = 18;
     PickTypeP pick = 20;
     OmitTypeP omit = 21;
+    ExcludeTypeP exclude = 22;
+    ExtractTypeP extract = 23;
+    NonNullableTypeP non_nullable = 24;
   }
 }
 

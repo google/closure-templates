@@ -40,7 +40,10 @@ public abstract class ExtractType extends ComputedType {
 
   @Override
   protected void doToProto(SoyTypeP.Builder builder) {
-    getEffectiveType().doToProto(builder);
+    builder
+        .getExtractBuilder()
+        .setType(getType().toProto())
+        .setExtractedTypes(getExtracted().toProto());
   }
 
   @Override

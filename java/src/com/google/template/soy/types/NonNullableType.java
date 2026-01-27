@@ -37,7 +37,7 @@ public abstract class NonNullableType extends ComputedType {
 
   @Override
   protected void doToProto(SoyTypeP.Builder builder) {
-    getEffectiveType().doToProto(builder);
+    builder.getNonNullableBuilder().setType(getType().toProto());
   }
 
   @Override
