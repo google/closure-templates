@@ -47,6 +47,7 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -66,7 +67,7 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
           Impression.ERROR_REWRITE_SHORT_FORM_CALLS_PASS_OVERFLOW);
   static final SoyErrorKind EXPECTED_NAMED_PARAMETERS =
       SoyErrorKind.of(
-          "Expected named parameters.",
+          "Expected named parameters or a single record parameter.",
           Impression.ERROR_REWRITE_SHORT_FORM_CALLS_PASS_EXPECTED_NAMED_PARAMETERS);
 
   private final ErrorReporter errorReporter;
@@ -202,33 +203,43 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
       return null;
     }
 
-    if (fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
+    boolean dataParam = isShortFormDataCall(fnNode);
+    if (fnNode.getParamsStyle() == ParamsStyle.POSITIONAL && !dataParam) {
       errorReporter.report(fnNode.getSourceLocation(), EXPECTED_NAMED_PARAMETERS);
       // Only report error once.
       expr.replaceChild(0, new StringNode("$error", QuoteStyle.SINGLE, expr.getSourceLocation()));
       return null;
     }
 
+    SourceLocation loc = expr.getSourceLocation();
+    ImmutableList<CommandTagAttribute> attrs = ImmutableList.of();
+    if (dataParam) {
+      CommandTagAttribute attr =
+          new CommandTagAttribute(
+              Identifier.create("data", loc),
+              QuoteStyle.DOUBLE,
+              ImmutableList.of(fnNode.getParam(0)),
+              loc);
+      attr.valueAsExprList().forEach(root -> root.setType(root.getRoot().getType()));
+      attrs = ImmutableList.of(attr);
+    }
+
     ExprNode callee = nameExpr.copy(new CopyState());
     SoyType type = callee.getType();
     CallBasicNode call =
         new CallBasicNode(
-            nodeIdGen.genId(),
-            expr.getSourceLocation(),
-            expr.getSourceLocation(),
-            callee,
-            ImmutableList.of(),
-            false,
-            ErrorReporter.exploding());
+            nodeIdGen.genId(), loc, loc, callee, attrs, false, ErrorReporter.exploding());
     call.setOriginalShortFormExprEquivalence(exprEquivalence.wrap(expr.copy(new CopyState())));
     call.getCalleeExpr().setType(type);
-    for (int i = 0; i < fnNode.getParamNames().size(); i++) {
-      Identifier id = fnNode.getParamNames().get(i);
-      CallParamValueNode valueNode =
-          new CallParamValueNode(
-              nodeIdGen.genId(), id.location(), id, fnNode.getParam(i).copy(new CopyState()));
-      valueNode.getExpr().setType(fnNode.getParam(i).getType());
-      call.addChild(valueNode);
+    if (!dataParam) {
+      for (int i = 0; i < fnNode.getParamNames().size(); i++) {
+        Identifier id = fnNode.getParamNames().get(i);
+        CallParamValueNode valueNode =
+            new CallParamValueNode(
+                nodeIdGen.genId(), id.location(), id, fnNode.getParam(i).copy(new CopyState()));
+        valueNode.getExpr().setType(fnNode.getParam(i).getType());
+        call.addChild(valueNode);
+      }
     }
 
     // Allow CheckTemplateCallsPass to find stricthtml violations. This will be more strict than if
@@ -236,5 +247,16 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
     call.setIsPcData(true);
 
     return call;
+  }
+
+  private static boolean isShortFormDataCall(FunctionNode fnNode) {
+    if (fnNode.getParamsStyle() != ParamsStyle.POSITIONAL) {
+      return false;
+    }
+    if (fnNode.getParams().size() != 1) {
+      return false;
+    }
+    ExprNode param = fnNode.getParam(0);
+    return RecordType.EMPTY_RECORD.isAssignableFromLoose(param.getType());
   }
 }
