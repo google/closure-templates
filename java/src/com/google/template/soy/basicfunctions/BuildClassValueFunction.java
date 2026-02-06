@@ -48,92 +48,92 @@ import java.util.List;
           returnType = "string"),
       @Signature(
           parameterTypes = {
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined"
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>"
           },
           returnType = "string"),
       @Signature(
           parameterTypes = {
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined"
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>"
           },
           returnType = "string"),
       @Signature(
           parameterTypes = {
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined"
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>"
           },
           returnType = "string"),
       @Signature(
           parameterTypes = {
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined"
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>"
           },
           returnType = "string"),
       @Signature(
           parameterTypes = {
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined"
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>"
           },
           returnType = "string"),
       @Signature(
           parameterTypes = {
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined"
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>"
           },
           returnType = "string"),
       @Signature(
           parameterTypes = {
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined"
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>"
           },
           returnType = "string"),
       @Signature(
           parameterTypes = {
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined"
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>"
           },
           returnType = "string"),
       @Signature(
           parameterTypes = {
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined",
-            "string | css | bool | null | undefined"
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>",
+            "string | css | bool | null | undefined | list<string|css|bool|null|undefined>"
           },
           returnType = "string")
     })
