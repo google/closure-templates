@@ -715,13 +715,17 @@ public final class BasicFunctionsRuntime {
     return arg instanceof NumberData && Double.isFinite(arg.floatValue());
   }
 
-  private static String joinHelper(List<SoyValue> values, String delimiter) {
+  private static String joinHelper(List<? extends SoyValue> values, String delimiter) {
     return values.stream()
         .filter(v -> v != null)
         .flatMap(
             v -> v instanceof SoyList ? ((SoyList) v).asResolvedJavaList().stream() : Stream.of(v))
         .filter(SoyValue::coerceToBoolean)
-        .map(SoyValue::coerceToString)
+        .map(
+            v ->
+                v instanceof SoyList
+                    ? joinHelper(((SoyList) v).asResolvedJavaList(), delimiter)
+                    : v.coerceToString())
         .collect(joining(delimiter));
   }
 
@@ -745,6 +749,11 @@ public final class BasicFunctionsRuntime {
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         values.stream()
             .filter(v -> v != null)
+            .flatMap(
+                v ->
+                    v instanceof SoyList
+                        ? ((SoyList) v).asResolvedJavaList().stream()
+                        : Stream.of(v))
             .filter(SoyValue::coerceToBoolean)
             .map(
                 v -> {
