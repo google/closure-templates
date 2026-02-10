@@ -2342,7 +2342,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         node.setIsVarArgs(ref.getSignature().isVarArgs());
         node.setAllowedParamTypes(
             ref.getSignature().getParameters().stream().map(Parameter::getType).collect(toList()));
-        node.setType(ref.getSignature().getReturnType());
+
+        SoyType returnType = ref.getSignature().getReturnType();
+        node.setType(returnType);
         node.setSoyFunction(ref);
         return true;
       }
