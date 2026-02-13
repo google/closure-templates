@@ -26,13 +26,25 @@ import javax.annotation.Nullable;
 @AutoValue
 public abstract class LogStatement {
   public static LogStatement create(long id, @Nullable Message data, boolean logOnly) {
-    return new AutoValue_LogStatement(id, data, logOnly);
+    return new AutoValue_LogStatement(id, null, data, logOnly);
+  }
+
+  public static LogStatement create(
+      long id, @Nullable String debugOnlyName, @Nullable Message data, boolean logOnly) {
+    return new AutoValue_LogStatement(id, debugOnlyName, data, logOnly);
   }
 
   LogStatement() {} // prevent subclasses outside the package
 
   /** The id of the element being logged, as specified by {@link LoggableElement#getId()}. */
   public abstract long id();
+
+  /**
+   * The name of the element being logged, as specified by {@link LoggableElement#getName()}. This
+   * is only meant to be used in debug mode.
+   */
+  @Nullable
+  public abstract String debugOnlyName();
 
   /**
    * An optional proto that is logged by the {@code data="<...>"} expression. The type will be what
@@ -47,7 +59,7 @@ public abstract class LogStatement {
   public abstract boolean logOnly();
 
   @Override
-  public String toString() {
+  public final String toString() {
     return MoreObjects.toStringHelper("velog")
         .omitNullValues()
         .add("id", id())
