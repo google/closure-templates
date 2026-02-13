@@ -111,6 +111,8 @@ class LoggingAttrs {
     });
     return this;
   }
+
+
   /**
    * Adds an `href` attribute to the list of attributes to be added to the
    * element.  The element must be an anchor.
