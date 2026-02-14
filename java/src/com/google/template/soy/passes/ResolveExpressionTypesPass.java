@@ -1461,7 +1461,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyType originalType = node.getChild(0).getType();
       SoyType explicitType = node.getChild(1).getType();
       if (explicitType.isEffectivelyEqual(originalType)) {
-        errorReporter.warn(node.getSourceLocation(), UNNECESSARY_CAST);
+        if (currentFile.getSourceMap().isEmpty()) {
+          errorReporter.warn(node.getSourceLocation(), UNNECESSARY_CAST);
+        }
         node.getParent().replaceChild(node, node.getChild(0));
       } else if (!originalType.isAssignableFromLoose(explicitType)
           && !explicitType.isAssignableFromLoose(originalType)) {
