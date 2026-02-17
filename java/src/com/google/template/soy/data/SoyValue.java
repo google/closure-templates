@@ -253,6 +253,15 @@ public abstract class SoyValue extends SoyValueProvider {
   }
 
   @Nonnull
+  public Iterable<? extends SoyValueProvider> asJavaIterable() {
+    return toIterable(javaIterator());
+  }
+
+  private static <T> Iterable<T> toIterable(Iterator<T> iterator) {
+    return () -> iterator;
+  }
+
+  @Nonnull
   public Map<? extends SoyValue, ? extends SoyValueProvider> asJavaMap() {
     throw new SoyDataException(classCastErrorMessage(this, "map"));
   }

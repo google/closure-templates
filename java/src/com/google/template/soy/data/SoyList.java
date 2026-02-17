@@ -53,6 +53,12 @@ public abstract class SoyList extends SoyIterable {
   @Override
   public abstract List<? extends SoyValueProvider> asJavaList();
 
+  @Override
+  @Nonnull
+  public final Iterable<? extends SoyValueProvider> asJavaIterable() {
+    return asJavaList();
+  }
+
   /**
    * Gets a Java list all values in this SoyList. All value providers will be eagerly resolved.
    *

@@ -112,6 +112,11 @@ public final class IterableImpl extends SoyIterable {
   }
 
   @Override
+  public Iterable<? extends SoyValueProvider> asJavaIterable() {
+    return impl;
+  }
+
+  @Override
   public boolean equals(Object other) {
     return other == this;
   }

@@ -20,7 +20,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Iterators;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.StringData;
+import java.util.ArrayList;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -34,5 +36,17 @@ public final class IterableImplTest {
     var soyItr = IterableImpl.forJavaIterable(itr, SoyValueConverter.INSTANCE::convert);
     assertThat(soyItr.javaIterator().next()).isEqualTo(StringData.forValue("Hello"));
     assertThat(soyItr.javaIterator().next()).isSameInstanceAs(soyItr.javaIterator().next());
+  }
+
+  @Test
+  public void testIterable() {
+    Iterable<String> itr = () -> Iterators.forArray("Hello", "World");
+    var soyItr = IterableImpl.forJavaIterable(itr, SoyValueConverter.INSTANCE::convert);
+
+    var list = new ArrayList<SoyValueProvider>();
+    for (SoyValueProvider item : soyItr.asJavaIterable()) {
+      list.add(item);
+    }
+    assertThat(list).containsExactly(StringData.forValue("Hello"), StringData.forValue("World"));
   }
 }
