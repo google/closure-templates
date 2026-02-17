@@ -472,6 +472,7 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
           veData.getData(),
           !!logOnly,
           veData.getVe().getMetadata(),
+          veData.getVe().getName(),
         ),
       );
     } else if (logOnly) {

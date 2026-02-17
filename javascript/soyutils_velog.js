@@ -200,8 +200,11 @@ class ElementMetadata {
    * @param {boolean} logOnly
    * @param {?ReadonlyLoggableElementMetadata|undefined=}
    *     loggableElementMetadata
+   * @param {string|undefined=} debugOnlyName
    */
-  constructor(id, data, logOnly, loggableElementMetadata = undefined) {
+  constructor(
+      id, data, logOnly, loggableElementMetadata = undefined,
+      debugOnlyName = undefined) {
     /**
      * The identifier for the logging element
      * @const {number}
@@ -227,6 +230,13 @@ class ElementMetadata {
      * @const {?ReadonlyLoggableElementMetadata|undefined}
      */
     this.loggableElementMetadata = loggableElementMetadata;
+
+    /**
+     * The name of the logging element, to be used for debugging only.
+     * @const {string|undefined}
+     */
+    this.debugOnlyName = debugOnlyName;
+
   }
 }
 
@@ -350,8 +360,8 @@ function storeElementData(veData, logOnly) {
     return -1;
   }
   const elementMetadata = new ElementMetadata(
-      veData.getVe().getId(), veData.getData(), logOnly,
-      veData.getVe().getMetadata());
+      veData.getVe().getId(), veData.getData(),
+      logOnly, veData.getVe().getMetadata(), veData.getVe().getName());
   const dataIdx = metadata.elements.push(elementMetadata) - 1;
   return dataIdx;
 }
@@ -723,6 +733,11 @@ class $$VisualElement {
   /** @return {number} */
   getId() {
     return this.id_;
+  }
+
+  /** @return {string|undefined} */
+  getName() {
+    return this.name_;
   }
 
   /** @return {!ReadonlyLoggableElementMetadata} */
