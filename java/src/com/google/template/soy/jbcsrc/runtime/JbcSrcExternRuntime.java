@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.data.SoyValueUnconverter.unconvert;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -57,7 +58,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -104,6 +104,7 @@ public final class JbcSrcExternRuntime {
           SanitizedContents.class, "fromTrustedResourceUrl", TrustedResourceUrl.class);
 
   public static final MethodRef LIST_BOX_VALUES = create("listBoxValues", Iterable.class);
+  public static final MethodRef SET_BOX_VALUES = create("setBoxValues", Iterable.class);
 
   public static final MethodRef CONVERT_SOY_VALUE_TO_BIG_INTEGER =
       MethodRef.createPure(
@@ -127,6 +128,15 @@ public final class JbcSrcExternRuntime {
       return null;
     }
     return Streams.stream(javaValues).map(SoyValueConverter.INSTANCE::convert).collect(toList());
+  }
+
+  @Keep
+  @Nullable
+  public static Set<SoyValueProvider> setBoxValues(Iterable<?> javaValues) {
+    if (javaValues == null) {
+      return null;
+    }
+    return Streams.stream(javaValues).map(SoyValueConverter.INSTANCE::convert).collect(toSet());
   }
 
   public static final MethodRef ITERABLE_BOX_VALUES = create("iterableBoxValues", Iterable.class);
@@ -348,8 +358,7 @@ public final class JbcSrcExternRuntime {
   @Nullable
   public static Object unboxObjectContents(Object unboxedValue) {
     if (unboxedValue instanceof Collection<?>) {
-      Collector<? super Object, ?, ?> collector =
-          unboxedValue instanceof Set ? Collectors.toSet() : toList();
+      Collector<? super Object, ?, ?> collector = unboxedValue instanceof Set ? toSet() : toList();
       return ((Collection<?>) unboxedValue)
           .stream()
               .map(SoyValueProvider.class::cast)

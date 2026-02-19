@@ -234,7 +234,7 @@ public final class MethodRefs {
   public static final MethodRef LIST_IMPL_FOR_PROVIDER_LIST =
       createPure(ListImpl.class, "forProviderList", List.class);
   public static final MethodRef SET_IMPL_FOR_PROVIDER_SET =
-      createPureConstructor(SetImpl.class, Set.class);
+      createPure(SetImpl.class, "forProviderSet", Set.class);
 
   public static final MethodRef LONG_PARSE_LONG =
       createPure(Long.class, "parseLong", String.class).asCheap().asNonJavaNullable();
@@ -706,8 +706,6 @@ public final class MethodRefs {
 
   public static final MethodRef AS_SWITCHABLE_VALUE_SOY_VALUE =
       createPure(JbcSrcRuntime.class, "asSwitchableValue", SoyValue.class, int.class);
-
-  public static final MethodRef NEW_SOY_SET = createPureConstructor(SetImpl.class, Iterator.class);
 
   // Constructors
 

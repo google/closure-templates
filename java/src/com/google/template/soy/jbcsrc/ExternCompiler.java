@@ -615,6 +615,8 @@ public final class ExternCompiler {
         externCall = JbcSrcExternRuntime.MARK_AS_SOY_MAP.invoke(externCall);
       }
       return JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE.invoke(externCall);
+    } else if (BytecodeUtils.isDefinitelyAssignableFrom(BytecodeUtils.SET_TYPE, externType)) {
+      return JbcSrcExternRuntime.SET_BOX_VALUES.invoke(externCall);
     } else if (BytecodeUtils.isDefinitelyAssignableFrom(
         BytecodeUtils.COLLECTION_TYPE, externType)) {
       return JbcSrcExternRuntime.LIST_BOX_VALUES.invoke(externCall);

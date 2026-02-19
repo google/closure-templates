@@ -378,6 +378,12 @@ public abstract class MethodRef {
    * the Expression api.
    */
   public void invokeUnchecked(CodeBuilder cb) {
+    // This public method is broken for constructor MethodRefs.
+    Preconditions.checkState(!method().getName().equals("<init>"));
+    invokeUncheckedInternal(cb);
+  }
+
+  private void invokeUncheckedInternal(CodeBuilder cb) {
     cb.visitMethodInsn(
         opcode(),
         owner().internalName(),
@@ -399,6 +405,6 @@ public abstract class MethodRef {
     for (Expression arg : args) {
       arg.gen(mv);
     }
-    invokeUnchecked(mv);
+    invokeUncheckedInternal(mv);
   }
 }

@@ -27,6 +27,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
+import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 /** A Set implementation. */
@@ -34,6 +35,11 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public final class SetImpl extends SoySet {
 
   private final ImmutableSet<SoyValue> providerSet;
+
+  @Nonnull
+  public static SetImpl forProviderSet(Set<? extends SoyValueProvider> providerList) {
+    return new SetImpl(providerList);
+  }
 
   public SetImpl(SoyValue iterable) {
     this(iterable.javaIterator());
