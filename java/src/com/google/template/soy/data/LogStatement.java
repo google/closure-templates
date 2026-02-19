@@ -48,7 +48,7 @@ public abstract class LogStatement {
 
   /**
    * An optional proto that is logged by the {@code data="<...>"} expression. The type will be what
-   * is specifed by the corresponding {@link LoggableElement#getProtoType()}.
+   * is specified by the corresponding {@link LoggableElement#getProtoType()}.
    */
   @Nullable
   public abstract Message data();
