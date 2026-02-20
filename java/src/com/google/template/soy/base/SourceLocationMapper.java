@@ -29,6 +29,10 @@ public interface SourceLocationMapper {
     return loc;
   }
 
+  default String getOriginalSource(SourceFilePath path) {
+    return "";
+  }
+
   default boolean isEmpty() {
     return this == EMPTY;
   }

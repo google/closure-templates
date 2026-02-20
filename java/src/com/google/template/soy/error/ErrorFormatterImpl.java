@@ -18,11 +18,14 @@ package com.google.template.soy.error;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.CharSource;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocationMapper;
 import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.base.internal.StableSoyFileSupplier;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -74,23 +77,38 @@ public final class ErrorFormatterImpl implements ErrorFormatter {
 
     SourceSnippetPrinter snippetPrinter =
         snippetCache.computeIfAbsent(sourceFile, SourceSnippetPrinter::new);
+
     Optional<String> snippet = snippetPrinter.getSnippet(location);
+    Optional<String> originalSnippet = Optional.empty();
 
     SourceLocationMapper sourceMap =
         sourceMapsCache.computeIfAbsent(sourceFile, ErrorFormatterImpl::buildSourceMap);
     SourceLocation originalLocation = sourceMap.map(location);
     String sourceMapExtraInfo = "";
     if (!location.equals(originalLocation) && originalLocation.getBeginPoint().isKnown()) {
+      String originalSource = sourceMap.getOriginalSource(originalLocation.getFilePath());
+      if (!Strings.isNullOrEmpty(originalSource)) {
+        SourceSnippetPrinter originalSnippetPrinter =
+            new SourceSnippetPrinter(
+                new StableSoyFileSupplier(
+                    CharSource.wrap(originalSource), originalLocation.getFilePath()));
+        originalSnippet = originalSnippetPrinter.getSnippet(originalLocation);
+      }
+
       report = report.withLocation(originalLocation);
-      sourceMapExtraInfo =
-          "\n[generated location: " + ErrorFormatter.formatLocation(location) + "]";
+
+      sourceMapExtraInfo = "\n\n  " + ErrorFormatter.formatLocation(location);
+      if (snippet.isPresent()) {
+        sourceMapExtraInfo += ("\n" + snippet.get().stripTrailing()).replace("\n", "\n    ");
+      }
+      snippet = originalSnippet;
     }
 
-    String formatted = SIMPLE.format(report) + sourceMapExtraInfo;
+    String formatted = SIMPLE.format(report);
     if (snippet.isPresent()) {
       formatted += '\n' + snippet.get().stripTrailing();
     }
-    return formatted;
+    return formatted + sourceMapExtraInfo;
   }
 
   private static SourceLocationMapper buildSourceMap(SoyFileSupplier sourceFile) {
