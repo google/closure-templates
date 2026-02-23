@@ -372,7 +372,7 @@ public final class TemplateMetadataSerializer {
     }
   }
 
-  static SoyType fromProto(
+  public static SoyType fromProto(
       SoyTypeP proto,
       SoyTypeRegistry typeRegistry,
       SourceFilePath filePath,
