@@ -1825,6 +1825,13 @@ const $$filterCspNonceValue = function(value) {
  *     is also SanitizedHtml, of the same known directionality.
  */
 const $$changeNewlineToBr = function(value) {
+  if (value && value.isHtmlBlock) {
+    const result = googString.newLineToBr(value.render().toString(), false);
+    // original value input was already from a trusted source so we can ordain
+    // the resulting output with newline to br conversion as SanitizedHtml.
+    return VERY_UNSAFE.ordainSanitizedHtml(result, getContentDir(value));
+  }
+
   const result = googString.newLineToBr(String(value), false);
   if ($$isHtmlOrHtmlTemplate(value)) {
     return VERY_UNSAFE.ordainSanitizedHtml(result, getContentDir(value));
