@@ -31,6 +31,7 @@ import * as incrementaldom from 'incrementaldom'; // from //third_party/javascri
 
 import {
   attributes,
+  create,
   FalsinessRenderer,
   IncrementalDomRenderer,
   IncrementalDomRendererImpl,
@@ -230,9 +231,15 @@ function htmlToString(
   renderer: IncrementalDomRenderer = htmlToStringRenderer,
 ): string {
   const el = document.createElement('div');
-  patch(el, () => {
-    fn(renderer);
-  });
+  if (USE_TEMPLATE_CLONING && incrementaldom.inTemplateCloning()) {
+    create(el, () => {
+      fn(renderer);
+    });
+  } else {
+    patch(el, () => {
+      fn(renderer);
+    });
+  }
   return el.innerHTML;
 }
 
