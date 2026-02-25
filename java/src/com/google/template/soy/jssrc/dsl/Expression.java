@@ -291,6 +291,14 @@ public abstract class Expression extends CodeChunk {
     return Call.create(this, ImmutableList.copyOf(args));
   }
 
+  public final Expression nullSafeCall(Expression... args) {
+    return nullSafeCall(Arrays.asList(args));
+  }
+
+  public final Expression nullSafeCall(Iterable<? extends Expression> args) {
+    return Call.createNullSafe(this, ImmutableList.copyOf(args));
+  }
+
   public final boolean hasOuterCast() {
     return this instanceof Cast;
   }
