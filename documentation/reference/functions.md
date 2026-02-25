@@ -857,11 +857,30 @@ value:
 ```
 
 > Warning: When rendering with idom, you can only read `$idHolder.id` after
-> *rendering* the element with the corresponding `uniqueAttribute()` call (since
-> it needs to read the attribute's value from the existing DOM element). In
-> debug builds, reading the `$idHolder.id` before the `uniqueAttribute()` call
-> is rendered will throw an error. To fix this error, swap the callsites so that
-> `uniqueAttribute()` is called on the element that is printed first.
+> *rendering* (up to the closing tag) the element with the corresponding
+> `uniqueAttribute()` call (since it needs to read the attribute's value from
+> the existing DOM element). In debug builds, reading the `$idHolder.id` before
+> the `uniqueAttribute()` call is rendered will throw an error. To fix this
+> error, swap the callsites so that `uniqueAttribute()` is called on the element
+> that is printed first.
+>
+> It means that the attribute should not be on the same element that uses the
+> `$idHolder.id` in its content. This is wrong:
+>
+> ```soy
+> <div {uniqueAttribute('id', $idHolder)}>
+>   {call textField}
+>     {param ariaDescribedBy: $idHolder.id /}
+>     // Other parameters...
+>   {/call}
+> </div>
+> ```
+>
+> The example above would work without a warning in debug mode, but might fail
+> unexpectedly in production because soy compiler does some optimization within
+> a single DOM tag and it might actually compute `textField` before outputting
+> the attributes on the div. Applying `uniqueAttribute()` to a separate prior
+> DOM element ensures the proper order of execution.
 
 > Tip: If this restriction is impractical (eg, if the ID is always passed as a
 > parameter to other templates), you can call `uniqueAttribute()` in an unused
@@ -872,7 +891,8 @@ value:
 >
 > ```soy
 > {let $idHolder: idHolder() /}
-> <div {uniqueAttribute('data-irrelevant-id', $idHolder)}>
+> <div {uniqueAttribute('data-irrelevant-id', $idHolder)}></div>
+> <div>
 >   {call someTemplate}
 >     {param id: $idHolder.id /}
 >   {/call}
@@ -881,6 +901,9 @@ value:
 >   {/call}
 > </div>
 > ```
+>
+> Please note that `uniqueAttribute` cannot be on the same `div` as the one with
+> calls, due to restrictions mentioned in previous box.
 
 > Warning: If you call this function in a `{let}` variable, and print the
 > variable multiple times, it will print unique values when rendering an idom
