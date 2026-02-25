@@ -624,6 +624,7 @@ public final class Metadata {
                           NamedType.create(
                               c.getName(),
                               proto().getNamespace(),
+                              SourceFilePath.create(proto()),
                               TemplateMetadataSerializer.fromProto(
                                   c.getType(),
                                   context().typeRegistry(),
@@ -1269,6 +1270,7 @@ public final class Metadata {
   private static final class NamedTypeResolving extends DelegatingSoyTypeRegistry {
 
     private final ImmutableMap<String, TypeDefP> namedTypes;
+    private final ImmutableMap<String, SourceFilePath> namedTypeSources;
     private final Map<String, NamedType> cache = new HashMap<>();
     private final ErrorReporter errorReporter;
 
@@ -1279,6 +1281,7 @@ public final class Metadata {
       super(typeRegistry);
       this.errorReporter = errorReporter;
       ImmutableMap.Builder<String, TypeDefP> namedTypesBuilder = ImmutableMap.builder();
+      ImmutableMap.Builder<String, SourceFilePath> namedTypeSourcesBuilder = ImmutableMap.builder();
       depHeaders.stream()
           .map(CompilationUnitAndKind::compilationUnit)
           .flatMap(u -> u.getFileList().stream())
@@ -1286,8 +1289,13 @@ public final class Metadata {
               f ->
                   f.getTypeDefsList()
                       .forEach(
-                          t -> namedTypesBuilder.put(f.getNamespace() + "." + t.getName(), t)));
+                          t -> {
+                            String key = f.getNamespace() + "." + t.getName();
+                            namedTypesBuilder.put(key, t);
+                            namedTypeSourcesBuilder.put(key, SourceFilePath.create(f));
+                          }));
       this.namedTypes = namedTypesBuilder.buildOrThrow();
+      this.namedTypeSources = namedTypeSourcesBuilder.buildOrThrow();
     }
 
     @Override
@@ -1296,15 +1304,15 @@ public final class Metadata {
       NamedType cachedVal = cache.get(key);
       if (cachedVal == null) {
         TypeDefP typeDef = namedTypes.get(key);
+        SourceFilePath path =
+            typeDef != null
+                ? namedTypeSources.get(key)
+                : SourceFilePath.create("unknown", "unknown");
         SoyType fullType =
             typeDef != null
-                ? TemplateMetadataSerializer.fromProto(
-                    typeDef.getType(),
-                    this,
-                    SourceFilePath.create(namespace, namespace), // fake
-                    errorReporter)
+                ? TemplateMetadataSerializer.fromProto(typeDef.getType(), this, path, errorReporter)
                 : UnknownType.getInstance();
-        cachedVal = intern(NamedType.create(name, namespace, fullType));
+        cachedVal = intern(NamedType.create(name, namespace, path, fullType));
         cache.put(key, cachedVal);
       }
       return cachedVal;
