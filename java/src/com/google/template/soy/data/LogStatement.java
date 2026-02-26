@@ -25,10 +25,6 @@ import javax.annotation.Nullable;
 /** The value of a {@code velog} statement. */
 @AutoValue
 public abstract class LogStatement {
-  public static LogStatement create(long id, @Nullable Message data, boolean logOnly) {
-    return new AutoValue_LogStatement(id, null, data, logOnly);
-  }
-
   public static LogStatement create(
       long id, @Nullable String debugOnlyName, @Nullable Message data, boolean logOnly) {
     return new AutoValue_LogStatement(id, debugOnlyName, data, logOnly);
