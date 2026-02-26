@@ -2116,6 +2116,42 @@ const $$makeArray = function(...args) {
 };
 
 /**
+ * A helper function for generating an array from one or more component
+ * iterables.
+ * @param {...!Iterable<T>} args
+ * @return {!Array<T>}
+ * @template T
+ */
+const $$makeArrayWithSpreads = function(...args) {
+  // This could possibly be made more efficient, perhaps by passing the args
+  // like: $$makeArrayWithSpreads(item1, item2, markSpead(array1), item3, ...)
+  const result = [];
+  for (const arg of args) {
+    for (const item of arg) {
+      result.push(item);
+    }
+  }
+  return result;
+};
+
+/**
+ * A helper function for merging multiple objects into a single object.
+ * @param {...!Object} args
+ * @return {!Object}
+ */
+const $$makeObjectWithSpreads = function(...args) {
+  const result = {};
+  for (const arg of args) {
+    for (const key in arg) {
+      if (arg.hasOwnProperty(key)) {
+        result[key] = arg[key];
+      }
+    }
+  }
+  return result;
+};
+
+/**
  * A helper function to provide tight type inference on array loops.
  * @param {!Array<T>|!ReadonlyArray<T>} arr
  * @return {!ReadonlyArray<T>}
@@ -3063,6 +3099,8 @@ exports = {
   $$listUniq,
   $$listFlat,
   $$makeArray,
+  $$makeArrayWithSpreads,
+  $$makeObjectWithSpreads,
   $$filterAndMap,
   $$numberListSort,
   $$comparatorListSort,

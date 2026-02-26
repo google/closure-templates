@@ -54,6 +54,8 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_FILTER_AND_MA
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_HAS_CONTENT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_IS_TRUTHY_NON_EMPTY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_ARRAY;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_ARRAY_WITH_SPREADS;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_OBJECT_WITH_SPREADS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT_DATA;
@@ -69,6 +71,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.Descriptor;
@@ -111,6 +114,7 @@ import com.google.template.soy.exprtree.OperatorNodes.InstanceOfOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -351,10 +355,35 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitListLiteralNode(ListLiteralNode node) {
-    if (node.numChildren() == 0) {
-      return Expressions.arrayLiteral(ImmutableList.of());
+    // Spread operators are supported by the JSC but defeat some optimizations. Emit array literals
+    // with spread elements using a factory function that avoids the spread operator.
+    boolean hasSpread = false;
+    List<Expression> iterables = new ArrayList<>();
+    List<Expression> thisBatch = new ArrayList<>();
+
+    for (ExprNode child : node.getChildren()) {
+      if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
+        hasSpread = true;
+        if (!thisBatch.isEmpty()) {
+          iterables.add(SOY_MAKE_ARRAY.call(thisBatch));
+          thisBatch.clear();
+        }
+        iterables.add(visit(((SpreadOpNode) child).getChild(0)));
+      } else {
+        thisBatch.add(visit(child));
+      }
     }
-    return SOY_MAKE_ARRAY.call(visitChildren(node));
+    if (!thisBatch.isEmpty()) {
+      iterables.add(SOY_MAKE_ARRAY.call(thisBatch));
+    }
+
+    if (iterables.isEmpty()) {
+      return Expressions.arrayLiteral(ImmutableList.of());
+    } else if (iterables.size() == 1 && !hasSpread) {
+      return iterables.get(0);
+    } else {
+      return SOY_MAKE_ARRAY_WITH_SPREADS.call(iterables);
+    }
   }
 
   @Override
@@ -443,20 +472,36 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitRecordLiteralNode(RecordLiteralNode node) {
-    LinkedHashMap<String, Expression> objLiteral = new LinkedHashMap<>();
+    // Spread operators are supported by the JSC but defeat some optimizations. Emit record literals
+    // with spread elements using a factory function that avoids the spread operator.
+    List<Expression> componentObjects = new ArrayList<>();
+    LinkedHashMap<String, Expression> thisBatch = new LinkedHashMap<>();
 
-    // Process children
+    boolean hasSpread = false;
     for (int i = 0; i < node.numChildren(); i++) {
       ExprNode child = node.getChild(i);
-      String key =
-          child.getKind() == ExprNode.Kind.SPREAD_OP_NODE
-              ? Expressions.objectLiteralSpreadKey()
-              : node.getKey(i).identifier();
-      objLiteral.put(key, visit(node.getChild(i)));
+      if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
+        hasSpread = true;
+        if (!thisBatch.isEmpty()) {
+          componentObjects.add(Expressions.objectLiteral(thisBatch));
+          thisBatch.clear();
+        }
+        componentObjects.add(visit(((SpreadOpNode) child).getChild(0)));
+      } else {
+        thisBatch.put(node.getKey(i).identifier(), visit(child));
+      }
+    }
+    if (!thisBatch.isEmpty()) {
+      componentObjects.add(Expressions.objectLiteral(thisBatch));
     }
 
-    // Build the record literal
-    return Expressions.objectLiteral(objLiteral);
+    if (componentObjects.isEmpty()) {
+      return Expressions.objectLiteral(ImmutableMap.of());
+    } else if (componentObjects.size() == 1 & !hasSpread) {
+      return componentObjects.get(0);
+    } else {
+      return SOY_MAKE_OBJECT_WITH_SPREADS.call(componentObjects);
+    }
   }
 
   @Override

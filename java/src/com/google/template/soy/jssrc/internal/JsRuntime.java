@@ -93,6 +93,12 @@ public final class JsRuntime {
 
   public static final Expression SOY_MAKE_ARRAY = SOY.dotAccess("$$makeArray");
 
+  public static final Expression SOY_MAKE_ARRAY_WITH_SPREADS =
+      SOY.dotAccess("$$makeArrayWithSpreads");
+
+  public static final Expression SOY_MAKE_OBJECT_WITH_SPREADS =
+      SOY.dotAccess("$$makeObjectWithSpreads");
+
   public static final Expression SOY_AS_READONLY = SOY.dotAccess("$$asReadonlyArray");
 
   public static final Expression SOY_FILTER_AND_MAP = SOY.dotAccess("$$filterAndMap");
