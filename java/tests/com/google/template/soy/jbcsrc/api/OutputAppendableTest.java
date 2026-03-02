@@ -35,11 +35,12 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class OutputAppendableTest {
 
-  private static final LogStatement LOGONLY = LogStatement.create(1, null, /* logOnly= */ true);
+  private static final LogStatement LOGONLY =
+      LogStatement.create(1, null, null, /* logOnly= */ true);
   private static final LogStatement NOT_LOGONLY =
-      LogStatement.create(1, null, /* logOnly= */ false);
+      LogStatement.create(1, null, null, /* logOnly= */ false);
   private static final LogStatement LOGGING_ATTRS =
-      LogStatement.create(2, null, /* logOnly= */ false);
+      LogStatement.create(2, null, null, /* logOnly= */ false);
 
   private static final SoyLogger LOGGER =
       new SoyLogger() {

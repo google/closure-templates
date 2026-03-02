@@ -492,7 +492,7 @@ public class SanitizedContentsTest {
     assertThat(buffering.getAsSanitizedContent().hasContent()).isTrue();
 
     buffering = LoggingAdvisingAppendable.buffering(ContentKind.HTML);
-    buffering.enterLoggableElement(LogStatement.create(0, null, false));
+    buffering.enterLoggableElement(LogStatement.create(0, null, null, false));
     assertThat(buffering.getAsSanitizedContent().hasContent()).isFalse();
     buffering.exitLoggableElement();
     assertThat(buffering.getAsSanitizedContent().hasContent()).isFalse();
