@@ -94,6 +94,13 @@ public interface SoyLogger {
         attrsBuilder.put(key, HtmlEscapers.htmlEscaper().escape(value));
       }
 
+      /** Adds a jslog attribute to the logging attributes. */
+      @CanIgnoreReturnValue
+      public Builder addJslogAttribute(String value) {
+        this.addAttribute("jslog", value);
+        return this;
+      }
+
       /**
        * Adds a data attribute to the logging attributes.
        *
