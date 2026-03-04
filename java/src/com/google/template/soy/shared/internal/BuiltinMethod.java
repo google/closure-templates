@@ -243,11 +243,7 @@ public enum BuiltinMethod implements SoyMethod {
     }
 
     private boolean acceptFieldDescriptor(FieldDescriptor fd) {
-      if (fd.isExtension() || fd.isRepeated()) {
-        return false;
-      }
-      if (fd.getJavaType() == JavaType.MESSAGE) {
-        // Jspb doesn't have OrUndefined accessors for messages, so neither does soy.
+      if (fd.isExtension() || fd.isRepeated() || fd.isMapField()) {
         return false;
       }
 
