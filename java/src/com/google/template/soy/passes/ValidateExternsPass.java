@@ -447,6 +447,14 @@ class ValidateExternsPass implements CompilerFilePass {
       return result;
     }
 
+    if (SoyTypes.isNullOrUndefined(soyType)) {
+      if (soyType.getKind() == Kind.NULL) {
+        return javaType == Object.class || javaType == SoyValue.class;
+      } else {
+        return javaType == SoyValue.class;
+      }
+    }
+
     boolean nullable = SoyTypes.isNullish(soyType);
     boolean isPrimitive = Primitives.allPrimitiveTypes().contains(javaType);
     if (nullable && isPrimitive) {
