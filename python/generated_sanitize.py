@@ -215,7 +215,7 @@ _MATCHER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MED
 
 _FILTER_FOR_FILTER_NORMALIZE_URI = re.compile(r"""^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:/?#]*(?:[/?#]|\Z))""", re.U | re.I)
 
-_FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI = re.compile(r"""^[^&:/?#]*(?:[/?#]|\Z)|^https?:|^ftp:|^data:image/[a-z0-9+-]+;base64,[a-z0-9+/]+=*\Z|^blob:""", re.U | re.I)
+_FILTER_FOR_FILTER_NORMALIZE_MEDIA_URI = re.compile(r"""^[^&:/?#]*(?:[/?#]|\Z)|^https?:|^filesystem:https?:|^ftp:|^data:image/[a-z0-9+-]+;base64,[a-z0-9+/]+=*\Z|^blob:""", re.U | re.I)
 
 _FILTER_FOR_FILTER_IMAGE_DATA_URI = re.compile(r"""^data:image/(?:bmp|gif|jpe?g|png|tiff|webp|x-icon);base64,[a-z0-9+/]+=*\Z""", re.U | re.I)
 

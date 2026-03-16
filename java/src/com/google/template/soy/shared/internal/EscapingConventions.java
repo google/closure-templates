@@ -1046,6 +1046,7 @@ public final class EscapingConventions {
               "^[^&:/?#]*(?:[/?#]|\\z)"
                   // Allow http, https and ftp URIs.
                   + "|^https?:"
+                  + "|^filesystem:https?:"
                   + "|^ftp:"
                   // Allow image data URIs. Ignore the subtype because browsers ignore them anyways.
                   // In fact, most browsers happily accept text/html or a completely empty MIME, but
