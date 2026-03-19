@@ -37,6 +37,7 @@ import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -44,6 +45,7 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import java.io.IOException;
 import java.util.Collection;
@@ -175,6 +177,12 @@ public final class Sanitizers {
         Collection<? extends OptionalSafeTag> optionalSafeTags) {
       this.delegate = delegate;
       this.optionalSafeTags = optionalSafeTags;
+    }
+
+    @Nullable
+    @Override
+    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) {
+      return nodeBuilder.render(this);
     }
 
     @Override
@@ -907,6 +915,12 @@ public final class Sanitizers {
       this.delegate = delegate;
     }
 
+    @Nullable
+    @Override
+    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) {
+      return nodeBuilder.render(this);
+    }
+
     private Appendable getActiveAppendable() {
       if (activeAppendable == null) {
         activeAppendable = new StringBuilder();
@@ -1059,6 +1073,12 @@ public final class Sanitizers {
         activeAppendable = new StringBuilder();
       }
       return activeAppendable;
+    }
+
+    @Nullable
+    @Override
+    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) {
+      return nodeBuilder.render(this);
     }
 
     @Override

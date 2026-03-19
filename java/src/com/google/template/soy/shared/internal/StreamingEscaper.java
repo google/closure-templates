@@ -23,9 +23,12 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.NodeBuilder;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.shared.internal.EscapingConventions.CrossLanguageStringXform;
 import java.io.IOException;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 /**
  * A StreamingEscaper is a decorator for a {@link LoggingAdvisingAppendable} that applies escaping
@@ -53,6 +56,12 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
   private StreamingEscaper(LoggingAdvisingAppendable delegate, CrossLanguageStringXform transform) {
     this.delegate = checkNotNull(delegate);
     this.transform = checkNotNull(transform);
+  }
+
+  @Nullable
+  @Override
+  public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) {
+    return nodeBuilder.render(this);
   }
 
   // Note we never propagate calls to setSanitizedContentKind to the delegate.  This is because

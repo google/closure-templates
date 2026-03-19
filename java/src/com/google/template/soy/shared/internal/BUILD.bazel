@@ -144,6 +144,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
+        "//java/src/com/google/template/soy/jbcsrc/shared:stackframe",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_flogger_flogger",

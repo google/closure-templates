@@ -504,6 +504,12 @@ public final class JbcSrcRuntime {
           return false;
         }
 
+        @Nullable
+        @Override
+        public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) {
+          return nodeBuilder.render(this);
+        }
+
         @Override
         public LoggingAdvisingAppendable append(char c) {
           System.out.append(c);

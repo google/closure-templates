@@ -33,6 +33,7 @@ import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
@@ -411,6 +412,12 @@ public final class StreamingPrintDirectivesTest {
     public AnnotatingAppendable(String wrapperText, LoggingAdvisingAppendable delegate) {
       this.delegate = delegate;
       this.wrapperText = wrapperText;
+    }
+
+    @Nullable
+    @Override
+    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) {
+      return nodeBuilder.render(this);
     }
 
     @Override
