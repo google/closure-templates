@@ -47,6 +47,7 @@ import com.google.template.soy.types.IndexedType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NonNullableType;
+import com.google.template.soy.types.NonUndefinedType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.OmitType;
@@ -609,6 +610,11 @@ public final class TemplateMetadataSerializer {
             NonNullableType.create(
                 fromProto(
                     proto.getNonNullable().getType(), typeRegistry, filePath, errorReporter)));
+      case NON_UNDEFINED:
+        return typeRegistry.intern(
+            NonUndefinedType.create(
+                fromProto(
+                    proto.getNonUndefined().getType(), typeRegistry, filePath, errorReporter)));
       case TYPEKIND_NOT_SET:
         // fall-through
     }

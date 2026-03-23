@@ -47,6 +47,7 @@ import com.google.template.soy.types.MutableListType;
 import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.NeverType;
 import com.google.template.soy.types.NonNullableType;
+import com.google.template.soy.types.NonUndefinedType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.OmitType;
 import com.google.template.soy.types.PickType;
@@ -270,6 +271,14 @@ public final class TypeNodeConverter
                 @Override
                 SoyType create(List<SoyType> types, TypeInterner interner) {
                   return interner.intern(NonNullableType.create(types.get(0)));
+                }
+              })
+          .put(
+              "NonUndefined",
+              new GenericTypeInfo(1) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.intern(NonUndefinedType.create(types.get(0)));
                 }
               })
           .buildOrThrow();
