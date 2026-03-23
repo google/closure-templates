@@ -21,10 +21,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
 /** A simple forwarding implementation, forwards all calls to a delegate. */
 public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisingAppendable {
@@ -32,12 +30,6 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
 
   protected ForwardingLoggingAdvisingAppendable(LoggingAdvisingAppendable delegate) {
     this.delegate = checkNotNull(delegate);
-  }
-
-  @Nullable
-  @Override
-  public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) throws IOException {
-    return delegate.appendNodeBuilder(nodeBuilder);
   }
 
   @Override

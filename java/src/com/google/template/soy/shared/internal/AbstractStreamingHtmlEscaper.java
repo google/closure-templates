@@ -23,9 +23,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
-import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.shared.internal.EscapingConventions.CrossLanguageStringXform;
 import java.io.IOException;
 import java.util.function.Function;
@@ -50,12 +48,6 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
       LoggingAdvisingAppendable delegate, CrossLanguageStringXform transform) {
     this.delegate = checkNotNull(delegate);
     this.transform = checkNotNull(transform);
-  }
-
-  @Nullable
-  @Override
-  public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) throws IOException {
-    return nodeBuilder.render(this);
   }
 
   @CanIgnoreReturnValue

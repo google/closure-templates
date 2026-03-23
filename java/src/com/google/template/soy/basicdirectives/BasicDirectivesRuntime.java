@@ -23,13 +23,11 @@ import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
-import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -93,12 +91,6 @@ public final class BasicDirectivesRuntime {
       this.delegate = delegate;
       this.maxLength = maxLength;
       this.addEllipsis = addEllipsis;
-    }
-
-    @Nullable
-    @Override
-    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) {
-      return nodeBuilder.render(this);
     }
 
     @CanIgnoreReturnValue

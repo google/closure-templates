@@ -204,7 +204,9 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       throws IOException;
 
   @Nullable
-  public abstract StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) throws IOException;
+  public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) throws IOException {
+    return nodeBuilder.render(this);
+  }
 
   /** A buffer of commands that can be replayed on a {@link LoggingAdvisingAppendable}. */
   @Immutable
@@ -260,19 +262,6 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
   }
 
-  /** A BufferingAppendable that flattens NodeBuidlers. */
-  private static class FlatteningBufferingAppendable extends BufferingAppendable {
-    FlatteningBufferingAppendable(SanitizedContent.ContentKind kind) {
-      super(kind);
-    }
-
-    @Nullable
-    @Override
-    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) throws IOException {
-      return nodeBuilder.render(this);
-    }
-  }
-
   /** A {@link LoggingAdvisingAppendable} that renders to a string builder. */
   public static class BufferingAppendable extends LoggingAdvisingAppendable {
 
@@ -290,13 +279,6 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     protected BufferingAppendable(SanitizedContent.ContentKind kind) {
       setKindAndDirectionality(kind);
-    }
-
-    @Nullable
-    @Override
-    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) throws IOException {
-      getCommandsAndAddPendingStringData().add(nodeBuilder);
-      return null;
     }
 
     @Override
@@ -520,12 +502,6 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     DelegatingAppendable(Appendable outputAppendable) {
       this.outputAppendable = checkNotNull(outputAppendable);
-    }
-
-    @Nullable
-    @Override
-    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) throws IOException {
-      return nodeBuilder.render(this);
     }
 
     @Override

@@ -127,10 +127,6 @@ public final class RenderResult {
       case LIMITED:
         // Docs on SoyValueProvider.status() and NodeBuilder.NoLimitAppendable call state that this
         // should never happen.
-        if (Boolean.getBoolean("soy_jbcsrc_take_every_detach_point")) {
-          // However JbcSrcDetachAllIntegrationTest will force LIMITED to be returned.
-          return;
-        }
         throw new AssertionError(
             "SoyValueProvider.status()/NoLimitAppendable returned a RenderResult.limited() which is"
                 + " out of spec");
