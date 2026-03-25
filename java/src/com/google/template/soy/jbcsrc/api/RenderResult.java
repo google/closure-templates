@@ -122,14 +122,18 @@ public final class RenderResult {
   private static final Logger logger = Logger.getLogger(RenderResult.class.getName());
 
   /** Helper method to block on the RenderResult's future. */
+  @SuppressWarnings("ThreadPriorityCheck")
   public void resolveDetach() {
     switch (type()) {
       case LIMITED:
-        // Docs on SoyValueProvider.status() and NodeBuilder.NoLimitAppendable call state that this
-        // should never happen.
-        throw new AssertionError(
-            "SoyValueProvider.status()/NoLimitAppendable returned a RenderResult.limited() which is"
-                + " out of spec");
+        // TODO(b/495484913): SoyValueProvider.status() and  NodeBuilder.NoLimitAppendable should
+        // never return LIMITED, and those are the only appendables that should end up here.
+        if (logger.isLoggable(Level.WARNING)) {
+          logger.log(Level.WARNING, "Received LIMITED in RenderResult#resolveDetach");
+        }
+        // Feeble attempt to not spam the appendable with isSoftLimitReached() calls.
+        Thread.yield();
+        return;
       case DETACH:
         Future<?> future = future();
         if (logger.isLoggable(Level.WARNING)) {

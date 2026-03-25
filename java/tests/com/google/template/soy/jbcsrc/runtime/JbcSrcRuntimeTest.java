@@ -198,13 +198,6 @@ public final class JbcSrcRuntimeTest {
   }
 
   @Test
-  public void testAwaitProvider_limited() {
-    FakeProvider provider = new FakeProvider(RenderResult.limited());
-    assertThrows(AssertionError.class, () -> JbcSrcRuntime.awaitProvider(provider));
-    assertThat(provider.calls).isEqualTo(1);
-  }
-
-  @Test
   public void testAwaitProvider_detachOnce() {
     FakeProvider provider =
         new FakeProvider() {
