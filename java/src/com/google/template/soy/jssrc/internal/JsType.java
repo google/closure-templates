@@ -635,59 +635,71 @@ public final class JsType implements CodeChunk.HasRequires {
                 .build();
           } else if (soyType instanceof IndexedType) {
             IndexedType indexedType = (IndexedType) soyType;
-            String type = "?";
-            String namespace = null;
+            SoyType baseType = indexedType.getType();
+
             // Find the named type that originally declared this property. We need to do this
             // because the typedef for the member is only declared relative to the {typedef} in
             // which it's defined, not copied to every {typedef} that extends it. If the same
             // property is defined in multiple type defs the behavior of this algorithm is
             // undefined. Incompatible types will have been resolved as `never` and should have
             // failed compilation.
-            Deque<SoyType> stack = new ArrayDeque<>();
-            stack.add(indexedType.getType());
-            WHILE:
-            while (!stack.isEmpty()) {
-              SoyType member = stack.removeLast();
-              if (!(member instanceof NamedType)) {
+            NamedType declaringNamedType = null;
+            SoyType memberCheckedType = null;
+            Deque<NamedType> stack = new ArrayDeque<>();
+            if (baseType instanceof NamedType) {
+              stack.add((NamedType) baseType);
+            }
+
+            while (!stack.isEmpty() && declaringNamedType == null) {
+              NamedType namedType = stack.removeLast();
+              SoyType namedEffectiveType = namedType.getType();
+
+              ImmutableSet<SoyType> components;
+              if (namedEffectiveType instanceof RecordType) {
+                components = ImmutableSet.of(namedEffectiveType);
+              } else if (namedEffectiveType instanceof IntersectionType) {
+                components = ((IntersectionType) namedEffectiveType).getMembers();
+              } else {
                 continue;
-              }
-              NamedType namedMember = (NamedType) member;
-              SoyType namedValue = namedMember.getType();
-              ImmutableSet<SoyType> components = ImmutableSet.of();
-              if (namedValue instanceof RecordType) {
-                components = ImmutableSet.of(namedValue);
-              } else if (namedValue instanceof IntersectionType) {
-                components = ((IntersectionType) namedValue).getMembers();
               }
 
               for (SoyType component : components) {
                 if (component instanceof NamedType) {
-                  stack.add(component);
+                  stack.add((NamedType) component);
                 } else if (component instanceof RecordType) {
                   RecordType.Member recMember =
                       ((RecordType) component).getMember(indexedType.getPropertyName());
                   if (recMember != null) {
-                    namespace = namedMember.getNamespace();
-                    type =
-                        matchNullishToBang(
-                            IndexedType.jsSynthenticTypeDefName(
-                                forRecursion.get(namedMember).typeExpr(),
-                                indexedType.getPropertyName()),
-                            SoyTypes.isNullish(recMember.checkedType()));
-                    break WHILE;
+                    if (namedType == baseType) {
+                      declaringNamedType = namedType;
+                      memberCheckedType = recMember.checkedType();
+                      break;
+                    } else {
+                      // Found a matching member defined in a super type.
+                      // GenJsCodeVisitor.visitTypeDefNode inserts IndexedType into the
+                      // FileScopeJsTypeRegistry, meaning we need to recurse here.
+                      return forRecursion.get(
+                          IndexedType.create(namedType, indexedType.getProperty()));
+                    }
                   }
                 }
               }
             }
-            JsType baseType = forRecursion.get(indexedType.getType());
-            return builder()
-                .addType(type)
-                .addRequires(
-                    namespace == null
-                        ? baseType.googRequires()
-                        : ImmutableList.of(GoogRequire.create(namespace)))
-                .setPredicate(TypePredicate.NO_OP)
-                .build();
+            if (declaringNamedType != null) {
+              return builder()
+                  .addType(
+                      matchNullishToBang(
+                          IndexedType.jsSynthenticTypeDefName(
+                              forRecursion.get(declaringNamedType).typeExpr(),
+                              indexedType.getPropertyName()),
+                          SoyTypes.isNullish(memberCheckedType)))
+                  .addRequires(
+                      ImmutableList.of(GoogRequire.create(declaringNamedType.getNamespace())))
+                  .setPredicate(TypePredicate.NO_OP)
+                  .build();
+            } else {
+              return UNKNOWN_TYPE;
+            }
           } else {
             return UNKNOWN_TYPE;
           }
