@@ -1009,6 +1009,11 @@ This mirrors the
 same name. Returns true if the `gbigint` value is within the safe JavaScript
 integer range and can be coerced to `number` type without loss of precision.
 
+### `compareGbigint(gbigint, gbigint)` {#compareGbigint}
+
+Compares two `gbigint` values numerically. Returns `1` if the first `gbigint` is
+greater than the second, `-1` if lesser, and `0` if they are equal.
+
 ## Localization (l10n) Functions
 
 ### `remainder(length)` {#remainder}
