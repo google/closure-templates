@@ -167,6 +167,21 @@ public final class SoyTreeUtils {
         });
   }
 
+  /**
+   * Returns a breadth-first stream traversal of the AST tree starting at {@code node}. Excludes
+   * expression nodes.
+   */
+  public static Stream<? extends SoyNode> allSoyNodes(SoyNode root) {
+    return TreeStreams.breadthFirst(
+        root,
+        next -> {
+          if (next instanceof ParentSoyNode<?>) {
+            return ((ParentSoyNode<?>) next).getChildren();
+          }
+          return ImmutableList.of();
+        });
+  }
+
   public static <T extends Node> Stream<T> allNodesOfType(Node rootSoyNode, Class<T> classObject) {
     // optimization to avoid navigating into expr trees if we can't possibly match anything
     boolean exploreExpressions = !SoyNode.class.isAssignableFrom(classObject);

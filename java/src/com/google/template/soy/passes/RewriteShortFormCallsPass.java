@@ -97,7 +97,7 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
     // processed.
     while (mutated.get() && --maxDepth > 0) {
       mutated.set(false);
-      SoyTreeUtils.allNodes(file)
+      SoyTreeUtils.allSoyNodes(file)
           .forEach(
               n -> {
                 boolean m = false;

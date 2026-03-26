@@ -121,7 +121,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    */
   @Nullable
   private static String getFullTagText(HtmlTagNode openTagNode) {
-    return SoyTreeUtils.allNodes(openTagNode)
+    return SoyTreeUtils.allSoyNodes(openTagNode)
             .anyMatch(
                 node ->
                     !(node instanceof RawTextNode
