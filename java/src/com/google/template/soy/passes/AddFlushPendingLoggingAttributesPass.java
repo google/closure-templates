@@ -30,13 +30,15 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.VeLogNode;
@@ -62,19 +64,22 @@ final class AddFlushPendingLoggingAttributesPass implements CompilerFilePass {
         instrumentNode(nodeIdGen, openTag);
       }
     }
-    // 2. it is the root of a {template}, {let}, or {param} with a well-formed single root element.
+    // 2. it is the root of a {template}, {let}, {param}, {if|elseif|else}, or {switch} with a
+    // well-formed single root element. Note that {for} is excluded as it produces a fragment.
 
     // We could flush on every html element, however that would be inefficient since only an element
     // that is directly under a {velog} will have anything to flush. Due to how Soy can compose HTML
     // (lets, params, calls), we can't always know what html element is directly under a {velog}.
     // So this logic can be expanded to cover more nodes, ideally only ones we can't prove are NOT
     // direct children of {velog}, with the tradeoff being less efficient java bytecode.
-    Streams.<RenderUnitNode>concat(
+    Streams.<BlockNode>concat(
             file.getTemplates().stream().filter(t -> t.getContentKind().isHtml()),
             SoyTreeUtils.allNodesOfType(file, LetContentNode.class)
                 .filter(l -> !l.isImplicitContentKind() && l.getContentKind().isHtml()),
             SoyTreeUtils.allNodesOfType(file, CallParamContentNode.class)
-                .filter(l -> !l.isImplicitContentKind() && l.getContentKind().isHtml()))
+                .filter(l -> !l.isImplicitContentKind() && l.getContentKind().isHtml()),
+            SoyTreeUtils.allNodesOfType(file, ConditionalBlockNode.class)
+                .filter(b -> !(b instanceof ForNonemptyNode)))
         .forEach(
             block -> {
               var contentTags =
@@ -97,7 +102,7 @@ final class AddFlushPendingLoggingAttributesPass implements CompilerFilePass {
   /**
    * Adds the {@code $$flushPendingLoggingAttributes()} call to the end of the open tag node.
    *
-   * <p>By placing them at the end, we ensure that they will simply be ignored by browesers.
+   * <p>By placing them at the end, we ensure that they will simply be ignored by browsers.
    *
    * <p>See:
    * https://html.spec.whatwg.org/multipage/parsing.html#attribute-name-state:parse-error-duplicate-attribute

@@ -244,7 +244,7 @@ public interface SoyNode extends Node {
    * loops.
    *
    * <p>Includes nodes such as IfCondNode, IfElseNode, SwitchCaseNode, SwitchDefaultNode,
-   * ForNonemptyNode, ForNode, WhileNode, etc.
+   * ForNonemptyNode, WhileNode, etc.
    */
   interface ConditionalBlockNode extends BlockNode {}
 
