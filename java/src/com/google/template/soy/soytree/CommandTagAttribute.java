@@ -306,10 +306,7 @@ public final class CommandTagAttribute implements Copyable<CommandTagAttribute> 
           Visibility.PUBLIC.getAttributeValue());
     } else if (visibility == null) {
       errorReporter.report(
-          valueLocation,
-          INVALID_ATTRIBUTE,
-          key.identifier(),
-          Visibility.PRIVATE.getAttributeValue());
+          valueLocation, INVALID_ATTRIBUTE_LIST, key.identifier(), Visibility.getAttributeValues());
     }
     return visibility;
   }
