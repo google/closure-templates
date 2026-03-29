@@ -47,7 +47,7 @@ public final class CallBasicNode extends CallNode {
 
   private ExprEquivalence.Wrapper originalShortFormExprEquivalence = null;
 
-  private boolean lazy = false;
+  private boolean lazy = true;
 
   public CallBasicNode(
       int id,
@@ -143,7 +143,13 @@ public final class CallBasicNode extends CallNode {
   }
 
   public boolean isLazy() {
-    return this.lazy;
+    // return lazy;
+
+    // TODO
+    if (!this.isHtml()) {
+      return false;
+    }
+    return lazy;
   }
 
   public boolean isHtml() {
