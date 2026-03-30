@@ -33,7 +33,7 @@ java_library(
     ),
     deps = [
         "//java/src/com/google/template/soy/base/internal",
-        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_auto_value_auto_value",
         "@maven//:com_google_guava_guava",
     ],
 )

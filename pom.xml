@@ -77,11 +77,11 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <java.version>11</java.version>
+    <java.version>17</java.version>
     <guice.version>7.0.0</guice.version>
     <guava.version>32.1.1-jre</guava.version>
     <asm.version>9.5</asm.version>
-    <autovalue.version>1.10.2</autovalue.version>
+    <autovalue.version>1.11.0</autovalue.version>
     <proto.version>3.21.7</proto.version>
     <truth.version>1.4.0</truth.version>
     <flogger.version>0.7.4</flogger.version>
