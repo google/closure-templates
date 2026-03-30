@@ -1,1 +1,3 @@
-build --java_language_version=11
+common --java_language_version=17
+
+common --toolchain_resolution_debug='@rules_java//toolchains:bootstrap_runtime_toolchain_type'

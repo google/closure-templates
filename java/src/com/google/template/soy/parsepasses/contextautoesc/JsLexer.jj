@@ -15,11 +15,12 @@
  */
 
 options {
-  JDK_VERSION = "1.8";
+  JDK_VERSION = "17";
   STATIC = false;
   UNICODE_INPUT = true;
   SUPPORT_CLASS_VISIBILITY_PUBLIC = false;
   DEBUG_TOKEN_MANAGER = false;
+  GENERATE_ANNOTATIONS = true;
 }
 
 PARSER_BEGIN(JsLexer)
