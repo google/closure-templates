@@ -31,6 +31,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -173,13 +174,19 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
    * delegate, which will execute any NodeBuilder.
    *
    * <p>A let/param is coerced to a SoyValue using status()/resolve(). In this case, if there are
-   * any NodeBuilders, appendNodeBuilder() will add a delegate to execute the NodeBuilder, and this
-   * delegate is used for the first getAsSoyValue() call.
+   * any NodeBuilders, appendNodeBuilder() will add a delegate to execute the NodeBuilder
+   * (this.flatteningAppendable) and this delegate is used for the first getAsSoyValue() call.
    *
-   * <p>In both cases, any further accesses will use the non-delegate/"local" appendable which will
-   * contain the unflattened NodeBuilders and will re-execute. These won't block though since we
-   * know the NodeBuilder has been successfully executed at least once already so all Futures will
-   * be resolved.
+   * <p>In both cases, the compiler will gencode detach handling logic for the first status() or
+   * renderAndResolve() calls.
+   *
+   * <p>For subsequent accesses, the compiler doesn't gencode detach handling logic, it assumes a
+   * SoyValueProvider will always be able to resolve without detaches after the first resolve. To
+   * build and return a SanitizedContent, we use the local buffer (super.commands/builder) which
+   * will contain the unflattened NodeBuilders and will re-execute. These won't block though since
+   * we know the NodeBuilder has been successfully executed at least once already so all Futures
+   * will be resolved. NodeBuilder also disables the softLimitReached calls. So we won't return from
+   * any of the detach points in the NodeBulders' template code.
    */
   public static final class MultiplexingAppendable extends BufferingAppendable {
 
@@ -202,9 +209,9 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
     // a SoyValue multiple times will re-exeute the NodeBuilder each time.
     private SoyValue resolvedSoyValue = null;
 
-    // A delegate that is created when a NodeBuilder is found and there is no existing delegate. It
-    // causes NodeBuilders to be invoked and flattened. It is only used for the first
-    // getAsSoyValue() call.
+    // A delegate that is created when a NodeBuilder is found and there is no existing delegate,
+    // which happens when using status()/resolve() to convert to a SoyValue. It causes NodeBuilders
+    // to be invoked and flattened. It is only used for the first getAsSoyValue() call.
     private BufferingAppendable flatteningAppendable = null;
 
     @Override
@@ -219,6 +226,17 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
         // unflattened version and so will re-execute any NodeBuilders.
         flatteningAppendable = null;
         return result;
+      }
+      if (hasNodeBuidlers()) {
+        // If we have NodeBuidlers, don't cache and flatten and generate a new SanitizedContent for
+        // each resolve().
+        BufferingAppendable buffer = LoggingAdvisingAppendable.buffering(getSanitizedContentKind());
+        try {
+          super.replayOn(buffer);
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+        return buffer.getAsSoyValue();
       }
       resolvedSoyValue = super.getAsSoyValue();
       return resolvedSoyValue;
