@@ -288,7 +288,8 @@ externs. Expressions within auto externs can call other externs, whether they
 are auto or not.
 
 Soy constructs that are NOT supported within auto externs typically relate to
-producing markup:
+producing markup. Auto externs cannot produce any
+[sanitized content](../reference/types.md#sanitized_types).
 
 *   Print commands, e.g. `{$expr}`
 *   Calling templates, both `{call}` and short form calls within expressions

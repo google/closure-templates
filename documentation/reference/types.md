@@ -186,6 +186,65 @@ NOTE: currently, protos are *not supported* in the Python backend.
 [^1]: The difference between map and record for JavaScript is simply whether the
     keys are strings or symbols.
 
+### `template` {#template}
+
+The `template` type represents the type or signature of a Soy template or
+element. It consist of a list of named parameters, their corresponding types,
+and the return type of the template, denoted as `template (param: pType, ...) =>
+rType`. `rType` must be one of the (sanitized types)[#sanitized_types] or
+`string`.
+
+References (lets, consts, params) of the `template` type may be invoked using
+the normal `{call}` syntax or element composition syntax, with any unset
+parameters passed as parameters.
+
+Only basic templates or elements may be referenced in expressions; deltemplates
+are not allowed. Additionally, for HTML templates, strict HTML is required for
+templates used in expressions.
+
+Parameters may be bound to template-type expressions using the
+[`.bind()`](functions.md#bind) method.
+
+For example:
+
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
+```soy
+{template foo}
+  {@param tpl: template (count: int, greeting: string) => html}
+
+  {call $tpl}
+    {param count: 5 /}
+    {param greeting: 'Hello!' /}
+  {/call}
+{/template}
+```
+
+###### Element Composition {.pg-tab}
+
+```soy
+{template foo}
+  {@param tpl: template (count: int, greeting: string) => html<?>}
+
+  <{$tpl.bind(record(count:5, greeting: 'Hello'))} />
+```
+
+</section>
+
+For more information, see
+[Passing Templates as Parameters](template-types.md#how-do-you-pass-in-a-template)
+
+### `function` {#function}
+
+The `function` type represents the type or signature of a Soy extern. It is
+denoted as `(param: pType, ...) => rType`.
+
+## Sanitized types
+
+Sanitized types are the types of content that templates can produce.
+
 ### `html` {#html}
 
 `html` is for a string that contains safe HTML content. Safe html is HTML that
@@ -323,53 +382,6 @@ Additionally, all backends have support for coercing
 `webutil.html.types.SafeStyleSheetProto` and `webutil.html.types.SafeStyleProto`
 to a `css` object.
 
-### `template` {#template}
-
-The `template` type represents a Soy template or element. Only basic templates
-or elements may be created in expressions; deltemplates are not allowed.
-Additionally, for HTML templates, strict HTML is required for templates used in
-expressions.
-
-Parameters may be bound to template-type expressions using the
-[`.bind()`](functions.md#bind) method.
-
-Templates passed as parameters may be invoked using the normal `{call}` syntax
-or element composition syntax, with any unset parameters passed as parameters.
-
-Template type declarations consist of a list of named parameters, their
-corresponding types, and the return type of the template.
-
-For example:
-
-<section class="polyglot">
-
-###### Call Command {.pg-tab}
-
-```soy
-{template foo}
-  {@param tpl: template (count: int, greeting: string) => html}
-
-  {call $tpl}
-    {param count: 5 /}
-    {param greeting: 'Hello!' /}
-  {/call}
-{/template}
-```
-
-###### Element Composition {.pg-tab}
-
-```soy
-{template foo}
-  {@param tpl: template (count: int, greeting: string) => html<?>}
-
-  <{$tpl.bind(record(count:5, greeting: 'Hello'))} />
-```
-
-</section>
-
-For more information, see
-[Passing Templates as Parameters](template-types.md#how-do-you-pass-in-a-template)
-
 ## Computed types {#computed}
 
 ### Named type: `A` {#named}
@@ -411,6 +423,10 @@ Creates a new type from the set intersection of `Union` and `Extracted`.
 ### NonNullable type: `NonNullable<Type>` {#nonnullable}
 
 Equivalent to `Exclude<Type, null | undefined>`.
+
+### NonUndefined type: `NonUndefined<Type>` {#nonundefined}
+
+Equivalent to `Exclude<Type, undefined>`.
 
 ## Collection types {#collection}
 
