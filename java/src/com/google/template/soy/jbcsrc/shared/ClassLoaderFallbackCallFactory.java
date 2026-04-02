@@ -375,8 +375,7 @@ public final class ClassLoaderFallbackCallFactory {
             templateName);
     NodeBuilder.Builder builder = NodeBuilder.builder(tmpl);
     Method buildMethod =
-        NodeBuilder.Builder.class.getDeclaredMethod(
-            "build", StackFrame.class, Object[].class, Object.class);
+        NodeBuilder.Builder.class.getDeclaredMethod("build", Object[].class, Object.class);
     MethodHandle unbound = lookup.unreflect(buildMethod);
     return new ConstantCallSite(unbound.bindTo(builder));
   }

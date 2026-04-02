@@ -236,13 +236,14 @@ final class DetachState implements ExpressionDetacher.Factory {
    * <p>This is only valid to call at the begining of templates. It does not allocate a save/restore
    * block since there should be nothing to save or restore.
    */
-  Optional<Statement> detachLimited(AppendableExpression appendable) {
+  Optional<Statement> detachLimited(
+      AppendableExpression appendable, RenderContextExpression renderContext) {
     checkDetachesAllowed();
     variables.assertSaveRestoreStateIsEmpty();
     if (!appendable.supportsSoftLimiting()) {
       return Optional.empty();
     }
-    Expression isSoftLimited = appendable.softLimitReached();
+    Expression isSoftLimited = renderContext.softLimitReached(appendable);
     Statement returnLimited = returnExpression(FieldRef.STACK_FRAME_LIMITED.accessor());
     return Optional.of(
         new Statement() {

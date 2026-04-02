@@ -318,7 +318,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   Statement compile(RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
     List<Statement> statements = new ArrayList<>();
     if (shouldCheckForSoftLimit(node)) {
-      getDetachState().detachLimited(getAppendableExpression()).ifPresent(statements::add);
+      getDetachState()
+          .detachLimited(getAppendableExpression(), parameterLookup.getRenderContext())
+          .ifPresent(statements::add);
     }
     statements.add(trackRequiredCssPathStatements(node));
     statements.add(doCompile(node, prefix, suffix));
@@ -1501,10 +1503,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           .asHandle();
 
   private static final String CREATE_NODE_BUILDER_SIGNATURE =
-      "(Lcom/google/template/soy/jbcsrc/shared/StackFrame;"
-          + "[Ljava/lang/Object;"
-          + "Ljava/lang/Object;)"
-          + "Lcom/google/template/soy/data/NodeBuilder;";
+      "([Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/template/soy/data/NodeBuilder;";
 
   private static final Handle STATIC_TEMPLATE_HANDLE =
       MethodRef.createPure(
@@ -1579,7 +1578,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                               new Expression(BytecodeUtils.NODE_BUILDER_TYPE) {
                                 @Override
                                 protected void doGen(CodeBuilder adapter) {
-                                  stackFrame.gen(adapter);
                                   nbParams.gen(adapter);
                                   renderContext.gen(adapter);
                                   adapter.visitInvokeDynamicInsn(
@@ -1590,7 +1588,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                                       positionalRenderMethod.method().getDescriptor());
                                 }
                               };
-                          return appendableExpression.appendNodeBuilder(nodeBuilder);
+                          return appendableExpression.appendNodeBuilder(nodeBuilder, stackFrame);
                         }
                         if (isPrivateCall) {
                           return positionalRenderMethod.invoke(
@@ -1633,7 +1631,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                           new Expression(BytecodeUtils.NODE_BUILDER_TYPE) {
                             @Override
                             protected void doGen(CodeBuilder adapter) {
-                              stackFrame.gen(adapter);
                               nbParams.gen(adapter);
                               renderContext.gen(adapter);
                               adapter.visitInvokeDynamicInsn(
@@ -1644,7 +1641,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                                   metadata.renderMethod().method().getDescriptor());
                             }
                           };
-                      return appendableExpression.appendNodeBuilder(nodeBuilder);
+                      return appendableExpression.appendNodeBuilder(nodeBuilder, stackFrame);
                     }
                     if (isPrivateCall) {
                       return metadata
@@ -1741,7 +1738,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                       frame,
                       expressionAndInitializer.expression(),
                       context);
-              return output.appendNodeBuilder(nodeBuilder);
+              return output.appendNodeBuilder(nodeBuilder, parameterLookup.getStackFrame());
             } else {
               return calleeVariable
                   .accessor()
@@ -1800,7 +1797,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                           frame,
                           expressionAndInitializer.expression(),
                           context);
-                  return output.appendNodeBuilder(nodeBuilder);
+                  return output.appendNodeBuilder(nodeBuilder, parameterLookup.getStackFrame());
                 } else {
                   return calleeVariable
                       .accessor()
