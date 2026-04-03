@@ -126,7 +126,7 @@ public final class SoySauceImpl implements SoySauce {
   @Override
   public RendererImpl renderTemplate(String template) {
     CompiledTemplates.TemplateData data = templates.getTemplateData(template);
-    return new RendererImpl(template, data.template(), data.kind(), /* data=*/ null);
+    return new RendererImpl(template, data.template(), data.kind(), /* data= */ null);
   }
 
   @Override
