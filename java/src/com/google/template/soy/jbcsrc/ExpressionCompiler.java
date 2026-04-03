@@ -102,6 +102,7 @@ import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.Int64ConversionMode;
 import com.google.template.soy.jbcsrc.restricted.Branch;
@@ -735,11 +736,41 @@ final class ExpressionCompiler {
       return isConstantContext ? record.toMaybeConstant() : record;
     }
 
+    /** Compiles local variables and parameters to the SoyValueProvider without resolving. */
+    private Expression nonResolved(VarRefNode node) {
+      VarDefn defn = node.getDefnDecl();
+      switch (defn.kind()) {
+        case LOCAL_VAR:
+          return parameters.getLocal((LocalVar) defn);
+        case PARAM:
+          return parameters.getParam((TemplateParam) defn);
+        default:
+          return visit(node);
+      }
+    }
+
+    /**
+     * When passing vars to bind(), we don't need to resolve them because the callee template will
+     * perform the detach logic. Resolving them at the bind() site will break context API since
+     * things will no longer be evaluated in page order.
+     */
+    private Expression recordLiteralAsParamStoreForBind(RecordLiteralNode node) {
+      return recordLiteralAsParamStore(node, /* resolveVarRefs= */ false);
+    }
+
     private Expression recordLiteralAsParamStore(RecordLiteralNode node) {
+      return recordLiteralAsParamStore(node, /* resolveVarRefs= */ true);
+    }
+
+    private Expression recordLiteralAsParamStore(RecordLiteralNode node, boolean resolveVarRefs) {
       Map<String, Expression> recordMap = new LinkedHashMap<>();
       for (int i = 0; i < node.numChildren(); i++) {
-        // Keys are RecordProperty objects and values are SoyValue object.
-        recordMap.put(node.getKey(i).identifier(), visit(node.getChild(i)));
+        Expression value =
+            node.getChild(i) instanceof VarRefNode && !resolveVarRefs
+                ? nonResolved((VarRefNode) node.getChild(i))
+                : visit(node.getChild(i));
+        // Keys are RecordProperty objects and values are SoyValue/Providers.
+        recordMap.put(node.getKey(i).identifier(), value);
       }
       return BytecodeUtils.newParamStore(Optional.empty(), recordMap);
     }
@@ -1729,7 +1760,7 @@ final class ExpressionCompiler {
                   node.getType(),
                   MethodRefs.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
                       baseExpr.checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE),
-                      recordLiteralAsParamStore(record)));
+                      recordLiteralAsParamStoreForBind(record)));
             }
         }
       } else if (function instanceof SoySourceFunctionMethod) {
