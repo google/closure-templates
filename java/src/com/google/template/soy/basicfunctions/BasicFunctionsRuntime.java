@@ -44,6 +44,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
@@ -51,6 +52,7 @@ import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
@@ -238,15 +240,13 @@ public final class BasicFunctionsRuntime {
   }
 
   @Nonnull
-  public static ImmutableList<? extends SoyValueProvider> listFlat(
-      List<? extends SoyValueProvider> list) {
-    return listFlatImpl(list, 1);
+  public static ImmutableList<? extends SoyValueProvider> listFlat(SoyList list) {
+    return listFlatImpl(list.asResolvedJavaList(), 1);
   }
 
   @Nonnull
-  public static ImmutableList<? extends SoyValueProvider> listFlat(
-      List<? extends SoyValueProvider> list, IntegerData data) {
-    return listFlatImpl(list, (int) data.getValue());
+  public static ImmutableList<? extends SoyValueProvider> listFlat(SoyList list, IntegerData data) {
+    return listFlatImpl(list.asResolvedJavaList(), (int) data.getValue());
   }
 
   @Nonnull
@@ -268,6 +268,104 @@ public final class BasicFunctionsRuntime {
         builder.add(value);
       }
     }
+  }
+
+  /** Callback interface for array methods like map/filter/forEach. */
+  @FunctionalInterface
+  public interface ArrayCallback {
+    @CanIgnoreReturnValue
+    SoyValue apply(SoyValue currentValue, SoyValue index, SoyList array);
+  }
+
+  /** Callback interface for array methods like reduce/reduceRight. */
+  @FunctionalInterface
+  public interface ArrayReduceCallback {
+    SoyValue apply(SoyValue accumulator, SoyValue currentValue, SoyValue index, SoyList array);
+  }
+
+  @Nonnull
+  public static SoyValue listReduce(SoyList list, ArrayReduceCallback callback) {
+    if (list.length() == 0) {
+      throw new IllegalArgumentException("Reduce of empty array with no initial value");
+    }
+    SoyValue accumulator = list.getProvider(0).resolve();
+    for (int i = 1; i < list.length(); i++) {
+      accumulator =
+          callback.apply(accumulator, list.getProvider(i).resolve(), IntegerData.forValue(i), list);
+    }
+    return accumulator;
+  }
+
+  @Nonnull
+  public static SoyValue listReduce(
+      SoyList list, ArrayReduceCallback callback, SoyValue initialValue) {
+    SoyValue accumulator = initialValue;
+    for (int i = 0; i < list.length(); i++) {
+      accumulator =
+          callback.apply(accumulator, list.getProvider(i).resolve(), IntegerData.forValue(i), list);
+    }
+    return accumulator;
+  }
+
+  @Nonnull
+  public static SoyValue listReduceRight(SoyList list, ArrayReduceCallback callback) {
+    if (list.length() == 0) {
+      throw new IllegalArgumentException("Reduce of empty array with no initial value");
+    }
+    SoyValue accumulator = list.getProvider(list.length() - 1).resolve();
+    for (int i = list.length() - 2; i >= 0; i--) {
+      accumulator =
+          callback.apply(accumulator, list.getProvider(i).resolve(), IntegerData.forValue(i), list);
+    }
+    return accumulator;
+  }
+
+  @Nonnull
+  public static SoyValue listReduceRight(
+      SoyList list, ArrayReduceCallback callback, SoyValue initialValue) {
+    SoyValue accumulator = initialValue;
+    for (int i = list.length() - 1; i >= 0; i--) {
+      accumulator =
+          callback.apply(accumulator, list.getProvider(i).resolve(), IntegerData.forValue(i), list);
+    }
+    return accumulator;
+  }
+
+  @Nonnull
+  public static SoyList listFlatMap(SoyList list, ArrayCallback callback) {
+    ImmutableList.Builder<SoyValueProvider> builder = ImmutableList.builder();
+    for (int i = 0; i < list.length(); i++) {
+      SoyValue result =
+          callback.apply(list.getProvider(i).resolve(), IntegerData.forValue(i), list);
+      if (result instanceof SoyList) {
+        SoyList soyList2 = (SoyList) result;
+        builder.addAll(soyList2.asResolvedJavaList());
+      } else {
+        builder.add(result);
+      }
+    }
+    return ListImpl.forProviderList(builder.build());
+  }
+
+  @CanIgnoreReturnValue
+  @Nonnull
+  public static SoyValue listForEach(SoyList list, ArrayCallback callback) {
+    for (int i = 0; i < list.length(); i++) {
+      callback.apply(list.getProvider(i).resolve(), IntegerData.forValue(i), list);
+    }
+    return NullData.INSTANCE;
+  }
+
+  @Nonnull
+  public static NumberData listFindIndex(SoyList list, ArrayCallback callback) {
+    for (int i = 0; i < list.length(); i++) {
+      if (callback
+          .apply(list.getProvider(i).resolve(), IntegerData.forValue(i), list)
+          .coerceToBoolean()) {
+        return IntegerData.forValue(i);
+      }
+    }
+    return IntegerData.forValue(-1);
   }
 
   /**
@@ -677,7 +775,8 @@ public final class BasicFunctionsRuntime {
 
   public static int length(SoyValue value) {
     if (value instanceof SoyList) {
-      return ((SoyList) value).length();
+      SoyList soyList = (SoyList) value;
+      return soyList.length();
     }
     return value.asJavaList().size();
   }
@@ -791,7 +890,7 @@ public final class BasicFunctionsRuntime {
   }
 
   public static SoyValue throwException(String message) {
-    throw new RuntimeException(message);
+    throw new IllegalArgumentException(message);
   }
 
   public static boolean isNaN(SoyValue value) {

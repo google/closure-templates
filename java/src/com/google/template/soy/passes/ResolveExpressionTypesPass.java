@@ -48,8 +48,9 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
@@ -62,9 +63,14 @@ import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.ConcatMapsMethod;
 import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
+import com.google.template.soy.basicfunctions.ListFindIndexMethod;
+import com.google.template.soy.basicfunctions.ListFlatMapMethod;
 import com.google.template.soy.basicfunctions.ListFlatMethod;
+import com.google.template.soy.basicfunctions.ListForEachMethod;
 import com.google.template.soy.basicfunctions.ListIncludesFunction;
 import com.google.template.soy.basicfunctions.ListIndexOfFunction;
+import com.google.template.soy.basicfunctions.ListReduceMethod;
+import com.google.template.soy.basicfunctions.ListReduceRightMethod;
 import com.google.template.soy.basicfunctions.ListReverseMethod;
 import com.google.template.soy.basicfunctions.ListSliceMethod;
 import com.google.template.soy.basicfunctions.ListUniqMethod;
@@ -251,6 +257,11 @@ import javax.annotation.Nullable;
 /** Visitor which resolves all expression types. */
 final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass {
   // Constant type resolution requires topological ordering of inputs.
+
+  private static final ImmutableSet<Kind> TEMPLATE_KINDS =
+      ImmutableSet.of(Kind.TEMPLATE, Kind.TEMPLATE_TYPE);
+
+  private static final Pattern GET_VALUE_PATTERN = Pattern.compile("\\s+");
 
   // Keep in alphabetical order.
   private static final SoyErrorKind BAD_FOREACH_TYPE =
@@ -673,13 +684,14 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
       // need to visit expressions first so parameters with inferred types have their expressions
       // analyzed
-      List<TemplateHeaderVarDefn> headerVars = node.getHeaderParams();
+      ImmutableList<TemplateHeaderVarDefn> headerVars = node.getHeaderParams();
       // If the default value expressions are not constant, they could reference another default
       // value parameter, which won't work because it's looking up the type of the parameter when it
       // hasn't been inferred yet.  So report an error and override the type to be the errortype
       for (TemplateHeaderVarDefn headerVar : headerVars) {
         if (headerVar instanceof TemplateStateVar) {
-          allStateVars.add((TemplateStateVar) headerVar);
+          TemplateStateVar templateStateVar = (TemplateStateVar) headerVar;
+          allStateVars.add(templateStateVar);
         }
         if (headerVar.getTypeNode() != null && SoyTypes.isNullOrUndefined(headerVar.type())) {
           errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
@@ -692,25 +704,32 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           ExprNode.Kind kind = nonConstantChild.getKind();
           switch (kind) {
             case VAR_REF_NODE:
-              VarRefNode refNode = (VarRefNode) nonConstantChild;
-              if (headerVar instanceof TemplateStateVar) {
-                // @state depends on @state
-                if (refNode.getDefnDecl() instanceof TemplateStateVar) {
-                  stateToStateDeps.put(
-                      (TemplateStateVar) headerVar, (TemplateStateVar) refNode.getDefnDecl());
+              {
+                VarRefNode refNode = (VarRefNode) nonConstantChild;
+                if (headerVar instanceof TemplateStateVar) {
+                  TemplateStateVar templateStateVar = (TemplateStateVar) headerVar;
+                  // @state depends on @state
+                  if (refNode.getDefnDecl() instanceof TemplateStateVar) {
+                    stateToStateDeps.put(
+                        templateStateVar, (TemplateStateVar) refNode.getDefnDecl());
+                  }
+                  continue; // @state depends on @param or @state
+                } else {
+                  errorReporter.report(
+                      nonConstantChild.getSourceLocation(), PARAM_DEPENDS_ON_PARAM);
                 }
-                continue; // @state depends on @param or @state
-              } else {
-                errorReporter.report(nonConstantChild.getSourceLocation(), PARAM_DEPENDS_ON_PARAM);
+                refNode.setSubstituteType(UnknownType.getInstance());
+                break;
               }
-              refNode.setSubstituteType(UnknownType.getInstance());
-              break;
             case FUNCTION_NODE:
-              if (headerVar instanceof TemplateStateVar) {
-                continue;
+              {
+                if (headerVar instanceof TemplateStateVar) {
+                  continue;
+                }
+                errorReporter.report(
+                    nonConstantChild.getSourceLocation(), PARAM_DEPENDS_ON_FUNCTION);
+                break;
               }
-              errorReporter.report(nonConstantChild.getSourceLocation(), PARAM_DEPENDS_ON_FUNCTION);
-              break;
             default:
               throw new AssertionError("Unexpected non-constant expression: " + nonConstantChild);
           }
@@ -822,15 +841,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       visitSoyNode(node);
     }
 
-    private final ImmutableSet<Kind> templateKinds =
-        ImmutableSet.of(Kind.TEMPLATE, Kind.TEMPLATE_TYPE);
-
     private void allowShortFormCall(ExprRootNode rootNode) {
       if (rootNode.getRoot() instanceof FunctionNode) {
         FunctionNode fnNode = (FunctionNode) rootNode.getRoot();
         if (!fnNode.hasStaticName()) {
           SoyType nameExprType = excludeNullish(fnNode.getNameExpr().getType());
-          if (SoyTypes.isKindOrUnionOfKinds(nameExprType, templateKinds)) {
+          if (SoyTypes.isKindOrUnionOfKinds(nameExprType, TEMPLATE_KINDS)) {
             fnNode.setAllowedToInvokeAsFunction(true);
           }
         }
@@ -892,8 +908,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           substitutions.restore(previousSubstitutionState);
           substitutions.addAll(visitor.negativeTypeConstraints);
         } else if (child instanceof IfElseNode) {
-          // For the else node, we simply inherit the previous set of substitutions.
           IfElseNode ien = (IfElseNode) child;
+          // For the else node, we simply inherit the previous set of substitutions.
           visitChildren(ien);
         }
       }
@@ -932,7 +948,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyType switchExprNarrowedType = switchExpr.getType();
       for (SoyNode child : node.getChildren()) {
         if (child instanceof SwitchCaseNode) {
-          SwitchCaseNode scn = ((SwitchCaseNode) child);
+          SwitchCaseNode scn = (SwitchCaseNode) child;
           visitExpressions(scn);
 
           // Calculate a new type for the switch expression: the union of the types of the case
@@ -978,9 +994,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             substitutions.addAll(negativeTypeConstraints);
           }
         } else if (child instanceof SwitchDefaultNode) {
+          SwitchDefaultNode sdn = (SwitchDefaultNode) child;
           // No new type substitutions for a default statement, but inherit the previous (negative)
           // substitutions.
-          SwitchDefaultNode sdn = ((SwitchDefaultNode) child);
           visitChildren(sdn);
         }
       }
@@ -1052,7 +1068,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       super.visitAssignmentNode(node);
       ExprNode lhs = node.getLhs().getRoot();
       if (lhs instanceof VarRefNode) {
-        SoyType to = ((VarRefNode) lhs).getDefnDecl().type();
+        VarRefNode varRefNode = (VarRefNode) lhs;
+        SoyType to = varRefNode.getDefnDecl().type();
         SoyType from = maybeCoerceType(node.getRhs().getRoot(), to);
         if (!to.isAssignableFromStrict(from)) {
           errorReporter.report(node.getSourceLocation(), INVALID_ASSIGNMENT_TYPES, to, from);
@@ -1063,7 +1080,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitSoyNode(SoyNode node) {
       if (node instanceof ExprHolderNode) {
-        visitExpressions((ExprHolderNode) node);
+        ExprHolderNode exprHolderNode = (ExprHolderNode) node;
+        visitExpressions(exprHolderNode);
       }
 
       if (node instanceof ParentSoyNode<?>) {
@@ -1089,19 +1107,21 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     collectionType = collectionType.getEffectiveType();
     switch (collectionType.getKind()) {
       case UNKNOWN:
-        // If we don't know anything about the base type, then make no assumptions
-        // about the field type.
-        return UnknownType.getInstance();
-
+        {
+          // If we don't know anything about the base type, then make no assumptions
+          // about the field type.
+          return UnknownType.getInstance();
+        }
       case ITERABLE:
       case LIST:
       case SET:
-        AbstractIterableType iterableType = (AbstractIterableType) collectionType;
-        if (iterableType.isEmpty()) {
-          return UnknownType.getInstance();
+        {
+          AbstractIterableType iterableType = (AbstractIterableType) collectionType;
+          if (iterableType.isEmpty()) {
+            return UnknownType.getInstance();
+          }
+          return iterableType.getElementType();
         }
-        return iterableType.getElementType();
-
       case UNION:
         {
           // If it's a union, then do the field type calculation for each member of
@@ -1118,14 +1138,15 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           }
           return computeLowestCommonType(typeRegistry, fieldTypes);
         }
-
       default:
-        errorReporter.report(
-            node.getParent().getSourceLocation(),
-            BAD_FOREACH_TYPE,
-            node.getExpr().toSourceString(),
-            node.getExpr().getType()); // Report the outermost union type in the error.
-        return UnknownType.getInstance();
+        {
+          errorReporter.report(
+              node.getParent().getSourceLocation(),
+              BAD_FOREACH_TYPE,
+              node.getExpr().toSourceString(),
+              node.getExpr().getType()); // Report the outermost union type in the error.
+          return UnknownType.getInstance();
+        }
     }
   }
 
@@ -1155,7 +1176,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           @Override
           protected void visitExprNode(ExprNode node) {
             if (node instanceof ParentExprNode) {
-              visitChildren((ParentExprNode) node);
+              ParentExprNode parentExprNode = (ParentExprNode) node;
+              visitChildren(parentExprNode);
             }
             requireNodeType(node);
           }
@@ -1324,7 +1346,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         if (child.getKind() == ExprNode.Kind.SPREAD_OP_NODE) {
           SoyType spreadType = child.getType().getEffectiveType();
           if (spreadType instanceof RecordType) {
-            for (Member member : ((RecordType) spreadType).getMembers()) {
+            RecordType recordType = (RecordType) spreadType;
+            for (Member member : recordType.getMembers()) {
               members.put(member.name(), member);
             }
           } else {
@@ -1553,7 +1576,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       if (!(expr instanceof DataAccessNode)) {
         return false;
       }
-      return hasNonNullAssertionRecurse(((DataAccessNode) expr).getBaseExprChild());
+      DataAccessNode dataAccessNode = (DataAccessNode) expr;
+      return hasNonNullAssertionRecurse(dataAccessNode.getBaseExprChild());
     }
 
     private DataAccessNode getDataAccessChild(AccessChainComponentNode expr) {
@@ -1700,7 +1724,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       node.setSoyMethod(method);
 
       if (method instanceof BuiltinMethod) {
-        node.setType(((BuiltinMethod) method).getReturnType(node, typeRegistry, errorReporter));
+        BuiltinMethod builtinMethod = (BuiltinMethod) method;
+        node.setType(builtinMethod.getReturnType(node, typeRegistry, errorReporter));
       } else if (method instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
         SoySourceFunction sourceFunction = sourceMethod.getImpl();
@@ -1796,6 +1821,35 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           if (returnType != null) {
             node.setType(returnType);
           }
+        } else if (sourceFunction instanceof ListFlatMapMethod) {
+          SoyType callbackType = node.getParam(0).getType();
+          if (SoyTypes.isKindOrUnionOfKind(callbackType, Kind.FUNCTION)) {
+            SoyType cbReturn = SoyTypes.getFunctionReturnType(callbackType);
+            if (cbReturn != null) {
+              if (cbReturn instanceof AbstractIterableType) {
+                node.setType(cbReturn);
+              } else {
+                node.setType(ListType.of(cbReturn));
+              }
+            } else {
+              node.setType(ListType.of(UnknownType.getInstance()));
+            }
+          } else {
+            node.setType(ListType.of(UnknownType.getInstance()));
+          }
+        } else if (sourceFunction instanceof ListReduceMethod
+            || sourceFunction instanceof ListReduceRightMethod) {
+          SoyType callbackType = node.getParam(0).getType();
+          if (SoyTypes.isKindOrUnionOfKind(callbackType, Kind.FUNCTION)) {
+            SoyType cbReturn = SoyTypes.getFunctionReturnType(callbackType);
+            if (cbReturn != null) {
+              node.setType(cbReturn);
+            } else {
+              node.setType(UnknownType.getInstance());
+            }
+          } else {
+            node.setType(UnknownType.getInstance());
+          }
         } else if (sourceFunction instanceof ListIncludesFunction
             || sourceFunction instanceof ListIndexOfFunction) {
           node.setType(sourceMethod.getReturnType());
@@ -1851,7 +1905,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
       if (!matchNameAndType.isEmpty() && andMatchArgCount.isEmpty()) {
         // We matched the base type and method name but did not match on arity.
-        Set<Integer> allNumArgs =
+        ImmutableSortedSet<Integer> allNumArgs =
             matchNameAndType.stream()
                 .map(SoyMethod::getNumArgs)
                 .collect(toImmutableSortedSet(naturalOrder()));
@@ -1861,7 +1915,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
 
       // Subset of previous that also matches arg types.
-      List<SoyMethod> andMatchArgType =
+      ImmutableList<SoyMethod> andMatchArgType =
           andMatchArgCount.stream()
               .filter(m -> appliesToArgs(m, baseType, argTypes))
               .collect(toImmutableList());
@@ -1904,6 +1958,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             // :( this is for kythe since we can't load plugin definitions since they are too
             // heavyweight.
             replaceNode = false;
+            break;
         }
       }
 
@@ -1918,10 +1973,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       for (int i = 0; i < params.size(); i++) {
         ExprNode param = params.get(i);
         if (param instanceof SpreadOpNode) {
+          SpreadOpNode spreadOpNode = (SpreadOpNode) param;
           if (i < params.size() - 1) {
             errorReporter.report(node.getSourceLocation(), SPREAD_NOT_VARARGS);
           }
-          SpreadOpNode spreadOpNode = (SpreadOpNode) param;
           visit(spreadOpNode);
           if (!(spreadOpNode.getChild(0).getType() instanceof AbstractIterableType)) {
             errorReporter.report(node.getSourceLocation(), SPREAD_NOT_ITERABLE);
@@ -1932,9 +1987,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     private void checkMethodParamType(ExprNode param, SoyType elementType) {
       SoyType paramType = param.getType();
-      if (param instanceof SpreadOpNode
-          && ((SpreadOpNode) param).getChild(0).getType() instanceof ListType) {
-        paramType = ((ListType) ((SpreadOpNode) param).getChild(0).getType()).getElementType();
+      if (param instanceof SpreadOpNode) {
+        SpreadOpNode spreadOpNode = (SpreadOpNode) param;
+        if (spreadOpNode.getChild(0).getType() instanceof ListType) {
+          paramType = ((ListType) spreadOpNode.getChild(0).getType()).getElementType();
+        }
       }
       if (!elementType.isAssignableFromStrict(paramType)) {
         errorReporter.report(
@@ -1942,20 +1999,67 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
     }
 
-    private List<SoyType> getParamTypes(SoyMethod method, SoyType baseType) {
+    private ImmutableList<SoyType> getParamTypes(SoyMethod method, SoyType baseType) {
       if (method instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
         // Hand-coded support for generic param types.
         if (sourceMethod.getImpl() instanceof SortMethod) {
           // Change list<T>.toSorted((?, ?) => int) to list<T>.toSorted((T, T) => int)
           FunctionType arg = (FunctionType) sourceMethod.getParamTypes().get(0);
-          SoyType itemType = ((AbstractIterableType) baseType).getElementType();
+          SoyType itemType =
+              baseType instanceof AbstractIterableType
+                  ? ((AbstractIterableType) baseType).getElementType()
+                  : UnknownType.getInstance();
           arg =
               FunctionType.of(
                   arg.getParameters().stream()
                       .map(p -> FunctionType.Parameter.of(p.getName(), itemType, p.isVarArgs()))
                       .collect(toImmutableList()),
                   arg.getReturnType());
+          return ImmutableList.of(arg);
+        } else if (sourceMethod.getImpl() instanceof ListFindIndexMethod
+            || sourceMethod.getImpl() instanceof ListFlatMapMethod
+            || sourceMethod.getImpl() instanceof ListForEachMethod) {
+          FunctionType arg = (FunctionType) sourceMethod.getParamTypes().get(0);
+          SoyType itemType =
+              baseType instanceof AbstractIterableType
+                  ? ((AbstractIterableType) baseType).getElementType()
+                  : UnknownType.getInstance();
+          FunctionType.Parameter valParam = arg.getParameters().get(0);
+          FunctionType.Parameter indexParam = arg.getParameters().get(1);
+          FunctionType.Parameter arrParam = arg.getParameters().get(2);
+          arg =
+              FunctionType.of(
+                  ImmutableList.of(
+                      FunctionType.Parameter.of(valParam.getName(), itemType, valParam.isVarArgs()),
+                      indexParam,
+                      FunctionType.Parameter.of(
+                          arrParam.getName(), baseType, arrParam.isVarArgs())),
+                  arg.getReturnType());
+          return ImmutableList.of(arg);
+        } else if (sourceMethod.getImpl() instanceof ListReduceMethod
+            || sourceMethod.getImpl() instanceof ListReduceRightMethod) {
+          FunctionType arg = (FunctionType) sourceMethod.getParamTypes().get(0);
+          SoyType itemType =
+              baseType instanceof AbstractIterableType
+                  ? ((AbstractIterableType) baseType).getElementType()
+                  : UnknownType.getInstance();
+          FunctionType.Parameter accParam = arg.getParameters().get(0);
+          FunctionType.Parameter valParam = arg.getParameters().get(1);
+          FunctionType.Parameter indexParam = arg.getParameters().get(2);
+          FunctionType.Parameter arrParam = arg.getParameters().get(3);
+          arg =
+              FunctionType.of(
+                  ImmutableList.of(
+                      accParam,
+                      FunctionType.Parameter.of(valParam.getName(), itemType, valParam.isVarArgs()),
+                      indexParam,
+                      FunctionType.Parameter.of(
+                          arrParam.getName(), baseType, arrParam.isVarArgs())),
+                  arg.getReturnType());
+          if (sourceMethod.getParamTypes().size() > 1) {
+            return ImmutableList.of(arg, sourceMethod.getParamTypes().get(1));
+          }
           return ImmutableList.of(arg);
         }
         return sourceMethod.getParamTypes();
@@ -1965,7 +2069,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     private boolean appliesToArgs(SoyMethod method, SoyType baseType, List<SoyType> argTypes) {
       if (method instanceof SoySourceFunctionMethod) {
-        List<SoyType> allowedTypes = getParamTypes(method, baseType);
+        ImmutableList<SoyType> allowedTypes = getParamTypes(method, baseType);
         Preconditions.checkArgument(argTypes.size() >= allowedTypes.size());
         for (int i = 0; i < argTypes.size(); i++) {
           if (!allowedTypes
@@ -2330,11 +2434,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           if (ref.getSignature().isVarArgs()
               && i >= ref.getSignature().getParameters().size() - 1) {
             typeCheck =
-                ((ListType)
-                        ref.getSignature()
-                            .getParameters()
-                            .get(ref.getSignature().getParameters().size() - 1)
-                            .getType())
+                ((ListType) Iterables.getLast(ref.getSignature().getParameters()).getType())
                     .getElementType();
           } else {
             typeCheck = ref.getSignature().getParameters().get(i).getType();
@@ -2405,17 +2505,19 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       if (!node.hasStaticName()) {
         visit(node.getNameExpr());
         if (nameExprType instanceof TemplateImportType) {
+          TemplateImportType templateImportType = (TemplateImportType) nameExprType;
           node.setType(
               SanitizedType.getTypeForContentKind(
-                  ((TemplateImportType) nameExprType)
+                  templateImportType
                       .getBasicTemplateType()
                       .getContentKind()
                       .getSanitizedContentKind()));
           return;
         } else if (nameExprType instanceof TemplateType) {
+          TemplateType templateType = (TemplateType) nameExprType;
           node.setType(
               SanitizedType.getTypeForContentKind(
-                  ((TemplateType) nameExprType).getContentKind().getSanitizedContentKind()));
+                  templateType.getContentKind().getSanitizedContentKind()));
           if (SoyTypes.isNullish(node.getNameExpr().getType())) {
             errorReporter.report(node.getNameExpr().getSourceLocation(), TEMPLATE_CALL_NULLISH);
           }
@@ -2491,7 +2593,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             knownFunction.getClass().getCanonicalName(),
             node);
       } else if (knownFunction instanceof BuiltinFunction) {
-        visitBuiltinFunction((BuiltinFunction) knownFunction, node);
+        BuiltinFunction builtinFunction = (BuiltinFunction) knownFunction;
+        visitBuiltinFunction(builtinFunction, node);
       }
 
       if (containsSpread) {
@@ -2773,7 +2876,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
       SoyType existingType = node.getType();
       if (existingType instanceof TemplateImportType) {
-        TemplateType basicType = ((TemplateImportType) existingType).getBasicTemplateType();
+        TemplateImportType templateImportType = (TemplateImportType) existingType;
+        TemplateType basicType = templateImportType.getBasicTemplateType();
         node.setType(
             Preconditions.checkNotNull(
                 basicType,
@@ -2858,10 +2962,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyType effectiveType = baseType.getEffectiveType();
       switch (effectiveType.getKind()) {
         case UNKNOWN:
-          // If we don't know anything about the base type, then make no assumptions
-          // about the field type.
-          return UnknownType.getInstance();
-
+          {
+            // If we don't know anything about the base type, then make no assumptions
+            // about the field type.
+            return UnknownType.getInstance();
+          }
         case RECORD:
           {
             RecordType recordType = (RecordType) effectiveType;
@@ -2880,14 +2985,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
               return UnknownType.getInstance();
             }
           }
-
         case LEGACY_OBJECT_MAP:
           {
             errorReporter.report(
                 sourceLocation, DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD, baseType);
             return UnknownType.getInstance();
           }
-
         case UNION:
           {
             // If it's a union, then do the field type calculation for each member of
@@ -2911,16 +3014,18 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             }
             return computeLowestCommonType(typeRegistry, fieldTypes);
           }
-
         case TEMPLATE_TYPE:
         case PROTO_TYPE:
         case PROTO_EXTENSION:
-          // May not be erased if other errors are present.
-          return UnknownType.getInstance();
-
+          {
+            // May not be erased if other errors are present.
+            return UnknownType.getInstance();
+          }
         default:
-          emitDefaultFieldNotFoundError(baseType, fieldName, sourceLocation);
-          return UnknownType.getInstance();
+          {
+            emitDefaultFieldNotFoundError(baseType, fieldName, sourceLocation);
+            return UnknownType.getInstance();
+          }
       }
     }
 
@@ -2948,21 +3053,24 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
       switch (baseType.getKind()) {
         case UNKNOWN:
-          // If we don't know anything about the base type, then make no assumptions
-          // about the item type.
-          return UnknownType.getInstance();
-
-        case LIST:
-          ListType listType = (ListType) baseType;
-
-          // For lists, the key type must either be unknown or assignable to integer.
-          if (!IntType.getInstance().isAssignableFromLoose(keyType)) {
-            errorReporter.report(keyLocation, BAD_INDEX_TYPE, keyType, baseType);
-            // fall through and report the element type.  This will allow more later type checks to
-            // be evaluated.
+          {
+            // If we don't know anything about the base type, then make no assumptions
+            // about the item type.
+            return UnknownType.getInstance();
           }
-          return listType.getElementType();
+        case LIST:
+          {
+            ListType listType = (ListType) baseType;
 
+            // For lists, the key type must either be unknown or assignable to integer.
+            if (!IntType.getInstance().isAssignableFromLoose(keyType)) {
+              errorReporter.report(keyLocation, BAD_INDEX_TYPE, keyType, baseType);
+              // fall through and report the element type.  This will allow more later type checks
+              // to
+              // be evaluated.
+            }
+            return listType.getElementType();
+          }
         case LEGACY_OBJECT_MAP:
           {
             AbstractMapType mapType = (AbstractMapType) baseType;
@@ -3008,10 +3116,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             }
             return computeLowestCommonType(typeRegistry, itemTypes);
           }
-
         default:
-          errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
-          return UnknownType.getInstance();
+          {
+            errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
+            return UnknownType.getInstance();
+          }
       }
     }
 
@@ -3060,13 +3169,17 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       validateBuiltinArgTypes(builtinFunction, node);
       switch (builtinFunction) {
         case CHECK_NOT_NULL:
-          SoyType type = node.getParam(0).getType();
-          if (SoyTypes.isNullOrUndefined(type)) {
-            errorReporter.report(
-                node.getSourceLocation(), CHECK_NOT_NULL_ON_COMPILE_TIME_NULL, "call checkNotNull");
-          } else {
-            // Same type as its child but with nulls removed
-            node.setType(excludeNullish(type));
+          {
+            SoyType type = node.getParam(0).getType();
+            if (SoyTypes.isNullOrUndefined(type)) {
+              errorReporter.report(
+                  node.getSourceLocation(),
+                  CHECK_NOT_NULL_ON_COMPILE_TIME_NULL,
+                  "call checkNotNull");
+            } else {
+              // Same type as its child but with nulls removed
+              node.setType(excludeNullish(type));
+            }
           }
           break;
         case IS_PRIMARY_MSG_IN_USE:
@@ -3074,8 +3187,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           node.setType(BoolType.getInstance());
           break;
         case CSS:
-          checkArgIsStringLiteralWithNoSpaces(node, node.numParams() - 1, builtinFunction);
-          node.setType(StringType.getInstance());
+          {
+            checkArgIsStringLiteralWithNoSpaces(node, node.numParams() - 1, builtinFunction);
+            node.setType(StringType.getInstance());
+          }
           break;
         case SOY_SERVER_KEY:
         case XID:
@@ -3085,18 +3200,22 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           node.setType(StringType.getInstance());
           break;
         case UNKNOWN_JS_GLOBAL:
-          checkArgIsStringLiteral(node, 0, builtinFunction);
-          node.setType(UnknownType.getInstance());
+          {
+            checkArgIsStringLiteral(node, 0, builtinFunction);
+            node.setType(UnknownType.getInstance());
+          }
           break;
         case VE_DATA:
           // Arg validation is already handled by the VeLogValidationPass
           node.setType(VeDataType.getInstance());
           break;
         case VE_DEF:
-          if (node.numParams() >= 3) {
-            node.setType(VeType.of(node.getParam(2).getType().toString()));
-          } else {
-            node.setType(VeType.NO_DATA);
+          {
+            if (node.numParams() >= 3) {
+              node.setType(VeType.of(node.getParam(2).getType().toString()));
+            } else {
+              node.setType(VeType.NO_DATA);
+            }
           }
           break;
         case TO_NUMBER:
@@ -3126,8 +3245,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           break;
         case UNDEFINED_TO_NULL:
         case UNDEFINED_TO_NULL_SSR:
-          visit(node.getParam(0));
-          node.setType(SoyTypes.undefinedToNull(node.getParam(0).getType()));
+          {
+            visit(node.getParam(0));
+            node.setType(SoyTypes.undefinedToNull(node.getParam(0).getType()));
+          }
           break;
         case EVAL_TOGGLE:
         case DEBUG_SOY_TEMPLATE_INFO:
@@ -3137,25 +3258,28 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           node.setType(BoolType.getInstance());
           break;
         case NEW_SET:
-          visit(node.getParam(0));
-          SoyType listType = node.getParam(0).getType();
-          if (listType instanceof AbstractIterableType) {
-            if (((AbstractIterableType) listType).isEmpty()) {
-              node.setType(SetType.empty());
-            } else {
-              SoyType keyType = ((AbstractIterableType) listType).getElementType();
-              if (SoyTypes.flattenUnion(keyType).anyMatch(t -> !MapType.isAllowedKeyValueType(t))) {
-                errorReporter.report(
-                    node.getParam(0).getSourceLocation(),
-                    CheckDeclaredTypesPass.BAD_MAP_OR_SET_KEY_TYPE,
-                    keyType);
+          {
+            visit(node.getParam(0));
+            SoyType listType = node.getParam(0).getType();
+            if (listType instanceof AbstractIterableType) {
+              AbstractIterableType abstractIterableType = (AbstractIterableType) listType;
+              if (abstractIterableType.isEmpty()) {
+                node.setType(SetType.empty());
+              } else {
+                SoyType keyType = abstractIterableType.getElementType();
+                if (SoyTypes.flattenUnion(keyType)
+                    .anyMatch(t -> !MapType.isAllowedKeyValueType(t))) {
+                  errorReporter.report(
+                      node.getParam(0).getSourceLocation(),
+                      CheckDeclaredTypesPass.BAD_MAP_OR_SET_KEY_TYPE,
+                      keyType);
+                }
+                node.setType(
+                    typeRegistry.getOrCreateSetType(abstractIterableType.getElementType()));
               }
-              node.setType(
-                  typeRegistry.getOrCreateSetType(
-                      ((AbstractIterableType) listType).getElementType()));
+            } else {
+              node.setType(UnknownType.getInstance());
             }
-          } else {
-            node.setType(UnknownType.getInstance());
           }
           break;
         case EMPTY_TO_UNDEFINED:
@@ -3168,7 +3292,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     private void checkArgIsStringLiteralWithNoSpaces(
         FunctionNode node, int childIndex, BuiltinFunction funcName) {
       StringNode stringNode = checkArgIsStringLiteral(node, childIndex, funcName);
-      if (stringNode != null && Pattern.compile("\\s+").matcher(stringNode.getValue()).find()) {
+      if (stringNode != null && GET_VALUE_PATTERN.matcher(stringNode.getValue()).find()) {
         errorReporter.report(node.getSourceLocation(), BAD_CLASS_STRING);
       }
     }
@@ -3268,7 +3392,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         if (!(childType instanceof MapType)) {
           return UnknownType.getInstance();
         }
-        MapType mapType = ((MapType) childType);
+        MapType mapType = (MapType) childType;
         if (mapType.isEmpty()) {
           continue;
         }
@@ -3414,7 +3538,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
   private static final class CompositeMethodRegistry implements SoyMethod.Registry {
     private final List<SoyMethod.Registry> registries;
 
-    public CompositeMethodRegistry(List<SoyMethod.Registry> registries) {
+    CompositeMethodRegistry(List<SoyMethod.Registry> registries) {
       this.registries = registries;
     }
 
@@ -3427,7 +3551,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     @Override
-    public ImmutableMultimap<SoyMethod, String> matchForBaseAndArgs(
+    public ImmutableListMultimap<SoyMethod, String> matchForBaseAndArgs(
         SoyType baseType, List<SoyType> argTypes) {
       ImmutableListMultimap.Builder<SoyMethod, String> combined = ImmutableListMultimap.builder();
       registries.forEach(r -> combined.putAll(r.matchForBaseAndArgs(baseType, argTypes)));
@@ -3489,7 +3613,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     @Override
-    public ImmutableMultimap<SoyMethod, String> matchForBaseAndArgs(
+    public ImmutableListMultimap<SoyMethod, String> matchForBaseAndArgs(
         SoyType baseType, List<SoyType> argTypes) {
       ImmutableListMultimap.Builder<SoyMethod, String> builder = ImmutableListMultimap.builder();
       plugins
@@ -3550,7 +3674,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     @Nullable
-    public SoySourceFunctionMethod findField(String fieldName, SoyType baseType) {
+    SoySourceFunctionMethod findField(String fieldName, SoyType baseType) {
       Preconditions.checkArgument(SoyTypes.isNullOrUndefined(baseType) || !isNullish(baseType));
       return methodCache.getUnchecked(fieldName).stream()
           .filter(method -> method.appliesToBase(baseType))
@@ -3558,7 +3682,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           .orElse(null);
     }
 
-    public ImmutableSet<String> getAllFieldNames(SoyType baseType) {
+    ImmutableSet<String> getAllFieldNames(SoyType baseType) {
       return plugins.getAllFieldNames().stream()
           .flatMap(methodName -> methodCache.getUnchecked(methodName).stream())
           .filter(method -> method.appliesToBase(baseType))

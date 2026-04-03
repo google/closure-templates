@@ -238,6 +238,40 @@ JS/TS script equality.
 Flattens a nested list. The behavior matches JavaScript's `Array.prototype.flat`
 method.
 
+<span id="list-any_findIndex"></span>
+
+### `list.findIndex(callback)` {#findIndex}
+
+Returns the index of the first element in the list that satisfies the provided
+testing function. Otherwise, it returns `-1`.
+
+<span id="list-any_flatMap"></span>
+
+### `list.flatMap(callback)` {#flatMap}
+
+Returns a new list formed by applying a given callback function to each element
+of the list, and then flattening the result by one level.
+
+<span id="list-any_forEach"></span>
+
+### `list.forEach(callback)` {#forEach}
+
+Executes a provided function once for each list element.
+
+<span id="list-any_reduce"></span>
+
+### `list.reduce(callback[, initialValue])` {#reduce}
+
+Executes a reducer function on each element of the list, resulting in a single
+output value.
+
+<span id="list-any_reduceRight"></span>
+
+### `list.reduceRight(callback[, initialValue])` {#reduceRight}
+
+Applies a function against an accumulator and each value of the list (from
+right-to-left) to reduce it to a single value.
+
 <span id="list-any_indexOf"></span>
 
 ### `list.indexOf(value[, startIndex])` {#listIndexOf}
