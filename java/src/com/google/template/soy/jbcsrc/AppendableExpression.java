@@ -136,9 +136,6 @@ final class AppendableExpression extends Expression {
   private static final MethodRef APPEND_CHAR =
       MethodRef.createNonPure(LoggingAdvisingAppendable.class, "append", char.class);
 
-  private static final MethodRef SOFT_LIMITED =
-      MethodRef.createNonPure(LoggingAdvisingAppendable.class, "softLimitReached").asCheap();
-
   static final MethodRef ENTER_LOGGABLE_STATEMENT =
       MethodRef.createNonPure(
           LoggingAdvisingAppendable.class, "enterLoggableElement", LogStatement.class);
@@ -231,12 +228,6 @@ final class AppendableExpression extends Expression {
    */
   AppendableExpression appendChar(Expression exp) {
     return withNewDelegate(e -> e.invoke(APPEND_CHAR, exp));
-  }
-
-  /** Returns an expression with the result of {@link AppendableExpression#softLimitReached}. */
-  Expression softLimitReached() {
-    checkArgument(supportsSoftLimiting);
-    return delegate.invoke(SOFT_LIMITED);
   }
 
   /** Invokes {@link LoggingAdvisingAppendable#enterLoggableElement} on the appendable. */
