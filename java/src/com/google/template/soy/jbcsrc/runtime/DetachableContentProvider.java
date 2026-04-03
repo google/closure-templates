@@ -377,7 +377,8 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
     @CanIgnoreReturnValue
     @Override
     @Nullable
-    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder) throws IOException {
+    public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder, StackFrame stackFrame)
+        throws IOException {
       if (delegates == null) {
         // No delegates, we must be capturing as a SoyValue, e.g. to pass to an extern. Add a
         // delegate that will execute the NodeBuilder.
@@ -391,7 +392,7 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
                 + " delegates should only happen with eager/optimisitc evaluation which"
                 + " kind=\"html\" is not eligible for.");
       }
-      StackFrame delegateFrame = delegates.get(0).appendNodeBuilder(nodeBuilder);
+      StackFrame delegateFrame = delegates.get(0).appendNodeBuilder(nodeBuilder, stackFrame);
       if (delegateFrame == null) {
         // Add the NodeBuilder to the local appendable only once the delegate is finished, so that
         // we don't add it multiple times if the delegate detaches.

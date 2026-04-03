@@ -26,34 +26,42 @@ import java.util.Collections;
 /** A lazy call. */
 public class NodeBuilder {
 
+  /**
+   * Provides a way for this class to override softLimitReached. For use when replaying
+   * NodeBuilders, we don't want to detach for LIMITED since we won't gencode detaches when
+   * re-resolving any SoyValueProvider. Independent of the actual appendable being used.
+   */
+  public interface SoftLimitOverrider {
+    void pushSoftLimitReachedOverride();
+
+    void popSoftLimitReachedOverride();
+  }
+
   /** Factory bound to a CallSite. */
   @SuppressWarnings("AvoidObjectArrays")
   public static interface Builder {
-    public NodeBuilder build(StackFrame stackFrame, Object[] templateParams, Object renderContext);
+    public NodeBuilder build(Object[] templateParams, Object renderContext);
   }
 
   public static Builder builder(CallSite callSite) {
-    return (StackFrame stackFrame, Object[] templateParams, Object renderContext) ->
-        new NodeBuilder(callSite, stackFrame, templateParams, renderContext);
+    return (Object[] templateParams, Object renderContext) ->
+        new NodeBuilder(callSite, templateParams, renderContext);
   }
 
   private final CallSite callSite;
-  private final StackFrame stackFrame;
   private final Object[] templateParams;
   // Type is always com.google.template.soy.jbcsrc.shared.RenderContext, declared as Object to avoid
   // circular dep.
   private final Object renderContext;
 
   @SuppressWarnings("AvoidObjectArrays")
-  public NodeBuilder(
-      CallSite callSite, StackFrame stackFrame, Object[] templateParams, Object renderContext) {
+  public NodeBuilder(CallSite callSite, Object[] templateParams, Object renderContext) {
     this.callSite = callSite;
-    this.stackFrame = stackFrame;
     this.templateParams = templateParams;
     this.renderContext = renderContext;
   }
 
-  public StackFrame render(LoggingAdvisingAppendable appendable) {
+  public StackFrame render(LoggingAdvisingAppendable appendable, StackFrame stackFrame) {
     ArrayList<Object> params = new ArrayList<>();
     params.add(stackFrame);
     Collections.addAll(params, templateParams);
@@ -67,37 +75,20 @@ public class NodeBuilder {
   }
 
   public void renderBlocking(LoggingAdvisingAppendable appendable) {
-    NoLimitAppendable delegate = new NoLimitAppendable(appendable);
-    NodeBuilder builder = this;
+    StackFrame stackFrame = null;
     do {
-      StackFrame newFrame;
       try {
-        newFrame = delegate.appendNodeBuilder(builder);
+        ((SoftLimitOverrider) renderContext).pushSoftLimitReachedOverride();
+        stackFrame = appendable.appendNodeBuilder(this, stackFrame);
       } catch (IOException e) {
         throw new UncheckedIOException(e);
+      } finally {
+        ((SoftLimitOverrider) renderContext).popSoftLimitReachedOverride();
       }
-      if (newFrame == null) {
+      if (stackFrame == null) {
         return;
       }
-      newFrame.asRenderResult().resolveDetach();
-      builder = new NodeBuilder(callSite, newFrame, templateParams, renderContext);
+      stackFrame.asRenderResult().resolveDetach();
     } while (true);
-  }
-
-  /**
-   * An appendable that forwards everything except softLimitReached() calls. Since we can't return
-   * control to the caller from renderBlocking we just return false unconditionally. This is ok
-   * since the rate limiting API as described in {@code AdvisingAppendable} is "cooperative",
-   * meaning softLimitReached() is just a hint, the receiver still always needs to accept writes.
-   */
-  private static class NoLimitAppendable extends ForwardingLoggingAdvisingAppendable {
-    protected NoLimitAppendable(LoggingAdvisingAppendable delegate) {
-      super(delegate);
-    }
-
-    @Override
-    public boolean softLimitReached() {
-      return false;
-    }
   }
 }

@@ -26,6 +26,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -195,6 +196,10 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
       MethodRef.createPure(
           RenderContext.class, "getInjectedValue", RecordProperty.class, SoyValue.class);
 
+  private static final MethodRef SOFT_LIMITED =
+      MethodRef.createNonPure(RenderContext.class, "softLimitReached", AdvisingAppendable.class)
+          .asCheap();
+
   private static final Type CSS_TO_TRACK_TYPE = Type.getType(RenderContext.CssToTrack.class);
   private static final Handle CSS_TO_TRACK_HANDLE =
       MethodRef.createPure(
@@ -216,6 +221,11 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   @Override
   protected void doGen(CodeBuilder adapter) {
     delegate.gen(adapter);
+  }
+
+  /** Returns an expression with the result of {@link AppendableExpression#softLimitReached}. */
+  Expression softLimitReached(AppendableExpression appendable) {
+    return delegate.invoke(SOFT_LIMITED, appendable);
   }
 
   @Override

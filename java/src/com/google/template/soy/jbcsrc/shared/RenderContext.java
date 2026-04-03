@@ -28,6 +28,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.Keep;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyInjector;
 import com.google.template.soy.data.SoyValue;
@@ -36,6 +37,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates.TemplateData;
 import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.msgs.GrammaticalGender;
@@ -64,7 +66,7 @@ import javax.annotation.Nullable;
  * A collection of contextual rendering data. Each top level rendering operation will obtain a
  * single instance of this object and it will be propagated throughout the render tree.
  */
-public final class RenderContext implements ContextStore {
+public final class RenderContext implements ContextStore, NodeBuilder.SoftLimitOverrider {
   // TODO(lukes):  within this object most of these fields are constant across all renders while
   // some are expected to change frequently (the renaming maps, msgBundle and activeModSelector).
   // Consider splitting this into two objects to represent the changing lifetimes.  We are kind of
@@ -84,6 +86,7 @@ public final class RenderContext implements ContextStore {
 
   private final SoyCssTracker cssTracker;
   private final SoyJsIdTracker jsIdTracker;
+  private int softLimitReachedOverrideCount = 0;
 
   /**
    * Stores memoized {const} values, which in SSR are actually request-scoped values, not Java
@@ -572,6 +575,23 @@ public final class RenderContext implements ContextStore {
   @Override
   public void restoreContext(ContextNode contextSnapshot) {
     currentContext = contextSnapshot;
+  }
+
+  @Override
+  public void pushSoftLimitReachedOverride() {
+    softLimitReachedOverrideCount++;
+  }
+
+  @Override
+  public void popSoftLimitReachedOverride() {
+    if (softLimitReachedOverrideCount == 0) {
+      throw new AssertionError("softLimitReachedOverride underrun");
+    }
+    softLimitReachedOverrideCount--;
+  }
+
+  public boolean softLimitReached(AdvisingAppendable appendable) {
+    return softLimitReachedOverrideCount == 0 && appendable.softLimitReached();
   }
 
   /** A builder for configuring the context. */

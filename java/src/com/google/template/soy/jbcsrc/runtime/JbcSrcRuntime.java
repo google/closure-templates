@@ -1120,7 +1120,7 @@ public final class JbcSrcRuntime {
                     RenderContext.class))
             .bindTo(tmpl);
     CallSite renderCallSite = new ConstantCallSite(renderMethod);
-    return new NodeBuilder(renderCallSite, stackFrame, new Object[] {params}, context);
+    return new NodeBuilder(renderCallSite, new Object[] {params}, context);
   }
 
   @Nonnull

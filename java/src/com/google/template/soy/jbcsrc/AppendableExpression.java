@@ -38,6 +38,7 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -157,7 +158,11 @@ final class AppendableExpression extends Expression {
           LoggingFunctionInvocation.class, "create", String.class, String.class, List.class);
 
   private static final MethodRef APPEND_NODE_BUILDER =
-      MethodRef.createPure(LoggingAdvisingAppendable.class, "appendNodeBuilder", NodeBuilder.class);
+      MethodRef.createPure(
+          LoggingAdvisingAppendable.class,
+          "appendNodeBuilder",
+          NodeBuilder.class,
+          StackFrame.class);
 
   private static final MethodRef SET_SANITIZED_CONTENT_KIND_AND_DIRECTIONALITY =
       MethodRef.createNonPure(
@@ -267,9 +272,9 @@ final class AppendableExpression extends Expression {
                 BytecodeUtils.asImmutableList(escapingDirectives)));
   }
 
-  /** Invokes {@link LoggingAdvisingAppendable#appendNodeBuilde} */
-  Expression appendNodeBuilder(Expression exp) {
-    return APPEND_NODE_BUILDER.invoke(this, exp);
+  /** Invokes {@link LoggingAdvisingAppendable#appendNodeBuilder} */
+  Expression appendNodeBuilder(Expression exp, Expression stackFrame) {
+    return APPEND_NODE_BUILDER.invoke(this, exp, stackFrame);
   }
 
   /** Invokes {@link LoggingAdvisingAppendable#setSanitizedContentKind} on the appendable. */
