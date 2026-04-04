@@ -19,14 +19,14 @@ workspace(name = "com_google_closure_templates")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:jvm.bzl", "jvm_maven_import_external")
 
-RULES_JVM_EXTERNAL_TAG = "5.3"
-RULES_JVM_EXTERNAL_SHA ="d31e369b854322ca5098ea12c69d7175ded971435e55c18dd9dd5f29cc5249ac"
+RULES_JVM_EXTERNAL_TAG = "6.10"
+RULES_JVM_EXTERNAL_SHA = "e5f83b8f2678d2b26441e5eafefb1b061826608417b8d24e5e8e15e585eab1ba"
 
 http_archive(
     name = "rules_jvm_external",
     strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
     sha256 = RULES_JVM_EXTERNAL_SHA,
-    url = "https://github.com/bazelbuild/rules_jvm_external/releases/download/%s/rules_jvm_external-%s.tar.gz" % (RULES_JVM_EXTERNAL_TAG, RULES_JVM_EXTERNAL_TAG)
+    url = "https://github.com/bazel-contrib/rules_jvm_external/releases/download/%s/rules_jvm_external-%s.tar.gz" % (RULES_JVM_EXTERNAL_TAG, RULES_JVM_EXTERNAL_TAG)
 )
 
 load("@rules_jvm_external//:repositories.bzl", "rules_jvm_external_deps")
@@ -194,3 +194,7 @@ http_archive(
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
 rules_proto_dependencies()
 rules_proto_toolchains()
+
+# Register the custom toolchains from the local rbe_toolchain directory
+register_toolchains("//rbe_toolchain/java:all")
+register_toolchains("//rbe_toolchain/config:all")
