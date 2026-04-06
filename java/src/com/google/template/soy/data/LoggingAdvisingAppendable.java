@@ -319,6 +319,12 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       return this;
     }
 
+    /** Returns true if there are any NodeBuilder commands in this buffer. */
+    public boolean hasNodeBuidlers() {
+      return this.commands != null
+          && this.commands.stream().anyMatch((c) -> c instanceof NodeBuilder);
+    }
+
     /**
      * Returns the commands list, allocating it if necessary and appending any string data to it.
      */
