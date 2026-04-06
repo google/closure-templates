@@ -42,6 +42,7 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
@@ -65,6 +66,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.msgs.restricted.SoyMsgViewerGrammaticalGenderPart;
 import com.google.template.soy.shared.RangeArgs;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
@@ -712,6 +714,14 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     @Override
     protected void visitGlobalNode(GlobalNode node) {
       // do nothing
+    }
+
+    @Override
+    protected void visitMethodCallNode(MethodCallNode node) {
+      var method = node.getSoyMethod();
+      if (method != BuiltinMethod.BIND) {
+        super.visitMethodCallNode(node);
+      }
     }
 
     @Override
