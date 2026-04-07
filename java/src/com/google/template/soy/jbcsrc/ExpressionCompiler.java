@@ -2561,6 +2561,14 @@ final class ExpressionCompiler {
     }
 
     @Override
+    Boolean visitListComprehensionVar(VarRefNode node, ComprehensionVarDefn var) {
+      if (var.declaringNode().getIndexVar() == var) {
+        return false;
+      }
+      return !analysis.isResolved(node);
+    }
+
+    @Override
     protected Boolean visitMethodCallNode(MethodCallNode node) {
       var method = node.getSoyMethod();
       if (method == BuiltinMethod.BIND || method == BuiltinMethod.FUNCTION_BIND) {
