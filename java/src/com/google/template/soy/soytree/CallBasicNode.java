@@ -142,8 +142,10 @@ public final class CallBasicNode extends CallNode {
     return calleeExpr;
   }
 
+  private static final boolean FORCE_LAZY_CALLS = Boolean.getBoolean("soy_force_lazy_calls");
+
   public boolean isLazy() {
-    return this.lazy;
+    return this.lazy || (FORCE_LAZY_CALLS && isHtml());
   }
 
   public boolean isHtml() {
