@@ -461,6 +461,7 @@ final class ExpressionCompiler {
     private final JavaSourceFunctionCompiler sourceFunctionCompiler;
     private final PartialFileSetMetadata fileSetMetadata;
     private final boolean isConstantContext;
+    private final ExpressionToSoyValueProviderCompiler svpCompiler;
 
     CompilerVisitor(
         SoyNode context,
@@ -479,6 +480,17 @@ final class ExpressionCompiler {
       this.sourceFunctionCompiler = checkNotNull(sourceFunctionCompiler);
       this.fileSetMetadata = fileSetMetadata;
       this.isConstantContext = isConstantContext;
+      this.svpCompiler =
+          ExpressionToSoyValueProviderCompiler.create(
+              analysis,
+              ExpressionCompiler.create(
+                  context,
+                  analysis,
+                  parameters,
+                  varManager,
+                  sourceFunctionCompiler,
+                  fileSetMetadata),
+              parameters);
     }
 
     @Override
@@ -735,11 +747,32 @@ final class ExpressionCompiler {
       return isConstantContext ? record.toMaybeConstant() : record;
     }
 
+    /**
+     * When passing vars to bind(), we don't need to resolve them because the callee template will
+     * perform the detach logic. Resolving them at the bind() site will break context API since
+     * things will no longer be evaluated in page order.
+     */
+    private Expression recordLiteralAsParamStoreForBind(RecordLiteralNode node) {
+      return recordLiteralAsParamStore(node, /* emitSoyValueProviders= */ true);
+    }
+
     private Expression recordLiteralAsParamStore(RecordLiteralNode node) {
+      // TODO(b/492505501): It might be possible to defer resolving individual record fields until
+      // they are accessed.
+      return recordLiteralAsParamStore(node, /* emitSoyValueProviders= */ false);
+    }
+
+    private Expression recordLiteralAsParamStore(
+        RecordLiteralNode node, boolean emitSoyValueProviders) {
       Map<String, Expression> recordMap = new LinkedHashMap<>();
+
       for (int i = 0; i < node.numChildren(); i++) {
-        // Keys are RecordProperty objects and values are SoyValue object.
-        recordMap.put(node.getKey(i).identifier(), visit(node.getChild(i)));
+        Expression value =
+            emitSoyValueProviders && detacher != null
+                ? svpCompiler.compile(node.getChild(i), detacher)
+                : visit(node.getChild(i));
+        // Keys are RecordProperty objects and values are SoyValue/Providers.
+        recordMap.put(node.getKey(i).identifier(), value);
       }
       return BytecodeUtils.newParamStore(Optional.empty(), recordMap);
     }
@@ -1729,7 +1762,7 @@ final class ExpressionCompiler {
                   node.getType(),
                   MethodRefs.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
                       baseExpr.checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE),
-                      recordLiteralAsParamStore(record)));
+                      recordLiteralAsParamStoreForBind(record)));
             }
         }
       } else if (function instanceof SoySourceFunctionMethod) {
