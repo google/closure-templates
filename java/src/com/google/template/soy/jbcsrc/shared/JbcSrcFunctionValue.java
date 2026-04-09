@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.FunctionalInterfaceUtil;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import java.lang.invoke.MethodHandle;
@@ -31,6 +32,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.List;
 
 /** Runtime type for function pointers. */
 @AutoValue
@@ -38,6 +40,7 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
 
   private static final MethodHandle ADAPT_RETURN;
   private static final MethodHandle ADAPT_ARG_TO_SOY_VALUE;
+  private static final MethodHandle ADAPT_ARG_FROM_SOY_VALUE;
 
   static {
     try {
@@ -53,6 +56,11 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
               JbcSrcFunctionValue.class,
               "adaptArgToSoyValue",
               MethodType.methodType(SoyValue.class, Object.class, Class.class));
+      ADAPT_ARG_FROM_SOY_VALUE =
+          lookup.findStatic(
+              JbcSrcFunctionValue.class,
+              "adaptArgFromSoyValue",
+              MethodType.methodType(Object.class, SoyValue.class, Class.class));
     } catch (ReflectiveOperationException e) {
       throw new VerifyException(e);
     }
@@ -114,6 +122,11 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
       Class<?> provided = functionalMethod.getParameterTypes()[i];
       if (SoyValue.class.isAssignableFrom(expected) && !SoyValue.class.isAssignableFrom(provided)) {
         argFilters[i] = MethodHandles.insertArguments(ADAPT_ARG_TO_SOY_VALUE, 1, provided);
+      } else if (!SoyValue.class.isAssignableFrom(expected)
+          && SoyValue.class.isAssignableFrom(provided)) {
+        MethodHandle adaptArg =
+            MethodHandles.insertArguments(ADAPT_ARG_FROM_SOY_VALUE, 1, expected);
+        argFilters[i] = adaptArg.asType(adaptArg.type().changeReturnType(expected));
       }
     }
     handle = MethodHandles.filterArguments(handle, 0, argFilters);
@@ -179,11 +192,44 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
     if (returnType == float.class || returnType == Float.class) {
       return ((Number) val).floatValue();
     }
+    if (SoyValue.class.isAssignableFrom(returnType)) {
+      return SoyValueConverter.INSTANCE.convert(val).resolve();
+    }
     return val;
   }
 
   /** Adapt value passed to Java extern from what Java passes. */
   public static SoyValue adaptArgToSoyValue(Object val, Class<?> paramType) {
     return SoyValueConverter.INSTANCE.convert(val).resolve();
+  }
+
+  /** Adapt value passed from Java interface to what Java extern method expects. */
+  public static Object adaptArgFromSoyValue(SoyValue val, Class<?> expectedType) {
+    if (expectedType == int.class || expectedType == Integer.class) {
+      return val.integerValue();
+    }
+    if (expectedType == long.class || expectedType == Long.class) {
+      return val.longValue();
+    }
+    if (expectedType == float.class || expectedType == Float.class) {
+      return (float) val.floatValue();
+    }
+    if (expectedType == double.class || expectedType == Double.class) {
+      return val.numberValue();
+    }
+    if (expectedType == boolean.class || expectedType == Boolean.class) {
+      return val.booleanValue();
+    }
+    if (expectedType == String.class) {
+      return val.stringValue();
+    }
+    if (List.class.isAssignableFrom(expectedType)) {
+      if (val instanceof SoyList) {
+        SoyList soyList = (SoyList) val;
+        return soyList.asResolvedJavaList();
+      }
+      return val;
+    }
+    return val;
   }
 }
