@@ -23,7 +23,7 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         "//java/src/com/google/template/soy/plugin/restricted",
-        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_auto_value_auto_value",
         "@maven//:com_google_guava_guava",
     ],
 )

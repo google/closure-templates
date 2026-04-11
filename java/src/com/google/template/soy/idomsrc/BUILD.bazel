@@ -27,7 +27,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/jssrc",
-        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_auto_value_auto_value",
     ],
 )
 
