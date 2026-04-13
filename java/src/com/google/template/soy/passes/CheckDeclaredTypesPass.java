@@ -112,44 +112,42 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
                 // this means an error was already reported
                 return;
               }
-              if (node instanceof GenericTypeNode) {
-                GenericTypeNode genericTypeNode = (GenericTypeNode) node;
+              if (node instanceof GenericTypeNode genericTypeNode) {
                 SoyType soyType = node.getResolvedType();
                 switch (soyType.getKind()) {
-                  case MAP:
+                  case MAP -> {
                     TypeNode key = genericTypeNode.arguments().get(0);
                     if (!MapType.isAllowedKeyType(key.getResolvedType())) {
                       errorReporter.report(
                           key.sourceLocation(), BAD_MAP_OR_SET_KEY_TYPE, key.getResolvedType());
                     }
-                    break;
-                  case VE:
+                  }
+                  case VE -> {
                     TypeNode dataType = genericTypeNode.arguments().get(0);
                     if (dataType.getResolvedType().getKind() != Kind.PROTO
                         && !SoyTypes.isNullOrUndefined(dataType.getResolvedType())) {
                       errorReporter.report(
                           dataType.sourceLocation(), VE_BAD_DATA_TYPE, dataType.getResolvedType());
                     }
-                    break;
-                  default:
-                    break;
+                  }
+                  default -> {}
                 }
               }
             });
   }
 
   private void checkLiteralTypes(TypeNode root) {
-    if (root instanceof LiteralTypeNode) {
-      ExprNode value = ((LiteralTypeNode) root).literal();
+    if (root instanceof LiteralTypeNode literalTypeNode) {
+      ExprNode value = literalTypeNode.literal();
       if (value.getKind() != ExprNode.Kind.NULL_NODE
           && value.getKind() != ExprNode.Kind.UNDEFINED_NODE) {
         errorReporter.report(root.sourceLocation(), LITERAL_TYPE);
       }
-    } else if (root instanceof GenericTypeNode) {
+    } else if (root instanceof GenericTypeNode genericTypeNode) {
       // String literal type nodes are only valid in the second argument of Pick<> and Omit<>.
-      String type = ((GenericTypeNode) root).name();
+      String type = genericTypeNode.name();
       if (type.equals("Pick") || type.equals("Omit")) {
-        checkGenericTypes(((GenericTypeNode) root).arguments().get(0));
+        checkGenericTypes(genericTypeNode.arguments().get(0));
         return;
       }
     }

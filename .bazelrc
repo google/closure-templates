@@ -1,1 +1,8 @@
-build --java_language_version=11
+build:remote --java_language_version=17
+build:remote --java_runtime_version=remotejdk_17
+build:remote --tool_java_language_version=17
+build:remote --tool_java_runtime_version=remotejdk_17
+
+#build --host_javabase=@bazel_tools//tools/jdk:remote_jdk17
+
+common --enable_workspace=true

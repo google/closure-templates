@@ -19,8 +19,39 @@ workspace(name = "com_google_closure_templates")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:jvm.bzl", "jvm_maven_import_external")
 
-RULES_JVM_EXTERNAL_TAG = "5.3"
-RULES_JVM_EXTERNAL_SHA ="d31e369b854322ca5098ea12c69d7175ded971435e55c18dd9dd5f29cc5249ac"
+http_archive(
+    name = "rules_java",
+    urls = [
+        "https://github.com/bazelbuild/rules_java/releases/download/9.4.0/rules_java-9.4.0.tar.gz",
+    ],
+    sha256 = "f1c2526c8011f5082c9080f617799d6fbbf9fbe18ab132d09f561be6d543ea49",
+)
+
+http_archive(
+    name = "bazel_features",
+    sha256 = "a660027f5a87f13224ab54b8dc6e191693c554f2692fcca46e8e29ee7dabc43b",
+    strip_prefix = "bazel_features-1.30.0",
+    url = "https://github.com/bazel-contrib/bazel_features/releases/download/v1.30.0/bazel_features-v1.30.0.tar.gz",
+)
+
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+bazel_features_deps()
+
+load("@rules_java//java:rules_java_deps.bzl", "rules_java_dependencies")
+rules_java_dependencies()
+
+# note that the following line is what is minimally required from protobuf for the java rules
+# consider using the protobuf_deps() public API from @com_google_protobuf//:protobuf_deps.bzl
+load("@com_google_protobuf//bazel/private:proto_bazel_features.bzl", "proto_bazel_features")  # buildifier: disable=bzl-visibility
+proto_bazel_features(name = "proto_bazel_features")
+
+# register toolchains
+load("@rules_java//java:repositories.bzl", "rules_java_toolchains")
+rules_java_toolchains()
+
+
+RULES_JVM_EXTERNAL_TAG = "6.10"
+RULES_JVM_EXTERNAL_SHA ="e5f83b8f2678d2b26441e5eafefb1b061826608417b8d24e5e8e15e585eab1ba"
 
 http_archive(
     name = "rules_jvm_external",
@@ -171,17 +202,6 @@ jvm_maven_import_external(
     neverlink = True,
     server_urls = SERVER_URLS,
 )
-
-http_archive(
-    name = "rules_java",
-    urls = [
-        "https://github.com/bazelbuild/rules_java/releases/download/6.2.2/rules_java-6.2.2.tar.gz",
-    ],
-    sha256 = "847527aa7f74712e0a63af2670ba3ddc04e8ea3d8930a7947c17aebfb29d5294",
-)
-load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_java_toolchains")
-rules_java_dependencies()
-rules_java_toolchains()
 
 http_archive(
     name = "rules_proto",
