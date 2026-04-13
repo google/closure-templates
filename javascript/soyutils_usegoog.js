@@ -1005,6 +1005,14 @@ const BLOCK_TAGS_RE_ =
 //     ../../../third_party/java_src/soy/java/com/google/template/soy/data/HtmlToText.java,
 //     ../../../third_party/java_src/soy/python/runtime/sanitize.py:htmlToText)
 
+/**
+ * Returns whether the value needs HTML escaping.
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {boolean} True if the value needs HTML escaping.
+ */
+const $$htmlStringNeedsEscaping = function(value) {
+  return String(value).search($$MATCHER_FOR_ESCAPE_HTML_) !== -1;
+};
 
 /**
  * Escapes HTML, except preserves entities.
@@ -3057,6 +3065,7 @@ exports = {
   $$escapeHtml,
   $$cleanHtml,
   $$htmlToText,
+  $$htmlStringNeedsEscaping,
   $$normalizeHtml,
   $$escapeHtmlRcdata,
   $$stripHtmlTags,
