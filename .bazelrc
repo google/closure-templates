@@ -1,1 +1,57 @@
-build --java_language_version=11
+# Copyright 2026 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+###############################################################################
+# Global options
+###############################################################################
+
+# Enable absl::string_view support in @googletest
+build --define absl=1
+
+# Fix the Java version
+build --java_language_version=21 # Version of the source files
+build --java_runtime_version=remotejdk_21 # Hermetic JRE
+
+# Fix the Java toolchain version
+build --tool_java_language_version=11
+build --tool_java_runtime_version=remotejdk_11
+
+###############################################################################
+# Options for linux with LLVM toolchain
+################################################################################
+
+build --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
+
+build --toolchain_resolution_debug='@bazel_tools//tools/cpp:toolchain_type'
+
+###############################################################################
+# Options for asan.
+################################################################################
+
+build --strip=never
+build --copt -fsanitize=address
+build --copt -DADDRESS_SANITIZER
+build --copt -O1
+build --copt -g
+build --copt -fno-omit-frame-pointer
+build --linkopt -fsanitize=address
+
+###############################################################################
+# Options for remote execution.
+################################################################################
+
+# Enforce stricter environment rules, which eliminates some non-hermetic
+# behavior and therefore improves both the remote cache hit rate and the
+# correctness and repeatability of the build.
+build:remote --incompatible_strict_action_env=false

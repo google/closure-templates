@@ -26,12 +26,12 @@ java_library(
     name = "tests",
     srcs = glob(["*.java"]),
     deps = [
+        "//:auto_value",
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/shared",
         "//java/src/com/google/template/soy/soytree",
-        "@com_google_auto_value_auto_value",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",

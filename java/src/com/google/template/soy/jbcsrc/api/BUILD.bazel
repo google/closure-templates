@@ -155,7 +155,7 @@ java_library(
     name = "plugin_runtime_instance_info",
     srcs = ["PluginRuntimeInstanceInfo.java"],
     deps = [
-        "@com_google_auto_value_auto_value",
+        "//:auto_value",
         "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
     ],

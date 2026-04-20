@@ -32,8 +32,8 @@ java_library(
         exclude = REFLECTIVE_SRCS + EXTERN_HELPERS_SRCS,
     ),
     deps = [
+        "//:auto_value",
         "//java/src/com/google/template/soy/base/internal",
-        "@com_google_auto_value_auto_value",
         "@maven//:com_google_guava_guava",
     ],
 )

@@ -25,9 +25,9 @@ java_library(
     srcs = OPTIONS_SRCS,
     visibility = ["//visibility:public"],
     deps = [
+        "//:auto_value",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/jssrc",
-        "@com_google_auto_value_auto_value",
     ],
 )
 

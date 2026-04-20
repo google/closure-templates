@@ -22,7 +22,7 @@
 // =================================================================================================
 
 options {
-  JDK_VERSION = "1.7";
+  JDK_VERSION = "17";
   STATIC = false;
   UNICODE_INPUT = true;
   SUPPORT_CLASS_VISIBILITY_PUBLIC = false;
@@ -31,6 +31,7 @@ options {
 
   DEBUG_PARSER = false;
   DEBUG_TOKEN_MANAGER = false;
+  GENERATE_ANNOTATIONS = true;
 }
 
 

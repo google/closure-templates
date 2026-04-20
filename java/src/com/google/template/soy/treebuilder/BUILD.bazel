@@ -22,12 +22,12 @@ java_library(
     name = "treebuilder",
     srcs = glob(["*.java"]),
     deps = [
+        "//:auto_value",
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/basetree",
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/shared/internal:builtin_function",
-        "@com_google_auto_value_auto_value",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
     ],

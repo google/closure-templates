@@ -24,7 +24,10 @@ package(
 java_library(
     name = "tests",
     srcs = glob(["*.java"]),
-    resources = glob(["*.soy"]),
+    resources = glob(
+        ["*.soy"],
+        allow_empty = True,
+    ),
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/internal/exemptions",

@@ -52,7 +52,6 @@ import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
-import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableBuilder;
@@ -119,7 +118,7 @@ import org.objectweb.asm.commons.Method;
 /**
  * Utilities for dealing with protocol buffers.
  *
- * <p>TODO(user): Consider moving this back into ExpressionCompiler.
+ * <p>TODO: Consider moving this back into ExpressionCompiler.
  */
 final class ProtoUtils {
 
@@ -1255,7 +1254,7 @@ final class ProtoUtils {
                       }
 
                       cb.pop(); // pop null off list, skip to end
-                      // TODO(user): This violates Expression contract, as it jumps out of itself
+                      // TODO: This violates Expression contract, as it jumps out of itself
                       cb.goTo(end);
 
                       cb.mark(isNonNull);
@@ -1524,7 +1523,7 @@ final class ProtoUtils {
      * setter.
      */
     private static void coerce(CodeBuilder cb, Type currentType, FieldDescriptor field) {
-      // TODO(user): This might be a good place to do some extra type-checking, by
+      // TODO: This might be a good place to do some extra type-checking, by
       // running comparisons between currentType to getRuntimeType(field).
       switch (field.getJavaType()) {
         case BOOLEAN:
@@ -1623,7 +1622,7 @@ final class ProtoUtils {
       }
     }
 
-    // TODO(user): Consider consolidating all the safe proto references to a single place.
+    // TODO: Consider consolidating all the safe proto references to a single place.
     private static boolean isSafeProto(FieldDescriptor field) {
       return field.getJavaType() == JavaType.MESSAGE
           && SAFE_PROTO_TO_SANITIZED_CONTENT.containsKey(field.getMessageType().getFullName());
@@ -1738,7 +1737,7 @@ final class ProtoUtils {
    */
   private static boolean isOpenEnumField(FieldDescriptor descriptor) {
     return descriptor.getType() == Descriptors.FieldDescriptor.Type.ENUM
-        && descriptor.getFile().getSyntax() == Syntax.PROTO3;
+        && !descriptor.legacyEnumFieldTreatedAsClosed();
   }
 
   /** Returns the {@link MethodRef} for the generated hasser method. */

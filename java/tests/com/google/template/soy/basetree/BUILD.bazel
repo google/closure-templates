@@ -25,6 +25,9 @@ package(
 java_library(
     name = "tests",
     srcs = glob(["*.java"]),
+    javacopts = [
+        "-Xep:CheckReturnValue:OFF",
+    ],
     runtime_deps = [
         "//java/src/com/google/template/soy/exprtree",
     ],

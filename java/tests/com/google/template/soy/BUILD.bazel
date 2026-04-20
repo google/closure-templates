@@ -26,6 +26,7 @@ java_library(
     name = "tests",
     srcs = glob(["*.java"]),
     deps = [
+        "//:auto_value",
         "//java/src/com/google/template/soy:impl",
         "//java/src/com/google/template/soy:per_input_output_files",
         "//java/src/com/google/template/soy:soy_cmdline",
@@ -49,7 +50,6 @@ java_library(
         "//src/main/protobuf:css_metadata_java_proto",
         "//src/main/protobuf:template_metadata_java_proto",
         "//src/test/protobuf:test_protos_java_proto",
-        "@com_google_auto_value_auto_value",
         "@maven//:com_google_common_html_types_types",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",

@@ -14,9 +14,45 @@
 # limitations under the License.
 ##
 
+package(default_visibility = ["//visibility:public"])
+
 package_group(
     name = "soy_internal",
     packages = [
         "//...",
+    ],
+)
+
+java_plugin(
+    name = "auto_value_plugin",
+    processor_class = "com.google.auto.value.processor.AutoValueProcessor",
+    deps = [
+        "@maven//:com_google_auto_value_auto_value",
+        "@maven//:com_google_auto_value_auto_value_annotations",
+    ],
+)
+
+java_plugin(
+    name = "auto_one_of_plugin",
+    processor_class = "com.google.auto.value.processor.AutoOneOfProcessor",
+    deps = ["@maven//:com_google_auto_value_auto_value"],
+)
+
+java_plugin(
+    name = "auto_annotation_plugin",
+    processor_class = "com.google.auto.value.processor.AutoAnnotationProcessor",
+    deps = ["@maven//:com_google_auto_value_auto_value"],
+)
+
+java_library(
+    name = "auto_value",
+    exported_plugins = [
+        ":auto_value_plugin",
+        ":auto_one_of_plugin",
+        ":auto_annotation_plugin",
+    ],
+    exports = [
+        "@maven//:com_google_auto_value_auto_value",
+        "@maven//:com_google_auto_value_auto_value_annotations",
     ],
 )
