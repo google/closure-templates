@@ -170,16 +170,12 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
       return NonceType.NONE;
     }
     String name = nameObj.getStaticTagNameAsLowerCase();
-    switch (name) {
-      case "script":
-        return NonceType.OTHER;
-      case "style":
-        return NonceType.STYLE;
-      case "link":
-        return isNonceableLink(tag);
-      default:
-        return NonceType.NONE;
-    }
+    return switch (name) {
+      case "script" -> NonceType.OTHER;
+      case "style" -> NonceType.STYLE;
+      case "link" -> isNonceableLink(tag);
+      default -> NonceType.NONE;
+    };
   }
 
   @Nullable

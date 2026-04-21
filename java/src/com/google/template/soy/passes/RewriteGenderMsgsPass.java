@@ -207,12 +207,12 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
               selectNode.getSourceLocation(), MORE_THAN_TWO_GENDER_EXPRS_WITH_PLURAL);
           return false;
         }
-        if (caseNodeChild instanceof MsgSelectNode) {
+        if (caseNodeChild instanceof MsgSelectNode msgSelectNode) {
           if (depth >= 3) {
             errorReporter.report(selectNode.getSourceLocation(), MORE_THAN_THREE_TOTAL_GENDERS);
             return false;
           } else {
-            boolean validSubtree = checkExceedsMaxGenders((MsgSelectNode) caseNodeChild, depth + 1);
+            boolean validSubtree = checkExceedsMaxGenders(msgSelectNode, depth + 1);
             if (!validSubtree) {
               return false;
             }

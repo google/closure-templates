@@ -119,9 +119,9 @@ final class LocalVariablesNodeVisitor {
       VarDefn defn = lookup(varRef.getName());
       if (defn != null && varRef.originallyLeadingDot()) {
         // Only local template references may begin with '.'
-        if (defn instanceof SymbolVar
-            && !((SymbolVar) defn).isImported()
-            && ((SymbolVar) defn).getSymbolKind() == SymbolKind.TEMPLATE) {
+        if (defn instanceof SymbolVar symbolVar
+            && !symbolVar.isImported()
+            && symbolVar.getSymbolKind() == SymbolKind.TEMPLATE) {
           return defn;
         }
         return null;
@@ -206,8 +206,8 @@ final class LocalVariablesNodeVisitor {
       for (ExternNode extern : node.getExterns()) {
         VarDefn var = extern.getVar();
         VarDefn preexisting = localVariables.lookup(var.refName());
-        if (preexisting instanceof SymbolVar
-            && ((SymbolVar) preexisting).getSymbolKind() == SymbolKind.EXTERN) {
+        if (preexisting instanceof SymbolVar symbolVar
+            && symbolVar.getSymbolKind() == SymbolKind.EXTERN) {
           // Allow multiple externs with the same name.
           continue;
         }
@@ -316,17 +316,17 @@ final class LocalVariablesNodeVisitor {
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ExprHolderNode) {
-        visitExpressions((ExprHolderNode) node);
+      if (node instanceof ExprHolderNode exprHolderNode) {
+        visitExpressions(exprHolderNode);
       }
 
-      if (node instanceof ParentSoyNode<?>) {
-        if (node instanceof BlockNode) {
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        if (node instanceof BlockNode blockNode) {
           localVariables.enterScope();
-          visitChildren((BlockNode) node);
+          visitChildren(blockNode);
           localVariables.exitScope();
         } else {
-          visitChildren((ParentSoyNode<?>) node);
+          visitChildren(parentSoyNode);
         }
       }
     }
@@ -375,31 +375,23 @@ final class LocalVariablesNodeVisitor {
   }
 
   private static String englishName(VarDefn varDefn) {
-    switch (varDefn.kind()) {
-      case PARAM:
-        return "Parameter";
-      case STATE:
-        return "State parameter";
-      case SYMBOL:
+    return switch (varDefn.kind()) {
+      case PARAM -> "Parameter";
+      case STATE -> "State parameter";
+      case SYMBOL -> {
         SymbolVar symbolVar = (SymbolVar) varDefn;
         if (symbolVar.isImported()) {
-          return "Imported symbol";
+          yield "Imported symbol";
         }
-        if (symbolVar.getSymbolKind() == SymbolKind.TEMPLATE) {
-          return "Template name";
-        }
-        if (symbolVar.getSymbolKind() == SymbolKind.EXTERN) {
-          return "Extern function";
-        }
-        if (symbolVar.getSymbolKind() == SymbolKind.CONST) {
-          return "Const";
-        }
-        return "Symbol"; // Should not happen.
-      case LOCAL_VAR:
-      case COMPREHENSION_VAR:
-        return "Local variable";
-    }
-    throw new AssertionError(varDefn.kind());
+        yield switch (symbolVar.getSymbolKind()) {
+          case TEMPLATE -> "Template name";
+          case EXTERN -> "Extern function";
+          case CONST -> "Const";
+          default -> "Symbol"; // Should not happen.
+        };
+      }
+      case LOCAL_VAR, COMPREHENSION_VAR -> "Local variable";
+    };
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -444,8 +436,8 @@ final class LocalVariablesNodeVisitor {
 
     @Override
     protected void visitExprNode(ExprNode node) {
-      if (node instanceof ParentExprNode) {
-        visitChildren((ParentExprNode) node);
+      if (node instanceof ParentExprNode parentExprNode) {
+        visitChildren(parentExprNode);
       }
     }
 

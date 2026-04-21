@@ -113,8 +113,8 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     for (SoyFileNode fileNode : sourceFiles) {
       LocalVariables localVariables = LocalVariablesNodeVisitor.getFileScopeVariables(fileNode);
       for (TemplateNode template : fileNode.getTemplates()) {
-        if (template instanceof TemplateDelegateNode
-            && isNullOrEmpty(((TemplateDelegateNode) template).getDelTemplateVariant())
+        if (template instanceof TemplateDelegateNode delegateNode
+            && isNullOrEmpty(delegateNode.getDelTemplateVariant())
             && isNullOrEmpty(template.getModName())) {
           errorReporter.report(template.getSourceLocation(), DELTEMPLATES_DEPRECATED);
         }

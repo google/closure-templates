@@ -94,11 +94,10 @@ final class KeyCommandPass implements CompilerFilePass {
   }
 
   private void checkNodeIsValidChildOfOpenTagNode(KeyNode node) {
-    if (!(node.getParent() instanceof HtmlOpenTagNode)) {
+    if (!(node.getParent() instanceof HtmlOpenTagNode tagNode)) {
       errorReporter.report(node.getSourceLocation(), KEY_ATTR_DIRECT_CHILD_OF_OPEN_TAG);
       return;
     }
-    HtmlOpenTagNode tagNode = (HtmlOpenTagNode) node.getParent();
     if (tagNode.getTaggedPairs().size() > 1) {
       errorReporter.report(node.getSourceLocation(), KEY_ELEMENT_AMBIGUOUS);
       return;
@@ -124,12 +123,12 @@ final class KeyCommandPass implements CompilerFilePass {
   //  TODO(b/119309461): Remove after migration is complete.
   private void checkNoDuplicateKeyAttribute(KeyNode node) {
     SoyNode parentNode = node.getParent();
-    if (!(parentNode instanceof HtmlOpenTagNode)) {
+    if (!(parentNode instanceof HtmlOpenTagNode tagNode)) {
       // Error thrown before this.
       return;
     }
 
-    HtmlAttributeNode keyAttrNode = ((HtmlOpenTagNode) parentNode).getDirectAttributeNamed("key");
+    HtmlAttributeNode keyAttrNode = tagNode.getDirectAttributeNamed("key");
     if (keyAttrNode != null) {
       errorReporter.report(keyAttrNode.getSourceLocation(), DUPLICATE_KEY_ATTR);
     }

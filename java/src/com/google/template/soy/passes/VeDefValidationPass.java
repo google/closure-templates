@@ -117,17 +117,17 @@ final class VeDefValidationPass implements CompilerFileSetPass {
       return;
     }
 
-    if (!(func.getParam(0) instanceof StringNode)) {
+    if (!(func.getParam(0) instanceof StringNode stringNode)) {
       errorReporter.report(func.getParam(0).getSourceLocation(), BAD_VE_DEF_NAME);
       return;
     }
-    String veName = ((StringNode) func.getParam(0)).getValue();
+    String veName = stringNode.getValue();
 
-    if (!(func.getParam(1) instanceof NumberNode)) {
+    if (!(func.getParam(1) instanceof NumberNode numberNode)) {
       errorReporter.report(func.getParam(1).getSourceLocation(), BAD_VE_DEF_ID);
       return;
     }
-    long id = ((NumberNode) func.getParam(1)).longValue();
+    long id = numberNode.longValue();
 
     Optional<String> dataProtoType;
     if (func.numParams() < 3 || func.getParam(2) instanceof NullNode) {
@@ -157,10 +157,9 @@ final class VeDefValidationPass implements CompilerFileSetPass {
   }
 
   private static boolean isVeDef(ExprNode node) {
-    if (!(node instanceof FunctionNode)) {
+    if (!(node instanceof FunctionNode functionNode)) {
       return false;
     }
-    FunctionNode functionNode = (FunctionNode) node;
     return functionNode.isResolved() && functionNode.getSoyFunction() == BuiltinFunction.VE_DEF;
   }
 }

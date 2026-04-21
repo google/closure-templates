@@ -98,8 +98,7 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     SoyTreeUtils.allNodesOfType(file, VarRefNode.class)
-        .filter(
-            v -> v.getDefnDecl() instanceof SymbolVar && ((SymbolVar) v.getDefnDecl()).isImported())
+        .filter(v -> v.getDefnDecl() instanceof SymbolVar symbolVar && symbolVar.isImported())
         .forEach(
             v -> {
               while (v != null) {
@@ -153,8 +152,8 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
 
     if (inlined != null) {
       parent.getParent().replaceChild(parent, inlined);
-      if (inlined instanceof VarRefNode) {
-        return (VarRefNode) inlined;
+      if (inlined instanceof VarRefNode varRefNode) {
+        return varRefNode;
       }
     }
 
@@ -245,9 +244,8 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
       // Unknown methods will be reported later.
       if (kind != Kind.METHOD_CALL_NODE) {
         String didYouMean = "";
-        if (type instanceof ImportType) {
-          didYouMean =
-              SoyErrors.getDidYouMeanMessage(((ImportType) type).getNestedSymbolNames(), fieldName);
+        if (type instanceof ImportType importType) {
+          didYouMean = SoyErrors.getDidYouMeanMessage(importType.getNestedSymbolNames(), fieldName);
         }
 
         errorReporter.report(
@@ -268,17 +266,12 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
   }
 
   private static String englishForType(SoyType type) {
-    switch (type.getKind()) {
-      case PROTO_TYPE:
-        return "proto message";
-      case PROTO_ENUM_TYPE:
-        return "proto enum";
-      case PROTO_EXTENSION:
-        return "proto extension";
-      case TEMPLATE_TYPE:
-        return "template";
-      default:
-        return "type";
-    }
+    return switch (type.getKind()) {
+      case PROTO_TYPE -> "proto message";
+      case PROTO_ENUM_TYPE -> "proto enum";
+      case PROTO_EXTENSION -> "proto extension";
+      case TEMPLATE_TYPE -> "template";
+      default -> "type";
+    };
   }
 }

@@ -59,8 +59,8 @@ final class UnknownJsGlobalPass implements CompilerFilePass {
               // so we don't need to enforce them here.
               if (fn.numParams() == 1) {
                 ExprNode child = fn.getParam(0);
-                if (child instanceof StringNode) {
-                  String parameter = ((StringNode) child).getValue();
+                if (child instanceof StringNode stringNode) {
+                  String parameter = stringNode.getValue();
                   if (!BaseUtils.isDottedIdentifier(parameter)) {
                     errorReporter.report(child.getSourceLocation(), INVALID_JS_GLOBAL_VALUE);
                   }

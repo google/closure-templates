@@ -61,8 +61,7 @@ final class CheckSkipPass implements CompilerFilePass {
 
     @Override
     public void visitSkipNode(SkipNode skipNode) {
-      if (skipNode.getParent() instanceof HtmlOpenTagNode) {
-        HtmlOpenTagNode openTag = (HtmlOpenTagNode) skipNode.getParent();
+      if (skipNode.getParent() instanceof HtmlOpenTagNode openTag) {
         if (skipNode.skipOnlyChildren()) {
           openTag.setSkipChildren();
         } else {
@@ -78,8 +77,8 @@ final class CheckSkipPass implements CompilerFilePass {
 
     @Override
     public void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode<?>) node);
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        visitChildren(parentSoyNode);
       }
     }
   }

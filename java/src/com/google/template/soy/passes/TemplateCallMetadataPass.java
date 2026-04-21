@@ -105,13 +105,11 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
   }
 
   private String getTemplateName(TemplateNode template) {
-    if (!(template instanceof TemplateBasicNode)) {
+    if (!(template instanceof TemplateBasicNode basicNode)) {
       return template.getTemplateName();
     }
-    TemplateBasicNode basicNode = (TemplateBasicNode) template;
     if (basicNode.getModifiesExpr() != null
-        && basicNode.getModifiesExpr().getRoot() instanceof TemplateLiteralNode) {
-      TemplateLiteralNode literal = (TemplateLiteralNode) basicNode.getModifiesExpr().getRoot();
+        && basicNode.getModifiesExpr().getRoot() instanceof TemplateLiteralNode literal) {
       return literal.getResolvedName();
     }
     return template.getTemplateName();
@@ -132,15 +130,13 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
    */
   private static Optional<TemplateCallMetadata.TemplateCall>
       parseShortFormTemplateCallAndElementComposition(PrintNode printNode) {
-    if (printNode.getExpr().getRoot() instanceof FunctionNode) {
-      FunctionNode fnNode = (FunctionNode) printNode.getExpr().getRoot();
+    if (printNode.getExpr().getRoot() instanceof FunctionNode fnNode) {
 
       if (!fnNode.allowedToInvokeAsFunction()
           || fnNode.getParamsStyle() == ParamsStyle.POSITIONAL) {
         return Optional.empty();
       }
-      if (fnNode.getNameExpr() instanceof TemplateLiteralNode) {
-        TemplateLiteralNode templateLiteralNode = (TemplateLiteralNode) fnNode.getNameExpr();
+      if (fnNode.getNameExpr() instanceof TemplateLiteralNode templateLiteralNode) {
         TemplateCallMetadata.TemplateCall.Builder templateCall =
             TemplateCallMetadata.TemplateCall.newBuilder()
                 .addAllParamArgs(getFunctionParams(fnNode.getParamNames(), fnNode.getParams()));
@@ -169,9 +165,9 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
             .collect(toImmutableList());
 
     // Check to see if the template call is constructed using a bind statement.
-    if (templateCallNode.getKind() == SoyNode.Kind.CALL_BASIC_NODE) {
-      ExprNode exprNode = ((CallBasicNode) templateCallNode).getCalleeExpr().getRoot();
-      if (isBindStatement(exprNode) || exprNode.getKind() == Kind.VAR_REF_NODE) {
+    if (templateCallNode instanceof CallBasicNode callBasicNode) {
+      ExprNode exprNode = callBasicNode.getCalleeExpr().getRoot();
+      if (isBindStatement(exprNode) || exprNode instanceof VarRefNode) {
         Optional<TemplateCallMetadata.TemplateCall> boundTemplateCall =
             resolveTemplateReference(exprNode);
         if (boundTemplateCall.isPresent()) {
@@ -199,14 +195,13 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
   }
 
   private static boolean isModifiableCall(CallNode call) {
-    if (!(call instanceof CallBasicNode)) {
+    if (!(call instanceof CallBasicNode callBasicNode)) {
       return false;
     }
-    CallBasicNode callBasicNode = (CallBasicNode) call;
-    if (!(callBasicNode.getCalleeExpr().getRoot().getType() instanceof TemplateType)) {
+    if (!(callBasicNode.getCalleeExpr().getRoot().getType() instanceof TemplateType templateType)) {
       return false;
     }
-    return ((TemplateType) callBasicNode.getCalleeExpr().getRoot().getType()).isModifiable();
+    return templateType.isModifiable();
   }
 
   /**
@@ -217,18 +212,18 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
    */
   private static Optional<TemplateCallMetadata.TemplateCall> resolveTemplateReference(
       ExprNode exprNode) {
-    if (exprNode instanceof TemplateLiteralNode) {
+    if (exprNode instanceof TemplateLiteralNode templateLiteralNode) {
       // This can determine that the template is called, but not its param args.
       // TODO(b/179912526): can this syntax specify param args? if so, add corresponding test case
-      String destTemplateName = ((TemplateLiteralNode) exprNode).getResolvedName();
+      String destTemplateName = templateLiteralNode.getResolvedName();
       return Optional.of(
           TemplateCallMetadata.TemplateCall.newBuilder()
               .setDestTemplateName(destTemplateName)
               .build());
-    } else if (exprNode.getKind() == Kind.VAR_REF_NODE) {
-      VarRefNode varRefNode = (VarRefNode) exprNode;
+    } else if (exprNode instanceof VarRefNode varRefNode) {
       return resolveVarRefTemplateCall(varRefNode, TemplateCall.newBuilder());
-    } else if (!isBindStatement(exprNode)) {
+    } else if (!(exprNode instanceof MethodCallNode bind
+        && bind.getMethodName().identifier().equals("bind"))) {
       return Optional.empty();
     }
 
@@ -240,12 +235,14 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
             .addAllParamArgs(getBoundTemplateParams(bind))
             // TODO(b/179912526): when / if needed, handle soy element composition + delcalls here
             .setIsDelcall(false);
-    if (bindCaller.getKind() == Kind.VAR_REF_NODE) {
-      VarRefNode varRefNode = (VarRefNode) bindCaller;
+    if (bindCaller instanceof VarRefNode varRefNode) {
       return resolveVarRefTemplateCall(varRefNode, templateCall);
     }
-    String destTemplateName = ((TemplateLiteralNode) bindCaller).getResolvedName();
-    return Optional.of(templateCall.setDestTemplateName(destTemplateName).build());
+    if (bindCaller instanceof TemplateLiteralNode templateLiteralNode) {
+      String destTemplateName = templateLiteralNode.getResolvedName();
+      return Optional.of(templateCall.setDestTemplateName(destTemplateName).build());
+    }
+    return Optional.empty();
   }
 
   /**
@@ -268,25 +265,22 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
         && (varDefn.type().getKind() == SoyType.Kind.TEMPLATE_TYPE
             || varDefn.type().getKind() == SoyType.Kind.TEMPLATE)) {
       return Optional.of(templateCallInfo.setSourceParam(varDefn.name()).build());
-    } else if (varDefn.kind() == VarDefn.Kind.LOCAL_VAR) {
-      LocalVarNode localVarDefn = ((LocalVar) varDefn).declaringNode();
-      if (localVarDefn instanceof LetValueNode) {
-        ExprNode letExpression = ((LetValueNode) localVarDefn).getExpr().getRoot();
-        if (letExpression.getKind() == Kind.TEMPLATE_LITERAL_NODE) {
+    } else if (varDefn instanceof LocalVar localVar) {
+      LocalVarNode localVarDefn = localVar.declaringNode();
+      if (localVarDefn instanceof LetValueNode letValueNode) {
+        ExprNode letExpression = letValueNode.getExpr().getRoot();
+        if (letExpression instanceof TemplateLiteralNode templateLiteralNode) {
           return Optional.of(
-              templateCallInfo
-                  .setSourceTemplate(((TemplateLiteralNode) letExpression).getResolvedName())
-                  .build());
-        } else if (isBindStatement(letExpression)) {
-          templateCallInfo.addAllParamArgs(getBoundTemplateParams((MethodCallNode) letExpression));
-          ExprNode bindCaller = ((MethodCallNode) letExpression).getChild(0);
-          if (bindCaller.getKind() == Kind.TEMPLATE_LITERAL_NODE) {
+              templateCallInfo.setSourceTemplate(templateLiteralNode.getResolvedName()).build());
+        } else if (letExpression instanceof MethodCallNode bind
+            && bind.getMethodName().identifier().equals("bind")) {
+          templateCallInfo.addAllParamArgs(getBoundTemplateParams(bind));
+          ExprNode bindCaller = bind.getChild(0);
+          if (bindCaller instanceof TemplateLiteralNode templateLiteralNode) {
             return Optional.of(
-                templateCallInfo
-                    .setSourceTemplate(((TemplateLiteralNode) bindCaller).getResolvedName())
-                    .build());
-          } else if (bindCaller.getKind() == Kind.VAR_REF_NODE) {
-            return resolveVarRefTemplateCall((VarRefNode) bindCaller, templateCallInfo);
+                templateCallInfo.setSourceTemplate(templateLiteralNode.getResolvedName()).build());
+          } else if (bindCaller instanceof VarRefNode varRefNodeBind) {
+            return resolveVarRefTemplateCall(varRefNodeBind, templateCallInfo);
           }
         }
       }
@@ -303,12 +297,12 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
    */
   private static TemplateCallMetadata.ParamArg createParamArg(CallParamNode callParamNode) {
     // only shorthand param ref syntax is supported
-    if (!(callParamNode instanceof CallParamValueNode)) {
+    if (!(callParamNode instanceof CallParamValueNode callParamValueNode)) {
       return TemplateCallMetadata.ParamArg.newBuilder()
           .setKey(callParamNode.getKey().identifier())
           .build();
     }
-    ExprNode possibleParamRefExpr = ((CallParamValueNode) callParamNode).getExpr().getRoot();
+    ExprNode possibleParamRefExpr = callParamValueNode.getExpr().getRoot();
     return resolveParam(callParamNode.getKey().identifier(), possibleParamRefExpr);
   }
 
@@ -362,10 +356,9 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
   private static ImmutableList<TemplateCallMetadata.ParamArg> getBoundTemplateParams(
       MethodCallNode bind) {
     ExprNode possibleBindParams = bind.getParam(0);
-    if (possibleBindParams.getKind() != Kind.RECORD_LITERAL_NODE) {
+    if (!(possibleBindParams instanceof RecordLiteralNode recordLiteralNode)) {
       return ImmutableList.of();
     }
-    RecordLiteralNode recordLiteralNode = (RecordLiteralNode) possibleBindParams;
     List<ExprNode> bindExprs = recordLiteralNode.getChildren();
     return getFunctionParams(recordLiteralNode.getKeys(), bindExprs);
   }
@@ -378,36 +371,32 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
    */
   private static TemplateCallMetadata.VarRefInfo resolveLocalVarRefToParamRef(
       ExprNode varExpr, TemplateCallMetadata.VarRefInfo.Builder varRefInfo) {
-    if (varExpr.getKind() == Kind.VAR_REF_NODE) {
-      VarDefn possibleParamRefDef = ((VarRefNode) varExpr).getDefnDecl();
+    if (varExpr instanceof VarRefNode varRefNode) {
+      VarDefn possibleParamRefDef = varRefNode.getDefnDecl();
       if (possibleParamRefDef.kind() == VarDefn.Kind.PARAM) {
         varRefInfo.setHeaderParam(possibleParamRefDef.name());
         return varRefInfo.build();
-      } else if (possibleParamRefDef.kind() == VarDefn.Kind.LOCAL_VAR) {
-        LocalVarNode varRefNode = ((LocalVar) possibleParamRefDef).declaringNode();
+      } else if (possibleParamRefDef instanceof LocalVar localVar) {
+        LocalVarNode varRefNodeLocal = localVar.declaringNode();
         // The LocalVarNode point to a for loop local variable
-        if (varRefNode.getKind() == SoyNode.Kind.FOR_NONEMPTY_NODE) {
+        if (varRefNodeLocal instanceof ForNonemptyNode forNonemptyNode) {
           varRefInfo.setUsesListIndex(true);
-          return resolveLocalVarRefToParamRef(
-              ((ForNonemptyNode) varRefNode).getExpr().getRoot(), varRefInfo);
-        } else if (varRefNode instanceof LetValueNode) {
+          return resolveLocalVarRefToParamRef(forNonemptyNode.getExpr().getRoot(), varRefInfo);
+        } else if (varRefNodeLocal instanceof LetValueNode letValueNode) {
           // The LocalVarNode is a let statement
-          return resolveLocalVarRefToParamRef(
-              ((LetValueNode) varRefNode).getExpr().getRoot(), varRefInfo);
+          return resolveLocalVarRefToParamRef(letValueNode.getExpr().getRoot(), varRefInfo);
         }
       }
-    } else if (varExpr.getKind() == Kind.ITEM_ACCESS_NODE) {
+    } else if (varExpr instanceof ItemAccessNode itemAccessNode) {
       varRefInfo.setUsesListIndex(true);
-      return resolveLocalVarRefToParamRef(
-          ((ItemAccessNode) varExpr).getBaseExprChild(), varRefInfo);
-    } else if (varExpr.getKind() == Kind.FIELD_ACCESS_NODE) {
-      FieldAccessNode fieldAccessNode = ((FieldAccessNode) varExpr);
+      return resolveLocalVarRefToParamRef(itemAccessNode.getBaseExprChild(), varRefInfo);
+    } else if (varExpr instanceof FieldAccessNode fieldAccessNode) {
       varRefInfo.setDataAccessAlias(fieldAccessNode.getFieldName());
       return resolveLocalVarRefToParamRef(fieldAccessNode.getBaseExprChild(), varRefInfo);
-    } else if (varExpr.getKind() == Kind.FUNCTION_NODE) {
-      if ("checkNotNull".equals(((FunctionNode) varExpr).getFunctionName())) {
+    } else if (varExpr instanceof FunctionNode functionNode) {
+      if (functionNode.getFunctionName().equals("checkNotNull")) {
         // this function accepts 1 expr and does not meaningfully change its value
-        return resolveLocalVarRefToParamRef(((FunctionNode) varExpr).getParam(0), varRefInfo);
+        return resolveLocalVarRefToParamRef(functionNode.getParam(0), varRefInfo);
       }
     }
 
@@ -427,16 +416,13 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
   }
 
   private static String getDestTemplateName(CallNode callNode) {
-    switch (callNode.getKind()) {
-      case CALL_BASIC_NODE:
-        CallBasicNode basicNode = ((CallBasicNode) callNode);
-        return basicNode.isStaticCall()
-            ? basicNode.getCalleeName()
-            : basicNode.getCalleeExpr().toSourceString();
-      case CALL_DELEGATE_NODE:
-        return ((CallDelegateNode) callNode).getDelCalleeName();
-      default:
-        throw new IllegalStateException("Unknown CallNode kind");
-    }
+    return switch (callNode) {
+      case CallBasicNode basicNode ->
+          basicNode.isStaticCall()
+              ? basicNode.getCalleeName()
+              : basicNode.getCalleeExpr().toSourceString();
+      case CallDelegateNode delegateNode -> delegateNode.getDelCalleeName();
+      default -> throw new IllegalStateException("Unknown CallNode kind: " + callNode.getKind());
+    };
   }
 }

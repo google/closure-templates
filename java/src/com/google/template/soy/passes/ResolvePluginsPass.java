@@ -20,7 +20,6 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -78,10 +77,9 @@ final class ResolvePluginsPass implements CompilerFilePass {
             //   3. proto init (top-level message only)
             VarDefn varDefn = getLocalVariables().lookup(node.getStaticFunctionName());
             boolean varDefnIsTemplate =
-                varDefn != null
-                    && varDefn.kind() == VarDefn.Kind.SYMBOL
-                    && !((SymbolVar) varDefn).isImported()
-                    && ((SymbolVar) varDefn).getSymbolKind() == SymbolKind.TEMPLATE;
+                varDefn instanceof SymbolVar symbolVar
+                    && !symbolVar.isImported()
+                    && symbolVar.getSymbolKind() == SymbolKind.TEMPLATE;
 
             // Precedence 1: Global/plug-in function, special case only when name collides with a
             //   local template name.
@@ -163,9 +161,9 @@ final class ResolvePluginsPass implements CompilerFilePass {
   }
 
   private static Object getSoyFunctionForExpr(ExprNode expr) {
-    if (expr.getKind() == Kind.VAR_REF_NODE
-        && ((VarRefNode) expr).hasType()
-        && expr.getType().getKind() == SoyType.Kind.PROTO_TYPE) {
+    if (expr instanceof VarRefNode varRef
+        && varRef.hasType()
+        && varRef.getType().getKind() == SoyType.Kind.PROTO_TYPE) {
       return BuiltinFunction.PROTO_INIT;
     }
     return null;

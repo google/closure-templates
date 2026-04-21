@@ -221,11 +221,11 @@ final class ResolveDeclaredTypesPass extends AbstractTopologicallyOrderedPass {
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ExprHolderNode) {
-        ((ExprHolderNode) node).getExprList().forEach(exprVisitor::exec);
+      if (node instanceof ExprHolderNode exprHolderNode) {
+        exprHolderNode.getExprList().forEach(exprVisitor::exec);
       }
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode<?>) node);
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        visitChildren(parentSoyNode);
       }
     }
 
@@ -246,8 +246,8 @@ final class ResolveDeclaredTypesPass extends AbstractTopologicallyOrderedPass {
 
     @Override
     protected void visitExprNode(ExprNode node) {
-      if (node instanceof ParentExprNode) {
-        visitChildren((ParentExprNode) node);
+      if (node instanceof ParentExprNode parentExprNode) {
+        visitChildren(parentExprNode);
       }
     }
   }

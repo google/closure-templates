@@ -32,7 +32,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
@@ -196,12 +195,11 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
         .flatMap(
             expHolder -> {
               Stream<ExprRootNode> roots = expHolder.getExprList().stream();
-              if (expHolder instanceof TemplateBasicNode) {
-                roots =
-                    roots.filter(r -> !r.equals(((TemplateBasicNode) expHolder).getModifiesExpr()));
-              } else if (expHolder instanceof CallBasicNode) {
+              if (expHolder instanceof TemplateBasicNode basicNode) {
+                roots = roots.filter(r -> !r.equals(basicNode.getModifiesExpr()));
+              } else if (expHolder instanceof CallBasicNode callBasicNode) {
                 // Allow short form calls. (RewriteShortFormCallsPass has run)
-                roots = roots.filter(r -> !r.equals(((CallBasicNode) expHolder).getCalleeExpr()));
+                roots = roots.filter(r -> !r.equals(callBasicNode.getCalleeExpr()));
               }
               return roots;
             })
@@ -212,13 +210,12 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
         // expression tree).
         .filter(
             exprNode ->
-                exprNode.getKind() == Kind.TEMPLATE_LITERAL_NODE
-                    && !((TemplateLiteralNode) exprNode).isStaticCall())
+                exprNode instanceof TemplateLiteralNode templateLiteralNode
+                    && !templateLiteralNode.isStaticCall())
         .map(TemplateLiteralNode.class::cast)
         .forEach(
             templateNode -> {
-              if (templateNode.getParent().getKind() == Kind.FUNCTION_NODE) {
-                FunctionNode functionNode = (FunctionNode) templateNode.getParent();
+              if (templateNode.getParent() instanceof FunctionNode functionNode) {
                 if (!functionNode.hasStaticName()
                     && functionNode.getNameExpr().equals(templateNode)) {
                   // Allow short form calls. (RewriteShortFormCallsPass has NOT run)
@@ -251,15 +248,13 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
               SoyType type = tagNode.getTagName().getDynamicTagName().getExpr().getType();
               if (type.isAssignableFromStrict(StringType.getInstance())) {
                 handleDynamicTag(tagNode, correctlyPlaced);
-              } else if (!(type instanceof TemplateType)
-                  || !(((TemplateType) type).getContentKind()
-                      instanceof TemplateContentKind.ElementContentKind)) {
-                errorReporter.report(
-                    tagNode.getSourceLocation(),
-                    ELEMENT_CALL_TO_HTML_TEMPLATE,
-                    tagNode.getTagName().getDynamicTagName().getExpr().getType());
-              } else {
+              } else if (type instanceof TemplateType templateType
+                  && templateType.getContentKind()
+                      instanceof TemplateContentKind.ElementContentKind) {
                 validateTemplateCall((HtmlOpenTagNode) tagNode, allowedSlots::add);
+              } else {
+                errorReporter.report(
+                    tagNode.getSourceLocation(), ELEMENT_CALL_TO_HTML_TEMPLATE, type);
               }
             });
 
@@ -312,7 +307,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
                       SoyTypes.unionWithNullish(SanitizedType.HtmlType.getInstance())
                           .isAssignableFromStrict(p.getCheckedType()))
               .collect(toImmutableList());
-      boolean childIsSlot = next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).isSlot();
+      boolean childIsSlot = next instanceof HtmlOpenTagNode openTag && openTag.isSlot();
       if (!childIsSlot && htmlTypeParams.size() == 1) {
         // Mark the single html typed param as set.
         seenSlots.add(htmlTypeParams.get(0).getName());
@@ -374,7 +369,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
     }
     String paramName = name.contains("-") ? Parameter.attrToParamName(name) : name;
     // This is a synthetically created IfCond Node created by somethin akin to @class="Hello"
-    if (((attr.getParent() instanceof IfCondNode && !attr.getParent().getSourceLocation().isKnown())
+    if (((attr.getParent() instanceof IfCondNode ifCond && !ifCond.getSourceLocation().isKnown())
             || attr.getParent() instanceof HtmlOpenTagNode)
         && !addAttr.apply(paramName)) {
       errorReporter.report(loc, DUPLICATE_PARAM, name);
@@ -419,11 +414,10 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
       SourceLocation templateLocation,
       Function<String, Boolean> addParam,
       Consumer<HtmlTagNode> consumer) {
-    if (!(startNode instanceof HtmlOpenTagNode) || !((HtmlOpenTagNode) startNode).isSlot()) {
+    if (!(startNode instanceof HtmlOpenTagNode nextOpenTag) || !nextOpenTag.isSlot()) {
       errorReporter.report(startNode.getSourceLocation(), ONLY_SLOTS_ALLOWED);
       return null;
     }
-    HtmlOpenTagNode nextOpenTag = (HtmlOpenTagNode) startNode;
     if (nextOpenTag.numChildren() != 2) {
       errorReporter.report(nextOpenTag.getSourceLocation(), NO_ATTRIBUTES_ON_SLOT);
       return null;
@@ -468,10 +462,9 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
     TagName name = tagNode.getTagName();
     PrintNode printNode = name.getDynamicTagName();
     ExprNode exprNode = printNode.getExpr().getRoot();
-    if (exprNode.getKind() == Kind.FUNCTION_NODE) {
-      if (((FunctionNode) exprNode).isResolved()
-          && ((FunctionNode) exprNode).getSoyFunction() == BuiltinFunction.LEGACY_DYNAMIC_TAG) {
-        FunctionNode functionNode = (FunctionNode) exprNode;
+    if (exprNode instanceof FunctionNode functionNode) {
+      if (functionNode.isResolved()
+          && functionNode.getSoyFunction() == BuiltinFunction.LEGACY_DYNAMIC_TAG) {
         if (functionNode.numParams() == 1) {
           printNode.getExpr().clearChildren();
           printNode.getExpr().addChild(functionNode.getParam(0));
@@ -480,9 +473,9 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
       }
     } else if (!tagNode.getTagName().isTemplateCall()) {
       if (printNode.getExpr().getType() == UnknownType.getInstance()) {
-        if (exprNode instanceof MethodCallNode
-            && ((MethodCallNode) exprNode).isMethodResolved()
-            && ((MethodCallNode) exprNode).getSoyMethod() == BuiltinMethod.BIND) {
+        if (exprNode instanceof MethodCallNode methodCallNode
+            && methodCallNode.isMethodResolved()
+            && methodCallNode.getSoyMethod() == BuiltinMethod.BIND) {
           // Bind method + unknown type indicates an error already reported here.
           return;
         }

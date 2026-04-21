@@ -300,9 +300,8 @@ final class VeLogValidationPass implements CompilerFileSetPass {
     ExprNode dataExpr = node.numParams() == 1 ? null : node.getParam(1);
     SoyType veExprType = veExpr.getType().getEffectiveType();
 
-    if (veExprType instanceof VeType) {
+    if (veExprType instanceof VeType veType) {
       if (dataExpr != null && !SoyTypes.isNullOrUndefined(dataExpr.getType())) {
-        VeType veType = (VeType) veExprType;
         SoyType dataType = dataExpr.getType();
         if (!veType.getDataType().isPresent()) {
           reporter.report(dataExpr.getSourceLocation(), UNEXPECTED_DATA, veType, dataType);

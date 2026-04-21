@@ -46,8 +46,7 @@ final class RewriteToggleRefsPass implements CompilerFilePass {
         .forEach(
             ref -> {
               VarDefn defn = ref.getDefnDecl();
-              if (defn instanceof SymbolVar) {
-                SymbolVar symbolVar = (SymbolVar) defn;
+              if (defn instanceof SymbolVar symbolVar) {
                 if (symbolVar.getSymbolKind() == SymbolKind.TOGGLE) {
                   rewriteToggleNode(ref, ref.getSourceLocation(), symbolVar);
                 }

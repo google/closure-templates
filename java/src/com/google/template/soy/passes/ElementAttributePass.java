@@ -652,8 +652,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
       } else {
         SoyNode firstContent =
             node.getChildren().stream().filter(StandaloneNode::isRendered).findFirst().orElse(null);
-        if (firstContent instanceof CallBasicNode) {
-          errorLoc = ((CallBasicNode) firstContent).getOpenTagLocation();
+        if (firstContent instanceof CallBasicNode call) {
+          errorLoc = call.getOpenTagLocation();
         }
       }
 
@@ -678,8 +678,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
     i.next(); // skip the attribute name
     while (i.hasNext()) {
       StandaloneNode child = i.next();
-      if (child instanceof HtmlAttributeValueNode) {
-        for (StandaloneNode node : ((HtmlAttributeValueNode) child).getChildren()) {
+      if (child instanceof HtmlAttributeValueNode valueNode) {
+        for (StandaloneNode node : valueNode.getChildren()) {
           to.addChild(node.copy(new CopyState()));
         }
       } else {
@@ -713,18 +713,16 @@ final class ElementAttributePass implements CompilerFileSetPass {
   // If the attribute is a single call to the buildAttr() function, return the attribute key.
   @Nullable
   static String getMergingKey(HtmlAttributeNode node) {
-    if (!(node.getChild(0) instanceof PrintNode)) {
+    if (!(node.getChild(0) instanceof PrintNode printNode)) {
       return null;
     }
-    PrintNode printNode = (PrintNode) node.getChild(0);
-    if (!(printNode.getExpr().getRoot() instanceof FunctionNode)) {
+    if (!(printNode.getExpr().getRoot() instanceof FunctionNode func)) {
       return null;
     }
-    FunctionNode func = (FunctionNode) printNode.getExpr().getRoot();
     if (func.hasStaticName()
         && func.getStaticFunctionName().equals("buildAttr")
-        && func.getChild(0) instanceof StringNode) {
-      return "@" + ((StringNode) func.getChild(0)).getValue();
+        && func.getChild(0) instanceof StringNode stringNode) {
+      return "@" + stringNode.getValue();
     }
     return null;
   }

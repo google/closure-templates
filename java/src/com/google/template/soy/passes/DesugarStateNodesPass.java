@@ -70,10 +70,9 @@ final class DesugarStateNodesPass implements CompilerFileSetPass {
           // Template calls are handled in ElementAttributePass and SoyElementCompositionPass
           .filter(tag -> !tag.getTagName().isTemplateCall())
           .forEach(tag -> desugarSkipAndKeyNodes(tag, nodeIdGen));
-      if (!(template instanceof TemplateElementNode)) {
+      if (!(template instanceof TemplateElementNode soyElement)) {
         continue;
       }
-      TemplateElementNode soyElement = (TemplateElementNode) template;
       ListMultimap<VarDefn, VarRefNode> map = ArrayListMultimap.create();
       for (VarRefNode ref : SoyTreeUtils.getAllNodesOfType(template, VarRefNode.class)) {
         if (ref.getDefnDecl().kind() == VarDefn.Kind.STATE) {

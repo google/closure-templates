@@ -73,17 +73,18 @@ final class CallAnnotationPass implements CompilerFileSetPass {
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
       // This invariant is enforced at
       if (node.getTaggedPairs().size() == 1) {
-        HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getTaggedPairs().get(0);
-        if (openTag.getKeyNode() != null && !openTag.isSkipRoot()) {
-          idStack.pop();
+        if (node.getTaggedPairs().get(0) instanceof HtmlOpenTagNode openTag) {
+          if (openTag.getKeyNode() != null && !openTag.isSkipRoot()) {
+            idStack.pop();
+          }
         }
       }
     }
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode) node);
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        visitChildren(parentSoyNode);
       }
     }
   }

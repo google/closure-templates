@@ -275,30 +275,33 @@ class ValidateExternsPass implements CompilerFilePass {
             java.paramTypes().stream().map(TypeReference::className).collect(toImmutableList()));
 
     switch (response.getCode()) {
-      case EXISTS:
-        break;
-      case NO_SUCH_CLASS:
+      case EXISTS -> {}
+      case NO_SUCH_CLASS -> {
         errorReporter.report(
             java.getAttributeValueLocation(JavaImplNode.CLASS), NO_SUCH_JAVA_CLASS);
         return;
-      case NOT_PUBLIC:
+      }
+      case NOT_PUBLIC -> {
         errorReporter.report(java.getAttributeValueLocation(JavaImplNode.METHOD), NOT_PUBLIC);
         return;
-      case NO_SUCH_METHOD_SIG:
+      }
+      case NO_SUCH_METHOD_SIG -> {
         errorReporter.report(
             java.getAttributeValueLocation(JavaImplNode.PARAMS),
             JAVA_METHOD_SIG_MISMATCH,
             java.methodName(),
             String.join(", ", response.getSuggesions()));
         return;
-      case NO_SUCH_RETURN_TYPE:
+      }
+      case NO_SUCH_RETURN_TYPE -> {
         errorReporter.report(
             java.getAttributeValueLocation(JavaImplNode.RETURN),
             JAVA_METHOD_RETURN_TYPE_MISMATCH,
             java.methodName(),
             String.join(", ", response.getSuggesions()));
         return;
-      case NO_SUCH_METHOD_NAME:
+      }
+      case NO_SUCH_METHOD_NAME -> {
         String didYouMean =
             SoyErrors.getDidYouMeanMessage(response.getSuggesions(), java.methodName());
         errorReporter.report(
@@ -307,6 +310,7 @@ class ValidateExternsPass implements CompilerFilePass {
             java.methodName(),
             didYouMean);
         return;
+      }
     }
 
     ReadMethodData method = response.getMethod();
@@ -463,108 +467,104 @@ class ValidateExternsPass implements CompilerFilePass {
 
     soyType = preserveUndefined ? SoyTypes.excludeNull(soyType) : SoyTypes.excludeNullish(soyType);
     javaType = Primitives.wrap(javaType);
-    switch (soyType.getKind()) {
-      case INT:
-        return javaType == Integer.class
-            || javaType == Long.class
-            || (mode == Mode.SUPER && javaType == Number.class);
-      case FLOAT:
-        return javaType == Double.class
-            || javaType == Float.class
-            || (mode == Mode.SUPER && javaType == Number.class);
-      case NUMBER:
-        return javaType == Integer.class
-            || javaType == Long.class
-            || javaType == Double.class
-            || javaType == Float.class
-            || (mode == Mode.SUPER && javaType == Number.class);
-      case STRING:
-        return javaType == String.class;
-      case BOOL:
-        return javaType == Boolean.class;
-      case GBIGINT:
-        return javaType == BigInteger.class;
-      case UNION:
-        if (soyType.equals(SoyTypes.INT_OR_FLOAT)) {
-          return javaType == Number.class || javaType == Double.class;
+    return switch (soyType.getKind()) {
+      case INT ->
+          javaType == Integer.class
+              || javaType == Long.class
+              || (mode == Mode.SUPER && javaType == Number.class);
+      case FLOAT ->
+          javaType == Double.class
+              || javaType == Float.class
+              || (mode == Mode.SUPER && javaType == Number.class);
+      case NUMBER ->
+          javaType == Integer.class
+              || javaType == Long.class
+              || javaType == Double.class
+              || javaType == Float.class
+              || (mode == Mode.SUPER && javaType == Number.class);
+      case STRING -> javaType == String.class;
+      case BOOL -> javaType == Boolean.class;
+      case GBIGINT -> javaType == BigInteger.class;
+      case UNION, ANY, UNKNOWN -> {
+        if (soyType.getKind() == Kind.UNION && soyType.equals(SoyTypes.INT_OR_FLOAT)) {
+          yield javaType == Number.class || javaType == Double.class;
         }
-      // fallthrough
-      case ANY:
-      case UNKNOWN:
-        return javaType == Object.class || javaType == SoyValue.class;
-      case ITERABLE:
+        yield javaType == Object.class || javaType == SoyValue.class;
+      }
+      case ITERABLE -> {
         // This was added to not break iterable semantics in externs?
         if (mode == Mode.SUPER && javaType == SoyValue.class) {
-          return true;
+          yield true;
         }
         if (!(mode == Mode.EXTENDS
             ? Iterable.class.isAssignableFrom(javaType)
             : javaType == Iterable.class)) {
-          return false;
+          yield false;
         }
-        return collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
-      case LIST:
+        yield collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
+      }
+      case LIST -> {
         // This was added to not break iterable semantics in externs?
         if (mode == Mode.SUPER && javaType == SoyValue.class) {
-          return true;
+          yield true;
         }
         if (!(mode == Mode.EXTENDS
             ? Iterable.class.isAssignableFrom(javaType)
             : !javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableList.class))) {
-          return false;
+          yield false;
         }
-        return collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
-      case SET:
+        yield collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
+      }
+      case SET -> {
         if (!(mode == Mode.EXTENDS
             ? Iterable.class.isAssignableFrom(javaType)
             : (!javaType.equals(Object.class) && javaType.isAssignableFrom(ImmutableSet.class)))) {
-          return false;
+          yield false;
         }
-        return collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
-      case MAP:
-      case RECORD:
+        yield collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
+      }
+      case MAP, RECORD -> {
         if (!(mode == Mode.EXTENDS
             ? Map.class.isAssignableFrom(javaType)
             : javaType == Map.class || javaType == ImmutableMap.class)) {
-          return false;
+          yield false;
         }
-        return collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
-      case MESSAGE:
-        return mode == Mode.EXTENDS
-            ? Message.class.isAssignableFrom(javaType)
-            : javaType == Message.class;
-      case URI:
-        return javaType == SafeUrl.class || javaType == SafeUrlProto.class;
-      case TRUSTED_RESOURCE_URI:
-        return javaType == TrustedResourceUrl.class || javaType == TrustedResourceUrlProto.class;
-      case ATTRIBUTES:
-        return javaType == SanitizedContent.class;
-      case HTML:
-        return javaType == SafeHtml.class
-            || javaType == SafeHtmlProto.class
-            || javaType == SanitizedContent.class;
-      case PROTO:
+        yield collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
+      }
+      case MESSAGE ->
+          mode == Mode.EXTENDS
+              ? Message.class.isAssignableFrom(javaType)
+              : javaType == Message.class;
+      case URI -> javaType == SafeUrl.class || javaType == SafeUrlProto.class;
+      case TRUSTED_RESOURCE_URI ->
+          javaType == TrustedResourceUrl.class || javaType == TrustedResourceUrlProto.class;
+      case ATTRIBUTES -> javaType == SanitizedContent.class;
+      case HTML ->
+          javaType == SafeHtml.class
+              || javaType == SafeHtmlProto.class
+              || javaType == SanitizedContent.class;
+      case PROTO -> {
         SoyProtoType protoType = (SoyProtoType) soyType;
-        return JavaQualifiedNames.getClassName(protoType.getDescriptor()).equals(javaType.getName())
+        yield JavaQualifiedNames.getClassName(protoType.getDescriptor()).equals(javaType.getName())
             || (mode == Mode.SUPER && javaType == Message.class);
-      case PROTO_ENUM:
+      }
+      case PROTO_ENUM -> {
         SoyProtoEnumType protoEnumType = (SoyProtoEnumType) soyType;
-        return JavaQualifiedNames.getClassName(protoEnumType.getDescriptor())
+        yield JavaQualifiedNames.getClassName(protoEnumType.getDescriptor())
             .equals(javaType.getName());
-      case VE:
-        return isAllowedVeExtern(extern) && javaType == SoyVisualElement.class;
-      case TEMPLATE:
+      }
+      case VE -> isAllowedVeExtern(extern) && javaType == SoyVisualElement.class;
+      case TEMPLATE -> {
         TemplateType templateType = (TemplateType) soyType;
-        return javaType == TemplateValue.class
+        yield javaType == TemplateValue.class
             || (javaType == SoyTemplate.class
                 && templateType.getParameters().stream().noneMatch(Parameter::isRequired))
             || (javaType == PartialSoyTemplate.class
                 && templateType.getParameters().stream().anyMatch(Parameter::isRequired));
-      case JS:
-        return javaType == SanitizedContent.class;
-      default:
-        return false;
-    }
+      }
+      case JS -> javaType == SanitizedContent.class;
+      default -> false;
+    };
   }
 
   private static TypeReference maybeUnwrapFuture(TypeReference parameterizedType) {
@@ -577,34 +577,31 @@ class ValidateExternsPass implements CompilerFilePass {
 
   private boolean collectionTypeIsCompatible(
       SoyType soyType, TypeReference parameterizedType, ExternNode extern, Mode mode) {
-    if (soyType instanceof AbstractIterableType) {
+    if (soyType instanceof AbstractIterableType abstractIterableType) {
       return parameterizedType.arity() == 1
           && typesAreCompatible(
               maybeUnwrapFuture(parameterizedType.getParameter(0)),
-              ((AbstractIterableType) soyType).getElementType(),
+              abstractIterableType.getElementType(),
               extern,
               mode);
-    } else if (soyType instanceof AbstractMapType) {
+    } else if (soyType instanceof AbstractMapType abstractMapType) {
       return parameterizedType.arity() == 2
           && typesAreCompatible(
               // We don't allow futures in map key position
-              parameterizedType.getParameter(0),
-              ((AbstractMapType) soyType).getKeyType(),
-              extern,
-              mode)
+              parameterizedType.getParameter(0), abstractMapType.getKeyType(), extern, mode)
           && typesAreCompatible(
               maybeUnwrapFuture(parameterizedType.getParameter(1)),
-              ((AbstractMapType) soyType).getValueType(),
+              abstractMapType.getValueType(),
               extern,
               mode);
-    } else if (soyType instanceof RecordType) {
+    } else if (soyType instanceof RecordType recordType) {
       return parameterizedType.arity() == 2
           // We don't allow futures in record key position
           && typesAreCompatible(
               parameterizedType.getParameter(0), StringType.getInstance(), extern, mode)
           && typesAreCompatible(
               maybeUnwrapFuture(parameterizedType.getParameter(1)),
-              SoyTypes.getRecordMembersType((RecordType) soyType),
+              SoyTypes.getRecordMembersType(recordType),
               extern,
               mode,
               true);
@@ -620,16 +617,13 @@ class ValidateExternsPass implements CompilerFilePass {
 
   private static boolean protoTypesAreCompatible(String javaType, SoyType soyType) {
     soyType = SoyTypes.excludeNullish(soyType);
-    switch (soyType.getKind()) {
-      case PROTO:
-        SoyProtoType protoType = (SoyProtoType) soyType;
-        return JavaQualifiedNames.getClassName(protoType.getDescriptor()).equals(javaType);
-      case PROTO_ENUM:
-        SoyProtoEnumType protoEnumType = (SoyProtoEnumType) soyType;
-        return JavaQualifiedNames.getClassName(protoEnumType.getDescriptor()).equals(javaType);
-      default:
-        return false;
-    }
+    return switch (soyType) {
+      case SoyProtoType protoType ->
+          JavaQualifiedNames.getClassName(protoType.getDescriptor()).equals(javaType);
+      case SoyProtoEnumType protoEnumType ->
+          JavaQualifiedNames.getClassName(protoEnumType.getDescriptor()).equals(javaType);
+      default -> false;
+    };
   }
 
   private boolean functionalTypesAreCompatible(

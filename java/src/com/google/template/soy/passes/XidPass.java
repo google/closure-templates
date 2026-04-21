@@ -25,8 +25,11 @@ import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -50,49 +53,50 @@ public final class XidPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.XID)
-        .forEach(
-            fn -> {
-              if (fn.numParams() != 1) {
-                // if it isn't == 1, then an error has already been reported, move along.
-                return;
-              }
-              ExprNode child = fn.getParam(0);
-              switch (child.getKind()) {
-                case GLOBAL_NODE:
-                  GlobalNode global = (GlobalNode) child;
-                  String xid = global.getName();
-                  fn.replaceChild(
-                      0,
-                      new StringNode(
-                          xid,
-                          QuoteStyle.SINGLE,
-                          global.getSourceLocation()) );
-                  break;
-                case VAR_REF_NODE:
-                case FIELD_ACCESS_NODE:
-                  // There can be collisions between the xid arg and certain in-scope symbols. Turn
-                  // any VarRef (with possibly dotted field access) back into a string. Also, these
-                  // var refs didn't get global alias expanded so do that here too.
-                  String source = child.toSourceString();
-                  if (!BaseUtils.isDottedIdentifier(source) || source.startsWith("$")) {
-                    reporter.report(child.getSourceLocation(), STRING_OR_GLOBAL_REQUIRED);
-                    break;
-                  }
-                  String expanded =
-                      file.resolveAlias(Identifier.create(source, SourceLocation.UNKNOWN))
-                          .identifier();
-                  fn.replaceChild(
-                      0,
-                      new StringNode(
-                          expanded,
-                          QuoteStyle.SINGLE,
-                          child.getSourceLocation()) );
-                  break;
-                case STRING_NODE:
-                  break;
-                default:
-                  reporter.report(child.getSourceLocation(), STRING_OR_GLOBAL_REQUIRED);
-              }
-            });
+        .forEach(fn -> processInvocation(file, fn));
+  }
+
+  private void processInvocation(SoyFileNode file, FunctionNode fn) {
+    if (fn.numParams() != 1) {
+      // if it isn't == 1, then an error has already been reported, move along.
+      return;
+    }
+    ExprNode child = fn.getParam(0);
+    switch (child) {
+      case GlobalNode global -> {
+        String xid = global.getName();
+          fn.replaceChild(
+              0,
+              new StringNode(
+                  xid,
+                  QuoteStyle.SINGLE,
+                  global.getSourceLocation()) );
+      }
+      case StringNode stringNode -> {
+      }
+      default -> {
+        if (!(child instanceof VarRefNode || child instanceof FieldAccessNode)) {
+          reporter.report(child.getSourceLocation(), STRING_OR_GLOBAL_REQUIRED);
+          return;
+        }
+
+        // There can be collisions between the xid arg and certain in-scope symbols. Turn
+        // any VarRef (with possibly dotted field access) back into a string. Also, these
+        // var refs didn't get global alias expanded so do that here too.
+        String source = child.toSourceString();
+        if (!BaseUtils.isDottedIdentifier(source) || source.startsWith("$")) {
+          reporter.report(child.getSourceLocation(), STRING_OR_GLOBAL_REQUIRED);
+          return;
+        }
+        String expanded =
+            file.resolveAlias(Identifier.create(source, SourceLocation.UNKNOWN)).identifier();
+        fn.replaceChild(
+            0,
+            new StringNode(
+                expanded,
+                QuoteStyle.SINGLE,
+                child.getSourceLocation()) );
+      }
+    }
   }
 }

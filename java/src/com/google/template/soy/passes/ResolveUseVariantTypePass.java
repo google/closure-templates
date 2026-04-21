@@ -35,9 +35,9 @@ final class ResolveUseVariantTypePass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode templateNode : file.getTemplates()) {
-      if (templateNode instanceof TemplateBasicNode) {
-        ((TemplateBasicNode) templateNode)
-            .resolveUseVariantType(file.getImportsContext().getTypeRegistry(), errorReporter);
+      if (templateNode instanceof TemplateBasicNode templateBasicNode) {
+        templateBasicNode.resolveUseVariantType(
+            file.getImportsContext().getTypeRegistry(), errorReporter);
       }
     }
   }

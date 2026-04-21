@@ -199,30 +199,32 @@ public final class PluginResolver {
         ImmutableMap.builder();
     for (Object function : Iterables.concat(soyFunctions, sourceFunctions)) {
       String name;
-      if (function instanceof SoySourceFunctionDescriptor) {
-        SoySourceFunctionDescriptor desc = (SoySourceFunctionDescriptor) function;
+      if (function instanceof SoySourceFunctionDescriptor desc) {
         functionToDesc.put(desc.soySourceFunction(), desc);
         function = desc.soySourceFunction();
       }
-      if (function instanceof SoySourceFunction) {
-        SoyFunctionSignature sig = function.getClass().getAnnotation(SoyFunctionSignature.class);
+      if (function instanceof SoySourceFunction sourceFunction) {
+        SoyFunctionSignature sig =
+            sourceFunction.getClass().getAnnotation(SoyFunctionSignature.class);
         if (sig == null) {
           // Make sure a function sig exists.
           reporter.report(
-              SourceLocation.UNKNOWN, MISSING_FUNCTION_SIGNATURE, function.getClass().getName());
+              SourceLocation.UNKNOWN,
+              MISSING_FUNCTION_SIGNATURE,
+              sourceFunction.getClass().getName());
           continue;
         }
         name = sig.name();
-        if (function instanceof SoyJavaSourceFunction) {
+        if (sourceFunction instanceof SoyJavaSourceFunction javaSourceFunction) {
           // Also make sure that the applyForJavaSource impl uses a single plugin instance.
           // We don't support multiple instances.
-          Set<String> instances =
-              PluginAnalyzer.analyze((SoyJavaSourceFunction) function).pluginInstanceNames();
+          ImmutableSet<String> instances =
+              PluginAnalyzer.analyze(javaSourceFunction).pluginInstanceNames();
           if (instances.size() > 1) {
             reporter.report(
                 SourceLocation.UNKNOWN,
                 MULTIPLE_PLUGIN_INSTANCES,
-                function.getClass().getName(),
+                javaSourceFunction.getClass().getName(),
                 instances);
           }
         }
@@ -376,11 +378,11 @@ public final class PluginResolver {
     if (function == null) {
       return Optional.empty();
     }
-    if (function instanceof SoySourceFunction) {
+    if (function instanceof SoySourceFunction sourceFunction) {
       SoyFunctionSignature signature =
-          function.getClass().getAnnotation(SoyFunctionSignature.class);
+          sourceFunction.getClass().getAnnotation(SoyFunctionSignature.class);
       if (signature.callableAsDeprecatedPrintDirective()) {
-        return Optional.of((SoySourceFunction) function);
+        return Optional.of(sourceFunction);
       }
     }
     reporter.report(sourceLocation, FUNCTION_NOT_CALLABLE, functionName);
@@ -456,21 +458,18 @@ public final class PluginResolver {
 
   private void reportMissing(SourceLocation location, String type, String name, String didYouMean) {
     switch (mode) {
-      case REQUIRE_DEFINITIONS:
-        reporter.report(location, UNKNOWN_PLUGIN, type, name, didYouMean);
-        break;
-      case ALLOW_UNDEFINED_AND_WARN:
-        reporter.warn(location, UNKNOWN_PLUGIN, type, name, didYouMean);
-        break;
-      case ALLOW_UNDEFINED:
+      case REQUIRE_DEFINITIONS -> reporter.report(location, UNKNOWN_PLUGIN, type, name, didYouMean);
+      case ALLOW_UNDEFINED_AND_WARN ->
+          reporter.warn(location, UNKNOWN_PLUGIN, type, name, didYouMean);
+      case ALLOW_UNDEFINED -> {
         // do nothing :(
-        break;
+      }
     }
   }
 
   private static RangeSet<Integer> getValidArgsSizes(Object soyFunction) {
-    if (soyFunction instanceof SoyFunction) {
-      return toRangeSet(((SoyFunction) soyFunction).getValidArgsSizes());
+    if (soyFunction instanceof SoyFunction legacyFunction) {
+      return toRangeSet(legacyFunction.getValidArgsSizes());
     } else {
       SoyFunctionSignature signature =
           soyFunction.getClass().getAnnotation(SoyFunctionSignature.class);
@@ -532,10 +531,10 @@ public final class PluginResolver {
   static void warnIfDeprecated(
       ErrorReporter reporter, String name, Object plugin, SourceLocation location) {
 
-    if (plugin instanceof SoySourceFunctionMethod) {
+    if (plugin instanceof SoySourceFunctionMethod sourceMethod) {
       // A SoySourceFunction called as a method is deprecated if the implementation is annotated
       // with @SoyDeprecated or SoyMethodSignature#deprecatedWarning is not empty.
-      SoySourceFunction function = ((SoySourceFunctionMethod) plugin).getImpl();
+      SoySourceFunction function = sourceMethod.getImpl();
       if (warnIfSoyDeprecated(reporter, name, function, location)) {
         return;
       }
@@ -544,8 +543,7 @@ public final class PluginResolver {
         reporter.warn(location, DEPRECATED_PLUGIN, name, sig.deprecatedWarning());
       }
       return;
-    } else if (plugin instanceof BuiltinFunction) {
-      BuiltinFunction builtin = (BuiltinFunction) plugin;
+    } else if (plugin instanceof BuiltinFunction builtin) {
       if (!builtin.deprecatedWarning().isEmpty()) {
         reporter.warn(location, DEPRECATED_PLUGIN, name, builtin.deprecatedWarning());
       }
@@ -556,10 +554,11 @@ public final class PluginResolver {
       return;
     }
 
-    if (plugin instanceof SoySourceFunction) {
+    if (plugin instanceof SoySourceFunction sourceFunction) {
       // A SoySourceFunction called as a function is also deprecated if
       // SoyFunctionSignature#deprecatedWarning is not empty.
-      SoyFunctionSignature sig = plugin.getClass().getAnnotation(SoyFunctionSignature.class);
+      SoyFunctionSignature sig =
+          sourceFunction.getClass().getAnnotation(SoyFunctionSignature.class);
       if (sig != null && !sig.deprecatedWarning().isEmpty()) {
         reporter.warn(location, DEPRECATED_PLUGIN, name, sig.deprecatedWarning());
       }

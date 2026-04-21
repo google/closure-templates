@@ -95,36 +95,34 @@ final class InsertMsgPlaceholderNodesPass implements CompilerFilePass {
       visitChildren(msgNode);
       isValidMsgPlaceholderPosition = false;
       for (SoyNode node : nodesToReplace) {
-        ParentSoyNode<?> parent = node.getParent();
-        if (!(parent instanceof MsgBlockNode)) {
+        if (!(node.getParent() instanceof MsgBlockNode parent)) {
           throw new AssertionError(
               "Expected parent: "
-                  + parent
+                  + node.getParent()
                   + " of "
                   + node
                   + " to be a msgblocknode @ "
-                  + parent.getSourceLocation());
+                  + node.getParent().getSourceLocation());
         }
         int index = parent.getChildIndex(node);
         parent.removeChild(index);
         MsgPlaceholderInitialNode newNode;
-        if (node instanceof HtmlTagNode) {
+        if (node instanceof HtmlTagNode htmlTagNode) {
           VeLogNode veLogParent = null;
           // If it is the open tag of a VeLogNode, then make sure the placeholder knows about it.
           // NOTE: we don't tell the close tags that they are part of a velog because it isn't
           // necessary, close tags are all the same, even when it comes to velogging. (all we need
           // to do is call exitLoggableElement()).
-          if (parent instanceof VeLogNode && index == 0) {
-            veLogParent = (VeLogNode) parent;
+          if (parent instanceof VeLogNode veLogNode && index == 0) {
+            veLogParent = veLogNode;
           }
           newNode =
-              MsgHtmlTagNode.fromNode(
-                  nodeIdGen.genId(), (HtmlTagNode) node, veLogParent, errorReporter);
+              MsgHtmlTagNode.fromNode(nodeIdGen.genId(), htmlTagNode, veLogParent, errorReporter);
         } else {
           // print, and call nodes don't get additional wrappers.
           newNode = (MsgPlaceholderInitialNode) node;
         }
-        ((MsgBlockNode) parent).addChild(index, new MsgPlaceholderNode(nodeIdGen.genId(), newNode));
+        parent.addChild(index, new MsgPlaceholderNode(nodeIdGen.genId(), newNode));
       }
       nodesToReplace.clear();
     }
@@ -219,11 +217,11 @@ final class InsertMsgPlaceholderNodesPass implements CompilerFilePass {
       if (isValidMsgPlaceholderPosition) {
         nodesToReplace.add(node);
       }
-      if (node instanceof ParentSoyNode<?>) {
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
         // inside of a potential placeholder node, we shouldn't find other placeholder nodes.
         boolean oldIsValidMsgPlaceholderPosition = isValidMsgPlaceholderPosition;
         isValidMsgPlaceholderPosition = false;
-        visitChildren((ParentSoyNode<?>) node);
+        visitChildren(parentSoyNode);
         isValidMsgPlaceholderPosition = oldIsValidMsgPlaceholderPosition;
       }
     }
@@ -239,11 +237,11 @@ final class InsertMsgPlaceholderNodesPass implements CompilerFilePass {
         // ifnode and ifcondnode in particular)
         return;
       }
-      if (node instanceof MsgPlaceholderInitialNode) {
-        checkPlaceholderNode((MsgPlaceholderInitialNode) node);
+      if (node instanceof MsgPlaceholderInitialNode msgPlaceholderInitialNode) {
+        checkPlaceholderNode(msgPlaceholderInitialNode);
       }
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        visitChildren(parentSoyNode);
       }
     }
 

@@ -189,8 +189,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             false,
             errorReporter);
 
-    if (tagNode instanceof HtmlOpenTagNode) {
-      HtmlOpenTagNode openTagNode = (HtmlOpenTagNode) tagNode;
+    if (tagNode instanceof HtmlOpenTagNode openTagNode) {
       ContextualAutoescaper.annotateAndRewriteHtmlTag(
           openTagNode, templateRegistryFull.get(), nodeIdGen, errorReporter, printDirectives);
       // When element compositioning a template, check the following cases:
@@ -253,7 +252,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
               .collect(toCollection(ArrayList::new));
       StandaloneNode next = (StandaloneNode) SoyTreeUtils.nextSibling(tagNode);
       if (params.size() != 1
-          || (next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).isSlot())) {
+          || (next instanceof HtmlOpenTagNode nextOpenTag && nextOpenTag.isSlot())) {
         while (next != closeTag) {
           next = consumeSlot(call, next, nodeIdGen);
           if (next == null) {
@@ -325,8 +324,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                       attributesNode,
                       Optional.of(ref));
                 }
-              } else if (c instanceof KeyNode) {
-                call.setKeyExpr(((KeyNode) c).getExpr().copy(new CopyState()));
+              } else if (c instanceof KeyNode keyNode) {
+                call.setKeyExpr(keyNode.getExpr().copy(new CopyState()));
               } else if (c instanceof SkipNode) {
                 errorReporter.report(c.getSourceLocation(), SKIP_NODE_NOT_ALLOWED);
               } else {

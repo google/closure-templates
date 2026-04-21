@@ -109,8 +109,8 @@ public final class TemplateImportProcessor implements ImportsPass.ImportProcesso
             /* validSymbols= */ fileMetadata.allSymbolNames());
       }
 
-      if (fileMetadata instanceof FileMetadata) {
-        setSymbolType(symbol, (FileMetadata) fileMetadata);
+      if (fileMetadata instanceof FileMetadata metadata) {
+        setSymbolType(symbol, metadata);
       }
     }
   }

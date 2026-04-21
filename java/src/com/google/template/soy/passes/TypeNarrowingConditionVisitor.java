@@ -121,14 +121,11 @@ final class TypeNarrowingConditionVisitor {
     UNDEFINED;
 
     public static NullishMode forNode(ExprNode node) {
-      switch (node.getKind()) {
-        case NULL_NODE:
-          return NULL;
-        case UNDEFINED_NODE:
-          return UNDEFINED;
-        default:
-          throw new IllegalArgumentException(node.getKind().toString());
-      }
+      return switch (node.getKind()) {
+        case NULL_NODE -> NULL;
+        case UNDEFINED_NODE -> UNDEFINED;
+        default -> throw new IllegalArgumentException(node.getKind().toString());
+      };
     }
   }
 
@@ -145,33 +142,27 @@ final class TypeNarrowingConditionVisitor {
     }
 
     private SoyType tryRemoveNullish(SoyType type) {
-      switch (mode) {
-        case NULLISH:
-          return SoyTypes.isNullOrUndefined(type)
-              ? NeverType.getInstance()
-              : SoyTypes.excludeNullish(type);
-        case NULL:
-          return type.isOfKind(Kind.NULL) ? NeverType.getInstance() : SoyTypes.excludeNull(type);
-        case UNDEFINED:
-          return type.isOfKind(Kind.UNDEFINED)
-              ? NeverType.getInstance()
-              : SoyTypes.excludeUndefined(type);
-      }
-      throw new AssertionError();
+      return switch (mode) {
+        case NULLISH ->
+            SoyTypes.isNullOrUndefined(type)
+                ? NeverType.getInstance()
+                : SoyTypes.excludeNullish(type);
+        case NULL ->
+            type.isOfKind(Kind.NULL) ? NeverType.getInstance() : SoyTypes.excludeNull(type);
+        case UNDEFINED ->
+            type.isOfKind(Kind.UNDEFINED)
+                ? NeverType.getInstance()
+                : SoyTypes.excludeUndefined(type);
+      };
     }
 
     private SoyType tryKeepNullish(SoyType type) {
-      switch (mode) {
-        case NULLISH:
-          return SoyTypes.isNullish(type)
-              ? SoyTypes.extractNullish(type)
-              : SoyTypes.NULL_OR_UNDEFINED;
-        case NULL:
-          return NullType.getInstance();
-        case UNDEFINED:
-          return UndefinedType.getInstance();
-      }
-      throw new AssertionError();
+      return switch (mode) {
+        case NULLISH ->
+            SoyTypes.isNullish(type) ? SoyTypes.extractNullish(type) : SoyTypes.NULL_OR_UNDEFINED;
+        case NULL -> NullType.getInstance();
+        case UNDEFINED -> UndefinedType.getInstance();
+      };
     }
 
     @Override

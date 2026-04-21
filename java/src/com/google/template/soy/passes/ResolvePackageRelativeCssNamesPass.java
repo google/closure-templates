@@ -79,12 +79,10 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
   private void resolveSelector(
       SoyNode templateOrConstant, FunctionNode node, @Nullable String packagePrefix) {
     ExprNode lastChild = Iterables.getLast(node.getParams(), null);
-    if (!(lastChild instanceof StringNode)) {
+    if (!(lastChild instanceof StringNode selector)) {
       // this will generate an error in CheckFunctionCallsVisitor
       return;
     }
-
-    StringNode selector = (StringNode) lastChild;
     String selectorText = selector.getValue();
     if (!selectorText.startsWith(RELATIVE_SELECTOR_PREFIX)) {
       return;
@@ -97,8 +95,7 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
           selectorText);
     }
 
-    if (packagePrefix == null && templateOrConstant instanceof TemplateNode) {
-      TemplateNode template = (TemplateNode) templateOrConstant;
+    if (packagePrefix == null && templateOrConstant instanceof TemplateNode template) {
       errorReporter.report(
           selector.getSourceLocation(),
           NO_CSS_PACKAGE,

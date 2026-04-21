@@ -131,12 +131,10 @@ final class ResolveTemplateNamesPass implements CompilerFileSetPass {
    */
   @Nullable
   private static TemplateLiteralNode varRefToLiteral(ExprNode expr, SourceLocation sourceLocation) {
-    if (expr.getKind() != Kind.VAR_REF_NODE) {
-      return null;
-    }
-    VarRefNode varRef = (VarRefNode) expr;
-    if (varRef.hasType() && expr.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
-      return TemplateLiteralNode.forVarRef(varRef.copy(new CopyState()), sourceLocation);
+    if (expr instanceof VarRefNode varRef) {
+      if (varRef.hasType() && varRef.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
+        return TemplateLiteralNode.forVarRef(varRef.copy(new CopyState()), sourceLocation);
+      }
     }
     return null;
   }

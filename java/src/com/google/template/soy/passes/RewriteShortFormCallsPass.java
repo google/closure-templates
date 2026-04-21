@@ -100,14 +100,15 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
       SoyTreeUtils.allSoyNodes(file)
           .forEach(
               n -> {
-                boolean m = false;
-                if (n instanceof PrintNode) {
-                  m = visitPrintNode((PrintNode) n, nodeIdGen);
-                } else if (n instanceof LetValueNode) {
-                  m = visitLetValueNode((LetValueNode) n, nodeIdGen, vars);
-                } else if (n instanceof CallParamValueNode) {
-                  m = visitCallParamValueNode((CallParamValueNode) n, nodeIdGen);
-                }
+                boolean m =
+                    switch (n) {
+                      case PrintNode printNode -> visitPrintNode(printNode, nodeIdGen);
+                      case LetValueNode letValueNode ->
+                          visitLetValueNode(letValueNode, nodeIdGen, vars);
+                      case CallParamValueNode callParamValueNode ->
+                          visitCallParamValueNode(callParamValueNode, nodeIdGen);
+                      default -> false;
+                    };
                 mutated.set(mutated.get() || m);
               });
     }
@@ -185,10 +186,9 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
 
   @Nullable
   private CallBasicNode convert(ExprRootNode expr, IdGenerator nodeIdGen) {
-    if (!(expr.getRoot() instanceof FunctionNode)) {
+    if (!(expr.getRoot() instanceof FunctionNode fnNode)) {
       return null;
     }
-    FunctionNode fnNode = (FunctionNode) expr.getRoot();
     if (fnNode.hasStaticName()) {
       return null;
     }

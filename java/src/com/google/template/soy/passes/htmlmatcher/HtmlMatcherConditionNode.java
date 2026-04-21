@@ -111,23 +111,16 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
   public void linkEdgeToNode(EdgeKind edgeKind, HtmlMatcherGraphNode node) {
     checkState(!this.equals(node), "Cannot link a node to itself.");
     switch (edgeKind) {
-      case TRUE_EDGE:
-        trueBranchNode = node;
-        break;
-      case FALSE_EDGE:
-        falseBranchNode = node;
-        break;
+      case TRUE_EDGE -> trueBranchNode = node;
+      case FALSE_EDGE -> falseBranchNode = node;
     }
   }
 
   @Override
   public Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind) {
-    switch (edgeKind) {
-      case TRUE_EDGE:
-        return Optional.ofNullable(trueBranchNode);
-      case FALSE_EDGE:
-        return Optional.ofNullable(falseBranchNode);
-    }
-    return Optional.empty();
+    return switch (edgeKind) {
+      case TRUE_EDGE -> Optional.ofNullable(trueBranchNode);
+      case FALSE_EDGE -> Optional.ofNullable(falseBranchNode);
+    };
   }
 }

@@ -67,8 +67,8 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
   private void checkVarRef(VarRefNode varRef) {
     VarDefn defn = varRef.getDefnDecl();
     if (isOverloadedExtern(defn)) {
-      if (!(varRef.getParent() instanceof FunctionNode
-          && varRef.equals(((FunctionNode) varRef.getParent()).getNameExpr()))) {
+      if (!(varRef.getParent() instanceof FunctionNode functionNode
+          && varRef.equals(functionNode.getNameExpr()))) {
         errorReporter.report(varRef.getSourceLocation(), EXTERN_OVERLOAD);
         return;
       }
@@ -78,12 +78,10 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
     Kind parentKind = parent != null ? parent.getKind() : null;
 
     switch (varRef.getType().getKind()) {
-      case PROTO_ENUM_TYPE:
-      case NAMESPACE:
-        errorReporter.report(
-            varRef.getSourceLocation(), ILLEGAL_TYPE_OF_VARIABLE, varRef.toSourceString());
-        break;
-      case PROTO_TYPE:
+      case PROTO_ENUM_TYPE, NAMESPACE ->
+          errorReporter.report(
+              varRef.getSourceLocation(), ILLEGAL_TYPE_OF_VARIABLE, varRef.toSourceString());
+      case PROTO_TYPE -> {
         if (!(parent == null
             || parentKind == Kind.FIELD_ACCESS_NODE
             || parentKind == Kind.FUNCTION_NODE)) {
@@ -100,8 +98,8 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
           errorReporter.report(
               varRef.getSourceLocation(), ILLEGAL_TYPE_OF_VARIABLE, varRef.toSourceString());
         }
-        break;
-      case PROTO_EXTENSION:
+      }
+      case PROTO_EXTENSION -> {
         if (parentKind != Kind.METHOD_CALL_NODE) {
           // This is for imports like:
           // import {TopLevelEnum} from 'path/to/my/proto/file.proto';
@@ -112,18 +110,17 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
           errorReporter.report(
               varRef.getSourceLocation(), ILLEGAL_TYPE_OF_VARIABLE, varRef.toSourceString());
         }
-        break;
-      default:
-        break;
+      }
+      default -> {}
     }
   }
 
   private boolean isOverloadedExtern(VarDefn defn) {
-    if (defn instanceof SymbolVar && ((SymbolVar) defn).getSymbolKind() == SymbolKind.EXTERN) {
-      if (((SymbolVar) defn).isImported()) {
-        return defn.type() instanceof UnionType;
+    if (defn instanceof SymbolVar symbolVar && symbolVar.getSymbolKind() == SymbolKind.EXTERN) {
+      if (symbolVar.isImported()) {
+        return symbolVar.type() instanceof UnionType;
       } else {
-        return externIndex.get(defn.name()).size() > 1;
+        return externIndex.get(symbolVar.name()).size() > 1;
       }
     }
     return false;

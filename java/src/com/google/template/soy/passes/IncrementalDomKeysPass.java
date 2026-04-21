@@ -120,20 +120,25 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
 
     @Override
     public void visitSoyNode(SoyNode node) {
-      var isTemplateNode = node instanceof TemplateNode || node instanceof VeLogNode;
-      var isHtmlContextBlock =
-          node instanceof HtmlContext.HtmlContextHolder
-              && node instanceof ParentSoyNode
-              && (disableAllTypeChecking
-                  || ((HtmlContext.HtmlContextHolder) node).getHtmlContext()
-                      == HtmlContext.HTML_PCDATA);
-      if (isTemplateNode || isHtmlContextBlock) {
-        visitBlockNode((ParentSoyNode) node);
+      if (!(node instanceof ParentSoyNode<?> parentSoyNode)) {
         return;
       }
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode) node);
+
+      var isTemplateNode =
+          parentSoyNode instanceof TemplateNode || parentSoyNode instanceof VeLogNode;
+      if (isTemplateNode) {
+        visitBlockNode(parentSoyNode);
+        return;
       }
+      var isHtmlContextBlock =
+          parentSoyNode instanceof HtmlContext.HtmlContextHolder holder
+              && (disableAllTypeChecking || holder.getHtmlContext() == HtmlContext.HTML_PCDATA);
+      if (isHtmlContextBlock) {
+        visitBlockNode(parentSoyNode);
+        return;
+      }
+
+      visitChildren(parentSoyNode);
     }
 
     @Override
@@ -173,8 +178,8 @@ final class IncrementalDomKeysPass implements CompilerFilePass {
 
     @Override
     public void visitHtmlCloseTagNode(HtmlCloseTagNode closeTagNode) {
-      if (closeTagNode.getTaggedPairs().size() == 1) {
-        HtmlOpenTagNode openTag = (HtmlOpenTagNode) closeTagNode.getTaggedPairs().get(0);
+      if (closeTagNode.getTaggedPairs().size() == 1
+          && closeTagNode.getTaggedPairs().get(0) instanceof HtmlOpenTagNode openTag) {
         handleKeyClose(openTag);
       }
     }

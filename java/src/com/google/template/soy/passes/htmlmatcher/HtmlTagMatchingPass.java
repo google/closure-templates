@@ -191,13 +191,12 @@ public final class HtmlTagMatchingPass {
     }
     visit(htmlMatcherGraph.getRootNode().get());
     for (HtmlTagNode tag : annotationMap.keySet()) {
-      if (tag instanceof HtmlOpenTagNode) {
-        HtmlOpenTagNode openTag = (HtmlOpenTagNode) tag;
+      if (tag instanceof HtmlOpenTagNode openTag) {
         if (!annotationMap.containsEntry(openTag, INVALID_NODE)) {
           continue;
         }
         if (annotationMap.get(openTag).size() == 1) {
-          if (!tag.getTagName().isExcludedOptionalTag()) {
+          if (!openTag.getTagName().isExcludedOptionalTag()) {
             errorReporter.report(
                 openTag.getSourceLocation(),
                 makeSoyErrorKind(
@@ -290,7 +289,7 @@ public final class HtmlTagMatchingPass {
     TagName openTagName = tag.getTagName();
     HtmlStack prev = stack;
     switch (tagNode.getTagKind()) {
-      case VOID_TAG:
+      case VOID_TAG -> {
         HtmlOpenTagNode voidTag = (HtmlOpenTagNode) tag;
         // Report errors for non-void tags that are self-closing.
         // For void tags, we don't care if they are self-closing or not. But when we visit
@@ -305,8 +304,8 @@ public final class HtmlTagMatchingPass {
               INVALID_SELF_CLOSING_TAG,
               openTagName.getStaticTagName());
         }
-        break;
-      case OPEN_TAG:
+      }
+      case OPEN_TAG -> {
         HtmlOpenTagNode openTag = (HtmlOpenTagNode) tag;
         // In a case where an open tag can close another open tag (ie <p><p> or <li><li>),
         // check if this is possible by peeking the stack and inject a tag before the open tag.
@@ -324,8 +323,8 @@ public final class HtmlTagMatchingPass {
             prev.push(
                 openTag,
                 stack.foreignContentTagDepth + (openTag.getTagName().isForeignContent() ? 1 : 0));
-        break;
-      case CLOSE_TAG:
+      }
+      case CLOSE_TAG -> {
         HtmlCloseTagNode closeTag = (HtmlCloseTagNode) tag;
         // Report an error if this node is a void tag. Void tag should never be closed.
         if (closeTag.getTagName().isDefinitelyVoid()) {
@@ -333,54 +332,53 @@ public final class HtmlTagMatchingPass {
               closeTag.getTagName().getTagLocation(),
               INVALID_CLOSE_TAG,
               closeTag.getTagName().getStaticTagName());
-          break;
-        }
-        // This is for cases similar to {block}</p>{/block}
-        if (stack.isEmpty() && !closeTag.getTagName().isExcludedOptionalTag()) {
+        } else if (stack.isEmpty() && !closeTag.getTagName().isExcludedOptionalTag()) {
+          // This is for cases similar to {block}</p>{/block}
           errorReporter.report(
               closeTag.getSourceLocation(),
               makeSoyErrorKind(
                   UNEXPECTED_CLOSE_TAG,
                   Impression.ERROR_HTML_TAG_MATCHING_PASS_UNEXPECTED_CLOSE_TAG));
-          break;
-        }
-        prev = stack;
-        while (!prev.isEmpty()) {
-          HtmlOpenTagNode nextOpenTag = prev.tagNode;
-          if (nextOpenTag.getTagName().isStatic() && closeTag.getTagName().isWildCard()) {
-            errorReporter.report(
-                closeTag.getTagName().getTagLocation(),
-                makeSoyErrorKind(
-                    EXPECTED_TAG_NAME, Impression.ERROR_HTML_TAG_MATCHING_PASS_EXPECTED_TAG_NAME));
-          }
-          if (nextOpenTag.getTagName().equals(closeTag.getTagName())
-              || (!nextOpenTag.getTagName().isStatic() && closeTag.getTagName().isWildCard())) {
-            annotationMap.put(nextOpenTag, Optional.of(closeTag));
-            annotationMap.put(closeTag, Optional.of(nextOpenTag));
-            prev = prev.pop();
-            break;
-          } else if (nextOpenTag.getTagName().isDefinitelyOptional()
-              && TagName.checkCloseTagClosesOptional(
-                  closeTag.getTagName(), nextOpenTag.getTagName())) {
-            // Close tag closes an optional open tag (e.g. <li> ... </ul>). Inject a synthetic
-            // close tag that matches `openTag`.
-            injectCloseTag(nextOpenTag, closeTag, idGenerator);
-            prev = prev.pop();
-          } else {
-            annotationMap.put(nextOpenTag, INVALID_NODE);
-            if (!closeTag.getTagName().isExcludedOptionalTag()) {
+        } else {
+          prev = stack;
+          while (!prev.isEmpty()) {
+            HtmlOpenTagNode nextOpenTag = prev.tagNode;
+            if (nextOpenTag.getTagName().isStatic() && closeTag.getTagName().isWildCard()) {
               errorReporter.report(
-                  closeTag.getSourceLocation(),
+                  closeTag.getTagName().getTagLocation(),
                   makeSoyErrorKind(
-                      UNEXPECTED_CLOSE_TAG_KNOWN,
-                      Impression.ERROR_HTML_TAG_MATCHING_PASS_UNEXPECTED_CLOSE_TAG_KNOWN),
-                  nextOpenTag.getTagName(),
-                  nextOpenTag.getSourceLocation());
+                      EXPECTED_TAG_NAME,
+                      Impression.ERROR_HTML_TAG_MATCHING_PASS_EXPECTED_TAG_NAME));
             }
-            prev = prev.pop();
+            if (nextOpenTag.getTagName().equals(closeTag.getTagName())
+                || (!nextOpenTag.getTagName().isStatic() && closeTag.getTagName().isWildCard())) {
+              annotationMap.put(nextOpenTag, Optional.of(closeTag));
+              annotationMap.put(closeTag, Optional.of(nextOpenTag));
+              prev = prev.pop();
+              break;
+            } else if (nextOpenTag.getTagName().isDefinitelyOptional()
+                && TagName.checkCloseTagClosesOptional(
+                    closeTag.getTagName(), nextOpenTag.getTagName())) {
+              // Close tag closes an optional open tag (e.g. <li> ... </ul>). Inject a synthetic
+              // close tag that matches `openTag`.
+              injectCloseTag(nextOpenTag, closeTag, idGenerator);
+              prev = prev.pop();
+            } else {
+              annotationMap.put(nextOpenTag, INVALID_NODE);
+              if (!closeTag.getTagName().isExcludedOptionalTag()) {
+                errorReporter.report(
+                    closeTag.getSourceLocation(),
+                    makeSoyErrorKind(
+                        UNEXPECTED_CLOSE_TAG_KNOWN,
+                        Impression.ERROR_HTML_TAG_MATCHING_PASS_UNEXPECTED_CLOSE_TAG_KNOWN),
+                    nextOpenTag.getTagName(),
+                    nextOpenTag.getSourceLocation());
+              }
+              prev = prev.pop();
+            }
           }
         }
-        break;
+      }
     }
     Optional<HtmlMatcherGraphNode> nextNode = tagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
     return ImmutableList.of(visit(nextNode, exprValueMap, prev));
@@ -479,17 +477,17 @@ public final class HtmlTagMatchingPass {
       };
     }
     HtmlMatcherGraphNode node = maybeNode.get();
-    if (node instanceof HtmlMatcherTagNode) {
-      return () -> visit((HtmlMatcherTagNode) node, exprValueMap, stack);
-    } else if (node instanceof HtmlMatcherConditionNode) {
-      return () -> visit((HtmlMatcherConditionNode) node, exprValueMap, stack);
-    } else if (node instanceof HtmlMatcherAccumulatorNode) {
-      return () -> visit((HtmlMatcherAccumulatorNode) node, exprValueMap, stack);
-    } else if (node instanceof HtmlMatcherBlockNode) {
-      return () -> visit((HtmlMatcherBlockNode) node, exprValueMap, stack);
-    } else {
-      throw new UnsupportedOperationException("No implementation for: " + node);
-    }
+    return switch (node) {
+      case HtmlMatcherTagNode htmlMatcherTagNode ->
+          () -> visit(htmlMatcherTagNode, exprValueMap, stack);
+      case HtmlMatcherConditionNode htmlMatcherConditionNode ->
+          () -> visit(htmlMatcherConditionNode, exprValueMap, stack);
+      case HtmlMatcherAccumulatorNode htmlMatcherAccumulatorNode ->
+          () -> visit(htmlMatcherAccumulatorNode, exprValueMap, stack);
+      case HtmlMatcherBlockNode htmlMatcherBlockNode ->
+          () -> visit(htmlMatcherBlockNode, exprValueMap, stack);
+      default -> throw new UnsupportedOperationException("No implementation for: " + node);
+    };
   }
 
   private void checkUnusedTags(HtmlStack stack) {

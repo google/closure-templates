@@ -95,8 +95,8 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
         .forEach(
             node -> {
               checkForDuplicateAttributes(node);
-              if (node instanceof HtmlCloseTagNode) {
-                checkCloseTagChildren((HtmlCloseTagNode) node);
+              if (node instanceof HtmlCloseTagNode closeTagNode) {
+                checkCloseTagChildren(closeTagNode);
               }
             });
     SoyTreeUtils.allNodesOfType(file, RenderUnitNode.class)
@@ -155,15 +155,15 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
       return IdShape.NO;
     }
     StandaloneNode attrValueNode = node.getChild(0);
-    if (attrValueNode instanceof RawTextNode) {
-      if (JS_IDENTIFIER_PATTERN.matcher(((RawTextNode) attrValueNode).getRawText()).matches()) {
+    if (attrValueNode instanceof RawTextNode rawTextNode) {
+      if (JS_IDENTIFIER_PATTERN.matcher(rawTextNode.getRawText()).matches()) {
         return IdShape.YES;
       }
-    } else if (attrValueNode instanceof PrintNode) {
-      ExprNode exprRoot = ((PrintNode) attrValueNode).getExpr().getRoot();
+    } else if (attrValueNode instanceof PrintNode printNode) {
+      ExprNode exprRoot = printNode.getExpr().getRoot();
       // Cannot
-      if (exprRoot instanceof FunctionNode
-          && ((FunctionNode) exprRoot).getFunctionName().equals("xid")) {
+      if (exprRoot instanceof FunctionNode functionNode
+          && functionNode.getFunctionName().equals("xid")) {
         return IdShape.XID;
       }
     }
@@ -173,8 +173,8 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
   private void warnOnIdAttributesMatchingJsIdentifiers(HtmlAttributeNode attributeNode) {
     if (attributeNode.definitelyMatchesAttributeName("id") && attributeNode.hasValue()) {
       SoyNode child = attributeNode.getChild(1);
-      if (child instanceof HtmlAttributeValueNode) {
-        SoyErrorKind error = getIdShape((HtmlAttributeValueNode) child).getError();
+      if (child instanceof HtmlAttributeValueNode valueNode) {
+        SoyErrorKind error = getIdShape(valueNode).getError();
         if (error != null) {
           errorReporter.warn(attributeNode.getChild(1).getSourceLocation(), error);
         }
@@ -261,8 +261,8 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode) node);
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        visitChildren(parentSoyNode);
       }
     }
   }

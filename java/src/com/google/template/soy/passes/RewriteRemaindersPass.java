@@ -153,11 +153,11 @@ final class RewriteRemaindersPass implements CompilerFilePass {
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        visitChildren(parentSoyNode);
       }
-      if (node instanceof ExprHolderNode) {
-        for (ExprNode expr : ((ExprHolderNode) node).getExprList()) {
+      if (node instanceof ExprHolderNode exprHolderNode) {
+        for (ExprNode expr : exprHolderNode.getExprList()) {
           SoyTreeUtils.allFunctionInvocations(expr, BuiltinFunction.REMAINDER)
               .forEach(this::rewriteRemainder);
         }

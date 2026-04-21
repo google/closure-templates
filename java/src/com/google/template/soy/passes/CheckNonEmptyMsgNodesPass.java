@@ -70,7 +70,7 @@ final class CheckNonEmptyMsgNodesPass implements CompilerFilePass {
    */
   private static boolean isEmpty(MsgNode msg) {
     for (SoyNode child : msg.getChildren()) {
-      if (child instanceof RawTextNode && ((RawTextNode) child).getRawText().isEmpty()) {
+      if (child instanceof RawTextNode rawTextNode && rawTextNode.getRawText().isEmpty()) {
         continue;
       }
       return false;

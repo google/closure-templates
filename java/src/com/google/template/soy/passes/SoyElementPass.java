@@ -28,7 +28,6 @@ import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -190,31 +189,30 @@ final class SoyElementPass implements CompilerFileSetPass {
       // TODO(user): There is no way to make guarantees about the root element of a dynamic
       // call. Consider adding some way to indicate this constraint in template type declarations.
       if (openTag == null
-          && child instanceof CallBasicNode
-          && ((CallBasicNode) child).isStaticCall()
+          && child instanceof CallBasicNode callBasicNode
+          && callBasicNode.isStaticCall()
           && i == template.numChildren() - 1) {
-        if (isSoyElement && ((CallBasicNode) child).getKeyExpr() != null) {
-          this.errorReporter.report(
-              ((CallBasicNode) child).getSourceCalleeLocation(), ROOT_HAS_KEY_NODE);
+        if (isSoyElement && callBasicNode.getKeyExpr() != null) {
+          this.errorReporter.report(callBasicNode.getSourceCalleeLocation(), ROOT_HAS_KEY_NODE);
         }
         return getTemplateMetadataForStaticCall(
             template,
-            ((CallBasicNode) child).getCalleeName(),
+            callBasicNode.getCalleeName(),
             child.getSourceLocation(),
             templatesInLibrary,
             visited);
       }
 
-      if (openTag == null && child instanceof HtmlOpenTagNode) {
-        closeTag = checkHtmlOpenTag(template, (HtmlOpenTagNode) child, errorReporter, isSoyElement);
+      if (openTag == null && child instanceof HtmlOpenTagNode openTagNode) {
+        closeTag = checkHtmlOpenTag(template, openTagNode, errorReporter, isSoyElement);
         if (closeTag == null) {
           break;
         }
         // jump ahead to just after the close tag
         i = template.getChildIndex(closeTag);
         openTag = ((HtmlOpenTagNode) child);
-      } else if (openTag == null && child instanceof VeLogNode) {
-        veLogNode = (VeLogNode) child;
+      } else if (openTag == null && child instanceof VeLogNode veLog) {
+        veLogNode = veLog;
         HtmlOpenTagNode maybeOpenTagNode = veLogNode.getOpenTagNode();
         if (maybeOpenTagNode != null) {
           closeTag = checkHtmlOpenTag(veLogNode, maybeOpenTagNode, errorReporter, isSoyElement);
@@ -331,25 +329,23 @@ final class SoyElementPass implements CompilerFileSetPass {
     }
     PrintNode printNode = tagName.getDynamicTagName();
     ExprNode exprNode = printNode.getExpr().getRoot();
-    if (exprNode instanceof TemplateLiteralNode) {
-      return ((TemplateLiteralNode) exprNode).getResolvedName();
+    if (exprNode instanceof TemplateLiteralNode templateLiteralNode) {
+      return templateLiteralNode.getResolvedName();
     }
 
-    if (exprNode.getKind() == ExprNode.Kind.METHOD_CALL_NODE
-        && ((MethodCallNode) exprNode).getMethodName().identifier().equals("bind")) {
+    if (exprNode instanceof MethodCallNode bind
+        && bind.getMethodName().identifier().equals("bind")) {
       // If RewriteElementCompositionFunctionsPass has run then we will see tmpl.bind(record(...))
-      MethodCallNode bind = (MethodCallNode) exprNode;
-      if (bind.getChild(0).getKind() != ExprNode.Kind.TEMPLATE_LITERAL_NODE) {
+      if (!(bind.getChild(0) instanceof TemplateLiteralNode templateLiteralNode)) {
         return null;
       }
 
-      return ((TemplateLiteralNode) bind.getChild(0)).getResolvedName();
-    } else if (exprNode.getKind() == Kind.FUNCTION_NODE) {
+      return templateLiteralNode.getResolvedName();
+    } else if (exprNode instanceof FunctionNode functionNode) {
       // If RewriteElementCompositionFunctionsPass has not run we will see tmpl(...)
-      FunctionNode functionNode = (FunctionNode) exprNode;
       if (!functionNode.hasStaticName()
-          && functionNode.getNameExpr().getKind() == Kind.TEMPLATE_LITERAL_NODE) {
-        return ((TemplateLiteralNode) functionNode.getNameExpr()).getResolvedName();
+          && functionNode.getNameExpr() instanceof TemplateLiteralNode templateLiteralNode) {
+        return templateLiteralNode.getResolvedName();
       }
     }
 

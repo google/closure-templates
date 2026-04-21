@@ -52,8 +52,7 @@ final class RewriteCssRefsPass implements CompilerFilePass {
         .forEach(
             ref -> {
               VarDefn defn = ref.getDefnDecl();
-              if (defn instanceof SymbolVar) {
-                SymbolVar symbolVar = (SymbolVar) defn;
+              if (defn instanceof SymbolVar symbolVar) {
                 if (symbolVar.getSymbolKind() == SymbolKind.CSS_CLASS) {
                   rewriteCssNode(ref, ref.getSourceLocation(), symbolVar);
                 }

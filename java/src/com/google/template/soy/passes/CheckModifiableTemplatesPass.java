@@ -89,8 +89,7 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     TreeSet<String> modifiedNamespaces = new TreeSet<>();
     for (TemplateNode templateNode : file.getTemplates()) {
-      if (templateNode instanceof TemplateBasicNode) {
-        TemplateBasicNode templateBasicNode = (TemplateBasicNode) templateNode;
+      if (templateNode instanceof TemplateBasicNode templateBasicNode) {
         if (templateBasicNode.isModifiable() && file.getModName() != null) {
           errorReporter.report(templateNode.getSourceLocation(), MODIFIABLE_WITH_MODNAME);
         }
@@ -183,8 +182,9 @@ final class CheckModifiableTemplatesPass implements CompilerFilePass {
     // Invariants checked in validateModifiesAttribute().
     ExprRootNode modifiesExpr = templateBasicNode.getModifiesExpr();
     Preconditions.checkNotNull(modifiesExpr);
-    Preconditions.checkState(modifiesExpr.getRoot() instanceof TemplateLiteralNode);
-    TemplateLiteralNode literal = (TemplateLiteralNode) modifiesExpr.getRoot();
+    if (!(modifiesExpr.getRoot() instanceof TemplateLiteralNode literal)) {
+      throw new IllegalStateException();
+    }
     String namespace =
         literal.getResolvedName().substring(0, literal.getResolvedName().lastIndexOf("."));
     if (!namespace.equals(file.getNamespace())) {

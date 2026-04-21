@@ -86,11 +86,10 @@ final class AddFlushPendingLoggingAttributesPass implements CompilerFilePass {
                   block.getChildren().stream()
                       .filter(StandaloneNode::isRendered)
                       .collect(toImmutableList());
-              if (contentTags.isEmpty() || !(contentTags.get(0) instanceof HtmlOpenTagNode)) {
+              if (contentTags.isEmpty()
+                  || !(contentTags.get(0) instanceof HtmlOpenTagNode openTag)) {
                 return;
               }
-
-              HtmlOpenTagNode openTag = (HtmlOpenTagNode) contentTags.get(0);
               if ((openTag.isSelfClosing() && contentTags.size() == 1)
                   || (openTag.getTaggedPairs().size() == 1
                       && openTag.getTaggedPairs().get(0).equals(Iterables.getLast(contentTags)))) {

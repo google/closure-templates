@@ -151,10 +151,9 @@ public final class IndirectParamsCalculator {
 
     @Override
     public boolean equals(Object other) {
-      if (!(other instanceof TransitiveCallSituation)) {
+      if (!(other instanceof TransitiveCallSituation otherCallSit)) {
         return false;
       }
-      TransitiveCallSituation otherCallSit = (TransitiveCallSituation) other;
       return Objects.equals(otherCallSit.callee, this.callee)
           && otherCallSit.allCallParamKeys.equals(this.allCallParamKeys);
     }

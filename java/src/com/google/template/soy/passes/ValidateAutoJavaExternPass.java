@@ -90,10 +90,10 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
       if (impl.numChildren() > 0) {
         SoyNode lastChild = Iterables.getLast(impl.getChildren());
         loc = lastChild.getSourceLocation();
-        if (lastChild instanceof IfNode) {
-          loc = ((IfNode) lastChild).getCloseTagLocation();
-        } else if (lastChild instanceof SwitchNode) {
-          loc = Iterables.getLast(((SwitchNode) lastChild).getChildren()).getSourceLocation();
+        if (lastChild instanceof IfNode ifNode) {
+          loc = ifNode.getCloseTagLocation();
+        } else if (lastChild instanceof SwitchNode switchNode) {
+          loc = Iterables.getLast(switchNode.getChildren()).getSourceLocation();
         }
       }
       errorReporter.report(loc, MISSING_RETURN);
@@ -119,8 +119,8 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode<?>) node);
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        visitChildren(parentSoyNode);
       }
     }
   }
@@ -187,8 +187,8 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
 
     @Override
     protected Boolean visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode) {
-        return Iterables.getLast(visitChildren((ParentSoyNode<?>) node));
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        return Iterables.getLast(visitChildren(parentSoyNode));
       }
       return false;
     }
@@ -213,16 +213,17 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
 
     @Override
     protected void visitAssignmentNode(AssignmentNode node) {
-      VarRefNode lhs = (VarRefNode) node.getLhs().getRoot();
-      if (!lets.contains(lhs.getName())) {
-        errorReporter.report(node.getSourceLocation(), BAD_ASSIGNMENT);
+      if (node.getLhs().getRoot() instanceof VarRefNode lhs) {
+        if (!lets.contains(lhs.getName())) {
+          errorReporter.report(node.getSourceLocation(), BAD_ASSIGNMENT);
+        }
       }
     }
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode) {
-        visitChildren((ParentSoyNode<?>) node);
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        visitChildren(parentSoyNode);
       }
     }
   }

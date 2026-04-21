@@ -217,10 +217,9 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
         SoyPrintDirective whitespaceDirective =
             new BasicEscapeDirective.WhitespaceHtmlAttributesDirective();
         var first = node.getChild(0);
-        if (first instanceof PrintNode) {
-          var printNode = (PrintNode) first;
-          if (printNode.getExpr().getRoot() instanceof FunctionNode
-              && ((FunctionNode) printNode.getExpr().getRoot()).getSoyFunction()
+        if (first instanceof PrintNode printNode) {
+          if (printNode.getExpr().getRoot() instanceof FunctionNode functionNode
+              && functionNode.getSoyFunction()
                   == BuiltinFunction.FLUSH_PENDING_LOGGING_ATTRIBUTES) {
             isFlushPendingLoggingAttribute = true;
           } else {
@@ -232,8 +231,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
           whitespaceDirectiveNode.setPrintDirective(whitespaceDirective);
             printNode.addChild(whitespaceDirectiveNode);
           }
-        } else if (first instanceof CallNode) {
-          CallNode typed = (CallNode) first;
+        } else if (first instanceof CallNode typed) {
           typed.setEscapingDirectives(
               ImmutableList.<SoyPrintDirective>builder()
                   .addAll(typed.getEscapingDirectives())
@@ -255,8 +253,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
           if ((node.definitelyMatchesAttributeName("jscontroller")
                   || node.definitelyMatchesAttributeName("jsmodel")
                   || node.definitelyMatchesAttributeName("jscallback"))
-              && child instanceof PrintNode) {
-            PrintNode printNode = (PrintNode) child;
+              && child instanceof PrintNode printNode) {
             wrapAsRecordJsId(printNode);
           }
           builder.add(child);
@@ -352,8 +349,8 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof SoyNode.ParentSoyNode) {
-        visitChildren((ParentSoyNode<?>) node);
+      if (node instanceof ParentSoyNode<?> parentSoyNode) {
+        visitChildren(parentSoyNode);
       }
     }
 

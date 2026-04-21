@@ -93,8 +93,8 @@ final class RewriteNullishChecksPass implements CompilerFilePass {
     @Override
     protected void visitExprNode(ExprNode node) {
 
-      if (node instanceof ParentExprNode) {
-        visitChildren((ParentExprNode) node);
+      if (node instanceof ParentExprNode parentExprNode) {
+        visitChildren(parentExprNode);
       }
     }
 
@@ -110,36 +110,31 @@ final class RewriteNullishChecksPass implements CompilerFilePass {
       if (!canTrustType(nonLiteral)) {
         return null;
       }
-      switch (node.getKind()) {
-        case EQUAL_OP_NODE:
-          if (SoyTypes.isDefinitelyNonNullish(nonLiteral.getType())) {
-            return new BooleanNode(false, SourceLocation.UNKNOWN);
-          }
-          break;
-        case NOT_EQUAL_OP_NODE:
-          if (SoyTypes.isDefinitelyNonNullish(nonLiteral.getType())) {
-            return new BooleanNode(true, SourceLocation.UNKNOWN);
-          }
-          break;
-        case TRIPLE_EQUAL_OP_NODE:
-          if (!nonLiteral.getType().isAssignableFromStrict(literal.getType())) {
-            return new BooleanNode(false, SourceLocation.UNKNOWN);
-          }
-          break;
-        case TRIPLE_NOT_EQUAL_OP_NODE:
-          if (!nonLiteral.getType().isAssignableFromStrict(literal.getType())) {
-            return new BooleanNode(true, SourceLocation.UNKNOWN);
-          }
-          break;
-        default:
-      }
-      return null;
+      return switch (node.getKind()) {
+        case EQUAL_OP_NODE ->
+            SoyTypes.isDefinitelyNonNullish(nonLiteral.getType())
+                ? new BooleanNode(false, SourceLocation.UNKNOWN)
+                : null;
+        case NOT_EQUAL_OP_NODE ->
+            SoyTypes.isDefinitelyNonNullish(nonLiteral.getType())
+                ? new BooleanNode(true, SourceLocation.UNKNOWN)
+                : null;
+        case TRIPLE_EQUAL_OP_NODE ->
+            !nonLiteral.getType().isAssignableFromStrict(literal.getType())
+                ? new BooleanNode(false, SourceLocation.UNKNOWN)
+                : null;
+        case TRIPLE_NOT_EQUAL_OP_NODE ->
+            !nonLiteral.getType().isAssignableFromStrict(literal.getType())
+                ? new BooleanNode(true, SourceLocation.UNKNOWN)
+                : null;
+        default -> null;
+      };
     }
 
     private boolean canTrustType(ExprNode node) {
-      if ((node instanceof MethodCallNode)
-          && ((MethodCallNode) node).getSoyMethod() instanceof BuiltinMethod) {
-        return ((MethodCallNode) node).getSoyMethod() != BuiltinMethod.GET_EXTENSION;
+      if ((node instanceof MethodCallNode methodCallNode)
+          && methodCallNode.getSoyMethod() instanceof BuiltinMethod) {
+        return methodCallNode.getSoyMethod() != BuiltinMethod.GET_EXTENSION;
       }
       return false;
     }

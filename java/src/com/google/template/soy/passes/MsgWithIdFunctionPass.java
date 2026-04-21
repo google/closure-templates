@@ -99,28 +99,27 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
         continue;
       }
       ExprNode msgVariable = fn.getParam(0);
-      if (!(msgVariable instanceof VarRefNode)) {
+      if (!(msgVariable instanceof VarRefNode varRefNode)) {
         badFunctionCall(fn, MSG_VARIABLE_NOT_IN_SCOPE, " It is not a variable.");
         continue;
       }
-      VarDefn defn = ((VarRefNode) msgVariable).getDefnDecl();
-      if (!(defn instanceof LocalVar)) {
+      VarDefn defn = varRefNode.getDefnDecl();
+      if (!(defn instanceof LocalVar localVar)) {
         badFunctionCall(fn, MSG_VARIABLE_NOT_IN_SCOPE, " It is not a let variable.");
         continue;
       }
-      LocalVarNode declaringNode = ((LocalVar) defn).declaringNode();
-      if (!(declaringNode instanceof LetContentNode)) {
+      LocalVarNode declaringNode = localVar.declaringNode();
+      if (!(declaringNode instanceof LetContentNode letNode)) {
         badFunctionCall(fn, MSG_VARIABLE_NOT_IN_SCOPE, " It is not a let.");
         continue;
       }
-      LetContentNode letNode = (LetContentNode) declaringNode;
       MsgFallbackGroupNode fallbackGroupNode = null;
       for (SoyNode child : letNode.getChildren()) {
-        if (child instanceof RawTextNode && ((RawTextNode) child).getRawText().isEmpty()) {
+        if (child instanceof RawTextNode rawTextNode && rawTextNode.getRawText().isEmpty()) {
           continue;
-        } else if (child instanceof MsgFallbackGroupNode) {
+        } else if (child instanceof MsgFallbackGroupNode msgFallbackGroupNode) {
           if (fallbackGroupNode == null) {
-            fallbackGroupNode = (MsgFallbackGroupNode) child;
+            fallbackGroupNode = msgFallbackGroupNode;
           } else {
             badFunctionCall(fn, MSG_VARIABLE_NOT_IN_SCOPE, " There is more than one msg.");
             continue outer;

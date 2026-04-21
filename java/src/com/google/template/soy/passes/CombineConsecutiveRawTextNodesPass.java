@@ -64,8 +64,7 @@ public final class CombineConsecutiveRawTextNodesPass
     int i = 0;
     for (; i < node.numChildren(); i++) {
       SoyNode child = node.getChild(i);
-      if (child instanceof RawTextNode) {
-        RawTextNode childAsRawText = (RawTextNode) child;
+      if (child instanceof RawTextNode childAsRawText) {
         if (start == -1) {
           // drop empty raw text nodes at the prefix
           if (childAsRawText.getRawText().isEmpty()) {
@@ -85,8 +84,8 @@ public final class CombineConsecutiveRawTextNodesPass
         i = mergeRange(node, start, lastNonEmptyRawTextNode, i);
         // reset
         start = -1;
-        if (child instanceof ParentSoyNode) {
-          visit((ParentSoyNode<?>) child); // recurse
+        if (child instanceof ParentSoyNode<?> parentSoyNode) {
+          visit(parentSoyNode); // recurse
         }
         // else do nothing since it cannot contain raw text nodes
       }

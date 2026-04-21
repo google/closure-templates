@@ -53,7 +53,6 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
@@ -207,10 +206,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
   private void coerceBindArgs(MethodCallNode node) {
     TemplateType type = (TemplateType) node.getBaseExprChild().getType();
     ExprNode arg = node.getParams().get(0);
-    if (!(arg instanceof RecordLiteralNode)) {
+    if (!(arg instanceof RecordLiteralNode record)) {
       return;
     }
-    RecordLiteralNode record = (RecordLiteralNode) arg;
     for (Identifier key : record.getKeys()) {
       Parameter paramType = type.getParameter(key.identifier());
       if (paramType != null) {
@@ -244,8 +242,8 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         return;
       }
 
-      if (calleeType instanceof TemplateType) {
-        checkCall(callerTemplate, node, (TemplateType) calleeType);
+      if (calleeType instanceof TemplateType templateType) {
+        checkCall(callerTemplate, node, templateType);
       } else if (SoyTypes.isKindOrUnionOfKind(calleeType, SoyType.Kind.TEMPLATE)) {
         TemplateContentKind templateContentKind = null;
         for (SoyType member : SoyTypes.flattenUnionToSet(calleeType)) {
@@ -363,18 +361,17 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
         // Type of the param value.
         SoyType argType;
-        if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_VALUE_NODE) {
-          CallParamValueNode node = (CallParamValueNode) callerParam;
-          argType = node.getExpr().getRoot().getType();
+        if (callerParam instanceof CallParamValueNode callParamValueNode) {
+          argType = callParamValueNode.getExpr().getRoot().getType();
           for (SoyType declaredParamType : declaredParamTypes) {
-            SoyType newType = maybeCoerceType(node.getExpr().getRoot(), declaredParamType);
+            SoyType newType =
+                maybeCoerceType(callParamValueNode.getExpr().getRoot(), declaredParamType);
             if (!newType.isEffectivelyEqual(argType)) {
               argType = newType;
               break;
             }
           }
-        } else if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_CONTENT_NODE) {
-          CallParamContentNode callParamContentNode = (CallParamContentNode) callerParam;
+        } else if (callerParam instanceof CallParamContentNode callParamContentNode) {
           if (!callParamContentNode.isImplicitContentKind()) {
             argType = SanitizedType.getTypeForContentKind(callParamContentNode.getContentKind());
           } else {

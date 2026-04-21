@@ -798,13 +798,15 @@ public final class PassManager {
           }
         } else {
           switch (rule) {
-            case STOP_AFTER_PASS:
+            case STOP_AFTER_PASS -> {
               builder.add(pass);
-            // fall-through
-            case STOP_BEFORE_PASS:
               Preconditions.checkState(building, "Multiple STOP rules not allowed.");
               building = false;
-              break;
+            }
+            case STOP_BEFORE_PASS -> {
+              Preconditions.checkState(building, "Multiple STOP rules not allowed.");
+              building = false;
+            }
           }
         }
         return this;

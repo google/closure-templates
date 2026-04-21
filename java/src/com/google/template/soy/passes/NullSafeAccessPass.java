@@ -42,9 +42,9 @@ public class NullSafeAccessPass implements CompilerFilePass {
 
   private static AccessChainComponentNode findRoot(DataAccessNode access) {
     AccessChainComponentNode node = access;
-    while ((node.getParent() instanceof DataAccessNode
+    while ((node.getParent() instanceof DataAccessNode dataAccessNode
             // Make sure to only traverse base nodes up the tree.
-            && ((DataAccessNode) node.getParent()).getBaseExprChild() == node)
+            && dataAccessNode.getBaseExprChild() == node)
         || node.getParent().getKind() == Kind.ASSERT_NON_NULL_OP_NODE) {
       node = (AccessChainComponentNode) node.getParent();
     }
