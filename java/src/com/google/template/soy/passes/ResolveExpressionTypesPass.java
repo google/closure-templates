@@ -58,6 +58,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.basicfunctions.AsSoySignalOrNullFunction;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.ConcatMapsMethod;
 import com.google.template.soy.basicfunctions.KeysFunction;
@@ -82,6 +83,7 @@ import com.google.template.soy.basicfunctions.MutableArrayMethods.Shift;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Splice;
 import com.google.template.soy.basicfunctions.MutableArrayMethods.Unshift;
 import com.google.template.soy.basicfunctions.NumberListSortMethod;
+import com.google.template.soy.basicfunctions.ReadSoySignalFunction;
 import com.google.template.soy.basicfunctions.SortMethod;
 import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
@@ -219,6 +221,8 @@ import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoType;
+import com.google.template.soy.types.SoySignalOrType;
+import com.google.template.soy.types.SoySignalType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -2555,6 +2559,42 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       node.setType(listType);
     }
 
+    private void visitReadSoySignalFunction(FunctionNode node) {
+      SoyType argType = node.getParam(0).getType().getEffectiveType();
+      if (argType instanceof SoySignalType) {
+        node.setType(((SoySignalType) argType).getType());
+      } else if (argType instanceof SoySignalOrType) {
+        node.setType(((SoySignalOrType) argType).getType());
+      } else {
+        node.setType(argType);
+      }
+    }
+
+    private void visitAsSoySignalOrNullFunction(FunctionNode node) {
+      SoyType argType = node.getParam(0).getType();
+      SoyType signalType = null;
+      if (argType instanceof SoySignalType) {
+        signalType = argType;
+      } else if (argType instanceof SoySignalOrType) {
+        signalType = SoySignalType.create(((SoySignalOrType) argType).getType());
+      } else {
+        SoyType effectiveType = argType.getEffectiveType();
+        if (effectiveType instanceof RecordType) {
+          RecordType recordType = (RecordType) effectiveType;
+          if (recordType.getMemberType("signalid") != null
+              && recordType.getMemberType("value") != null) {
+            signalType = SoySignalType.create(recordType.getMemberType("value"));
+          }
+        }
+      }
+
+      if (signalType != null) {
+        node.setType(UnionType.of(signalType, NullType.getInstance()));
+      } else {
+        node.setType(NullType.getInstance());
+      }
+    }
+
     private void visitLegacyObjectMapToMapFunction(FunctionNode node) {
       SoyType argType = node.getParam(0).getType().getEffectiveType();
       if (argType instanceof AbstractMapType && ((AbstractMapType) argType).isEmpty()) {
@@ -2887,6 +2927,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           return UnknownType.getInstance();
         }
 
+        case COMPUTED -> {
+          return getFieldType(effectiveType, fieldName, sourceLocation);
+        }
+
         default -> {
           emitDefaultFieldNotFoundError(baseType, fieldName, sourceLocation);
           return UnknownType.getInstance();
@@ -2896,7 +2940,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     private void emitDefaultFieldNotFoundError(
         SoyType baseType, String fieldName, SourceLocation sourceLocation) {
-      if (!methodRegistry.matchForNameAndBase(fieldName, baseType).isEmpty()) {
+      if (!methodRegistry.matchForNameAndBase(fieldName, excludeNullish(baseType)).isEmpty()) {
         errorReporter.report(sourceLocation, METHOD_REFERENCE);
       } else {
         ImmutableSet<String> allFields = fieldRegistry.getAllFieldNames(excludeNullish(baseType));
@@ -3165,6 +3209,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         }
       } else if (fn instanceof KeysFunction) {
         visitKeysFunction(node);
+      } else if (fn instanceof ReadSoySignalFunction) {
+        visitReadSoySignalFunction(node);
+      } else if (fn instanceof AsSoySignalOrNullFunction) {
+        visitAsSoySignalOrNullFunction(node);
       } else if (fn instanceof ConcatListsFunction) {
         node.setType(getGenericListType(node.getParams()));
       } else if (fn instanceof LoggingFunction) {
