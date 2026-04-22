@@ -377,8 +377,7 @@ public final class JbcSrcRuntime {
       }
       for (int i = partIndex; i < msgParts.numParts(); i++) {
         Object msgPart = msgParts.getPart(i);
-        if (msgPart instanceof String) {
-          String s = (String) msgPart;
+        if (msgPart instanceof String s) {
           if (htmlEscape) {
             maybeEscapeHtmlOnto(s, out);
           } else {
@@ -467,29 +466,32 @@ public final class JbcSrcRuntime {
       // variables are resolved.  So we need to resolve those first.
       // NOTE: that in the most common case, this loop only executes once and at maximum it will
       // loop 3 times.
+      outer:
       while (!resolvedCases) {
-        if (msgParts instanceof SoyMsgSelectPartForRendering) {
-          SoyMsgSelectPartForRendering selectPart = (SoyMsgSelectPartForRendering) msgParts;
-          SoyValueProvider selectPlaceholder = getPlaceholder(selectPart.getSelectVarName());
-          var caseSelectionResult = selectPlaceholder.status();
-          if (caseSelectionResult.isDone()) {
-            msgParts = selectPart.lookupCase(selectPlaceholder.resolve().coerceToString());
-          } else {
-            return caseSelectionResult;
+        switch (msgParts) {
+          case SoyMsgSelectPartForRendering selectPart -> {
+            SoyValueProvider selectPlaceholder = getPlaceholder(selectPart.getSelectVarName());
+            var caseSelectionResult = selectPlaceholder.status();
+            if (caseSelectionResult.isDone()) {
+              msgParts = selectPart.lookupCase(selectPlaceholder.resolve().coerceToString());
+            } else {
+              return caseSelectionResult;
+            }
           }
-        } else if (msgParts instanceof SoyMsgPluralPartForRendering) {
-          SoyMsgPluralPartForRendering pluralPart = (SoyMsgPluralPartForRendering) msgParts;
-          SoyValueProvider pluralPlaceholder = getPlaceholder(pluralPart.getPluralVarName());
-          var caseSelectionResult = pluralPlaceholder.status();
-          if (caseSelectionResult.isDone()) {
-            double pluralValue = pluralPlaceholder.resolve().floatValue();
-            msgParts = pluralPart.lookupCase(pluralValue, locale);
-          } else {
-            return caseSelectionResult;
+          case SoyMsgPluralPartForRendering pluralPart -> {
+            SoyValueProvider pluralPlaceholder = getPlaceholder(pluralPart.getPluralVarName());
+            var caseSelectionResult = pluralPlaceholder.status();
+            if (caseSelectionResult.isDone()) {
+              double pluralValue = pluralPlaceholder.resolve().floatValue();
+              msgParts = pluralPart.lookupCase(pluralValue, locale);
+            } else {
+              return caseSelectionResult;
+            }
           }
-        } else {
-          resolvedCases = true;
-          break;
+          default -> {
+            resolvedCases = true;
+            break outer;
+          }
         }
       }
       // render the cases.

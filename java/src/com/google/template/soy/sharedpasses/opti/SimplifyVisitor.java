@@ -295,8 +295,7 @@ public final class SimplifyVisitor {
           for (LocalVarNode varNode :
               SoyTreeUtils.allNodesOfType(node, LocalVarNode.class).collect(toImmutableList())) {
 
-            if (varNode instanceof ForNonemptyNode) {
-              var forNode = (ForNonemptyNode) varNode;
+            if (varNode instanceof ForNonemptyNode forNode) {
               // we cannot delete unreferenced loop variables but we can delete unreferenced
               // index vars
               if (forNode.getIndexVar() != null

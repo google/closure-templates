@@ -99,9 +99,9 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
   @Override
   @SuppressWarnings("EqualsGetClass") // All subclasses are final.
   public boolean equals(Object o) {
-    return o != null
+    return o instanceof BaseSoyTemplateImpl other
         && getClass().equals(o.getClass())
-        && data.equals(((BaseSoyTemplateImpl) o).data);
+        && data.equals(other.data);
   }
 
   @Override

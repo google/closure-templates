@@ -379,11 +379,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private Statement trackRequiredCssPathStatements(RenderUnitNode node) {
     SoyFileNode fileNode = node.getNearestAncestor(SoyFileNode.class);
-    if (node instanceof TemplateNode
-        && (((TemplateNode) node).getVisibility() == Visibility.PUBLIC
-            || (node instanceof TemplateBasicNode
-                && ((TemplateBasicNode) node).getModifiesExpr() != null))
-        && !definitelyCallsPublicTemplateInSameFile((TemplateNode) node)) {
+    if (node instanceof TemplateNode templateNode
+        && (templateNode.getVisibility() == Visibility.PUBLIC
+            || (templateNode instanceof TemplateBasicNode templateBasicNode
+                && templateBasicNode.getModifiesExpr() != null))
+        && !definitelyCallsPublicTemplateInSameFile(templateNode)) {
       return trackRequiredCssPathStatements(fileNode);
     }
     return Statement.NULL_STATEMENT;
@@ -451,8 +451,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   }
 
   private static boolean directlyPrintingNode(Node node) {
-    if (node instanceof SoyNode) {
-      SoyNode.Kind kind = ((SoyNode) node).getKind();
+    if (node instanceof SoyNode soyNode) {
+      SoyNode.Kind kind = soyNode.getKind();
       return kind == SoyNode.Kind.RAW_TEXT_NODE || kind == SoyNode.Kind.PRINT_NODE;
     }
     return false;
@@ -527,8 +527,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     List<IfBlock> ifs = new ArrayList<>();
     Optional<Statement> elseBlock = Optional.empty();
     for (SoyNode child : node.getChildren()) {
-      if (child instanceof IfCondNode) {
-        IfCondNode icn = (IfCondNode) child;
+      if (child instanceof IfCondNode icn) {
         Label reattachPoint = newLabel();
         Branch cond = compileIfCondNode(icn, reattachPoint, node.getHtmlContext());
         Statement block = visitChildrenInNewScope(icn);
@@ -712,12 +711,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Map<Object, SwitchCaseNode> cases = new LinkedHashMap<>();
     SwitchDefaultNode dfltNode = null;
     for (SoyNode child : node.getChildren()) {
-      if (child instanceof SwitchCaseNode) {
-        SwitchCaseNode caseNode = (SwitchCaseNode) child;
+      if (child instanceof SwitchCaseNode caseNode) {
         for (ExprRootNode caseExpr : caseNode.getExprList()) {
           var root = caseExpr.getRoot();
-          if (root instanceof NumberNode) {
-            NumberNode numberNode = (NumberNode) root;
+          if (root instanceof NumberNode numberNode) {
             if (numberNode.isInteger()) {
               long intValue = numberNode.longValue();
               // If a case expression is used multiple times, only use the first occurrence
