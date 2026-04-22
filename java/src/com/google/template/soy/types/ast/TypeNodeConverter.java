@@ -54,6 +54,8 @@ import com.google.template.soy.types.PickType;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SoySignalOrType;
+import com.google.template.soy.types.SoySignalType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -279,6 +281,22 @@ public final class TypeNodeConverter
                 @Override
                 SoyType create(List<SoyType> types, TypeInterner interner) {
                   return interner.intern(NonUndefinedType.create(types.get(0)));
+                }
+              })
+          .put(
+              "SoySignal",
+              new GenericTypeInfo(1) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.intern(SoySignalType.create(types.get(0)));
+                }
+              })
+          .put(
+              "SoySignalOr",
+              new GenericTypeInfo(1) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return interner.intern(SoySignalOrType.create(types.get(0)));
                 }
               })
           .buildOrThrow();

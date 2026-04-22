@@ -2787,6 +2787,26 @@ function $$isRecord(value) {
 }
 
 /**
+ * @param {?} val
+ * @return {?}
+ */
+function $$asSoySignalOrNull(val) {
+  if ($$isRecord(val) && 'signalid' in val && 'value' in val) {
+    return val;
+  }
+  return null;
+}
+
+/**
+ * @param {?} val
+ * @return {?}
+ */
+function $$readSoySignal(val) {
+  const sig = $$asSoySignalOrNull(val);
+  return sig ? sig.value : val;
+}
+
+/**
  * Wrapper for JSPB's isReadonly.
  * @param {?} ctor JSPB constructor.
  * @param {?} msg JSPB instance.
@@ -3044,6 +3064,8 @@ exports = {
   $$asReadonlyArray,
   $$assignDefaults,
   $$getMapKeys,
+  $$readSoySignal,
+  $$asSoySignalOrNull,
   $$checkNotNull,
   $$castNotNull,
   $$parseInt,

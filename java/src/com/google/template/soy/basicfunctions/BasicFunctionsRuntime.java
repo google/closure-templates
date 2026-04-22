@@ -29,6 +29,7 @@ import com.google.common.math.DoubleMath;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.errorprone.annotations.Keep;
 import com.google.protobuf.Message;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
@@ -967,5 +968,31 @@ public final class BasicFunctionsRuntime {
     var mutableMap = (Map<SoyValue, SoyValue>) map.asJavaMap();
     mutableMap.put(key, value);
     return map;
+  }
+
+  /** Returns the SoySignal if the value is structurally a signal, or null. */
+  @Keep
+  public static com.google.template.soy.data.SoyValue asSoySignalOrNull(
+      com.google.template.soy.data.SoyValue val) {
+    if (val instanceof com.google.template.soy.data.SoyRecord) {
+      com.google.template.soy.data.SoyRecord record = (com.google.template.soy.data.SoyRecord) val;
+      java.util.Map<String, ? extends com.google.template.soy.data.SoyValueProvider> map =
+          record.recordAsMap();
+      if (map.containsKey("signalid") && map.containsKey("value")) {
+        return val;
+      }
+    }
+    return null;
+  }
+
+  /** Extracts the value from a SoySignal if present, otherwise returns the value as-is. */
+  @Keep
+  public static com.google.template.soy.data.SoyValue readSoySignal(
+      com.google.template.soy.data.SoyValue val) {
+    com.google.template.soy.data.SoyValue sig = asSoySignalOrNull(val);
+    if (sig != null) {
+      return ((com.google.template.soy.data.SoyRecord) sig).recordAsMap().get("value").resolve();
+    }
+    return val;
   }
 }

@@ -62,6 +62,8 @@ import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
+import com.google.template.soy.types.SoySignalOrType;
+import com.google.template.soy.types.SoySignalType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.StringType;
@@ -580,6 +582,15 @@ public final class TemplateMetadataSerializer {
             OmitType.create(
                 fromProto(proto.getOmit().getType(), typeRegistry, filePath, errorReporter),
                 fromProto(proto.getOmit().getKeys(), typeRegistry, filePath, errorReporter)));
+      case SIGNAL_TYPE:
+        return typeRegistry.intern(
+            SoySignalType.create(
+                fromProto(proto.getSignalType().getType(), typeRegistry, filePath, errorReporter)));
+      case SIGNAL_OR_TYPE:
+        return typeRegistry.intern(
+            SoySignalOrType.create(
+                fromProto(
+                    proto.getSignalOrType().getType(), typeRegistry, filePath, errorReporter)));
       case LITERAL:
         SoyTypeP.LiteralTypeP literal = proto.getLiteral();
         switch (literal.getValueCase()) {

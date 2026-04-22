@@ -158,6 +158,14 @@ message SoyTypeP {
     SoyTypeP type = 1;
   }
 
+  message SoySignalTypeP {
+    SoyTypeP type = 1;
+  }
+
+  message SoySignalOrTypeP {
+    SoyTypeP type = 1;
+  }
+
   // discriminated union of the different type categories
   oneof TypeKind {
     PrimitiveTypeP primitive = 1;
@@ -185,6 +193,8 @@ message SoyTypeP {
     ExtractTypeP extract = 23;
     NonNullableTypeP non_nullable = 24;
     NonUndefinedTypeP non_undefined = 25;
+    SoySignalTypeP signal_type = 26;
+    SoySignalOrTypeP signal_or_type = 27;
   }
 }
 

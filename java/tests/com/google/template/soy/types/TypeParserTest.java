@@ -81,6 +81,12 @@ public class TypeParserTest {
     assertTypeEquals(MapType.of(IntType.getInstance(), BoolType.getInstance()), "map<int, bool>");
   }
 
+  @Test
+  public void testSoySignalTypes() {
+    assertTypeEquals(SoySignalType.create(StringType.getInstance()), "SoySignal<string>");
+    assertTypeEquals(SoySignalOrType.create(IntType.getInstance()), "SoySignalOr<int>");
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
