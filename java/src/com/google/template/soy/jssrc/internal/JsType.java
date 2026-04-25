@@ -621,8 +621,7 @@ public final class JsType implements CodeChunk.HasRequires {
             return builder.build();
           }
         case COMPUTED:
-          if (soyType instanceof NamedType) {
-            NamedType namedType = (NamedType) soyType;
+          if (soyType instanceof NamedType namedType) {
             String namespace =
                 kind == JsTypeKind.IDOMSRC
                     ? namedType.getNamespace() + ".incrementaldom"
@@ -633,8 +632,7 @@ public final class JsType implements CodeChunk.HasRequires {
                 .addRequire(GoogRequire.create(namespace))
                 .setPredicate(TypePredicate.NO_OP)
                 .build();
-          } else if (soyType instanceof IndexedType) {
-            IndexedType indexedType = (IndexedType) soyType;
+          } else if (soyType instanceof IndexedType indexedType) {
             SoyType baseType = indexedType.getType();
 
             // Find the named type that originally declared this property. We need to do this
@@ -646,8 +644,8 @@ public final class JsType implements CodeChunk.HasRequires {
             NamedType declaringNamedType = null;
             SoyType memberCheckedType = null;
             Deque<NamedType> stack = new ArrayDeque<>();
-            if (baseType instanceof NamedType) {
-              stack.add((NamedType) baseType);
+            if (baseType instanceof NamedType namedType) {
+              stack.add(namedType);
             }
 
             while (!stack.isEmpty() && declaringNamedType == null) {
@@ -657,18 +655,17 @@ public final class JsType implements CodeChunk.HasRequires {
               ImmutableSet<SoyType> components;
               if (namedEffectiveType instanceof RecordType) {
                 components = ImmutableSet.of(namedEffectiveType);
-              } else if (namedEffectiveType instanceof IntersectionType) {
-                components = ((IntersectionType) namedEffectiveType).getMembers();
+              } else if (namedEffectiveType instanceof IntersectionType intersectionType) {
+                components = intersectionType.getMembers();
               } else {
                 continue;
               }
 
               for (SoyType component : components) {
-                if (component instanceof NamedType) {
-                  stack.add((NamedType) component);
-                } else if (component instanceof RecordType) {
-                  RecordType.Member recMember =
-                      ((RecordType) component).getMember(indexedType.getPropertyName());
+                if (component instanceof NamedType componentNamedType) {
+                  stack.add(componentNamedType);
+                } else if (component instanceof RecordType recordType) {
+                  RecordType.Member recMember = recordType.getMember(indexedType.getPropertyName());
                   if (recMember != null) {
                     if (namedType == baseType) {
                       declaringNamedType = namedType;
