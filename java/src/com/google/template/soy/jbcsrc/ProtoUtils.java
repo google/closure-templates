@@ -236,7 +236,7 @@ final class ProtoUtils {
       LocalVariableManager varManager,
       Int64ConversionMode int64Mode) {
     SoyType type = baseExpr.soyType().getEffectiveType();
-    if (type instanceof SoyProtoType) {
+    if (type.getKind() == SoyType.Kind.PROTO || type.getKind().name().equals("PROTO")) {
       return accessField((SoyProtoType) type, baseExpr, fieldName, fieldType, mode, int64Mode);
     } else {
       return accessProtoUnionField(
