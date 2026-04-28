@@ -748,7 +748,11 @@ final class ProtoUtils {
       this.memberGenerator = memberGenerator;
 
       SoyType type = getBaseExprType();
-      checkArgument(type instanceof UnionType, baseExpr.soyType());
+      checkArgument(
+          type instanceof UnionType,
+          "Accessing field '%s' on non-union type '%s'",
+          fieldName,
+          type);
       checkArgument(!SoyTypes.isNullish(type), baseExpr.soyType());
     }
 
