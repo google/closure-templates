@@ -76,11 +76,9 @@ import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
-import java.io.Closeable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -128,8 +126,6 @@ public final class MethodRefs {
   public static final MethodRef DOUBLE_TO_STRING =
       createPure(BaseUtils.class, "formatDouble", double.class);
 
-  public static final MethodRef EQUALS = createPure(Object.class, "equals", Object.class);
-
   public static final MethodRef STRING_COMPARE_TO =
       createPure(String.class, "compareTo", String.class);
 
@@ -143,19 +139,11 @@ public final class MethodRefs {
       createNonPure(ImmutableList.class, "builder");
   public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD =
       createNonPure(ImmutableList.Builder.class, "add", Object.class);
-  public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD_ALL =
-      createNonPure(ImmutableList.Builder.class, "addAll", Iterable.class);
   public static final MethodRef IMMUTABLE_LIST_BUILDER_ADD_ALL_ITERATOR =
       createNonPure(ImmutableList.Builder.class, "addAll", Iterator.class);
   public static final MethodRef IMMUTABLE_LIST_BUILDER_BUILD =
       createNonPure(ImmutableList.Builder.class, "build").asNonJavaNullable();
 
-  public static final MethodRef IMMUTABLE_SET_BUILDER =
-      createNonPure(ImmutableSet.class, "builder");
-  public static final MethodRef IMMUTABLE_SET_BUILDER_ADD_ALL_ITERATOR =
-      createNonPure(ImmutableSet.Builder.class, "addAll", Iterator.class);
-  public static final MethodRef IMMUTABLE_SET_BUILDER_BUILD =
-      createNonPure(ImmutableSet.Builder.class, "build").asNonJavaNullable();
   public static final MethodRef IMMUTABLE_SET_COPY_OF =
       createNonPure(ImmutableSet.class, "copyOf", Iterator.class).asNonJavaNullable();
 
@@ -257,9 +245,6 @@ public final class MethodRefs {
   public static final MethodRef NUMBER_FLOAT_VALUE =
       createPure(Number.class, "floatValue").asCheap();
 
-  public static final MethodRef OBJECT_TO_STRING =
-      createPure(Object.class, "toString").asNonJavaNullable();
-
   public static final MethodRef OBJECTS_EQUALS =
       createPure(Objects.class, "equals", Object.class, Object.class);
 
@@ -285,14 +270,8 @@ public final class MethodRefs {
   public static final MethodRef SOY_PROTO_VALUE_CREATE =
       createPure(SoyProtoValue.class, "create", Message.class);
 
-  public static final MethodRef RENDER_RESULT_DONE =
-      createPure(RenderResult.class, "done").asCheap();
-
   public static final MethodRef RENDER_RESULT_IS_DONE =
       createPure(RenderResult.class, "isDone").asCheap();
-
-  public static final MethodRef RENDER_RESULT_LIMITED =
-      createPure(RenderResult.class, "limited").asCheap();
 
   public static final MethodRef BUFFER_TEMPLATE =
       createNonPure(
@@ -310,9 +289,6 @@ public final class MethodRefs {
 
   public static final MethodRef SOY_SERVER_KEY =
       createPure(SharedRuntime.class, "soyServerKey", SoyValue.class).asCheap();
-
-  public static final MethodRef RUNTIME_RANGE_LOOP_LENGTH =
-      createPure(JbcSrcRuntime.class, "rangeLoopLength", int.class, int.class, int.class).asCheap();
 
   public static final MethodRef SOY_JAVA_PRINT_DIRECTIVE_APPLY_FOR_JAVA =
       createNonPure(SoyJavaPrintDirective.class, "applyForJava", SoyValue.class, List.class);
@@ -629,9 +605,6 @@ public final class MethodRefs {
   public static final MethodRef GBIGINT_DATA_FOR_VALUE =
       createPure(GbigintData.class, "forValue", BigInteger.class).asCheap();
 
-  public static final MethodRef GBIGINT_DATA_FOR_STRING_VALUE =
-      createPure(GbigintData.class, "forStringValue", String.class).asCheap();
-
   public static final MethodRef GBIGINT_DATA_FOR_LONG_VALUE =
       createPure(GbigintData.class, "forValue", long.class).asCheap();
 
@@ -661,8 +634,6 @@ public final class MethodRefs {
       createPure(JbcSrcRuntime.class, "createLogStatement", boolean.class, SoyValue.class);
   public static final MethodRef CREATE_LOG_STATEMENT_NOT_LOGONLY =
       createPure(JbcSrcRuntime.class, "createLogStatement", SoyValue.class);
-
-  public static final MethodRef CLOSEABLE_CLOSE = createNonPure(Closeable.class, "close");
 
   public static final MethodRef PROTOCOL_ENUM_GET_NUMBER =
       createPure(ProtocolMessageEnum.class, "getNumber").asCheap();
@@ -716,8 +687,6 @@ public final class MethodRefs {
       createNonPureConstructor(ArrayList.class, Collection.class);
   public static final MethodRef ARRAY_LIST_SIZE =
       createNonPureConstructor(ArrayList.class, int.class);
-  public static final MethodRef HASH_MAP_CAPACITY =
-      createNonPureConstructor(HashMap.class, int.class);
   public static final MethodRef LINKED_HASH_MAP_CAPACITY =
       createNonPureConstructor(LinkedHashMap.class, int.class);
   public static final MethodRef PARAM_STORE_AUGMENT =
