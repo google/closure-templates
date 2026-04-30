@@ -620,6 +620,9 @@ public final class PassManager {
         // and before ResolveExpressionTypesPass (since we insert expressions).
         passes.add(new AddDebugAttributesPass());
       }
+      if (options.getExperimentalFeatures().contains("annotate_html_source_locations")) {
+        passes.add(new AddHtmlSourceLocationsPass());
+      }
       if (astRewrites.rewriteAttributeParams()) {
         passes.add(
             new ElementAttributePass(
