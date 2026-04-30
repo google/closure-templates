@@ -623,6 +623,8 @@ public final class MethodRefs {
       createPure(JbcSrcRuntime.class, "isNonSoyNullish", SoyValueProvider.class);
   public static final MethodRef IS_SOY_NON_NULL =
       createPure(JbcSrcRuntime.class, "isNonSoyNull", SoyValueProvider.class);
+  public static final MethodRef JAVA_TO_SOY_NULL =
+      createPure(JbcSrcRuntime.class, "javaToSoyNull", SoyValue.class);
 
   public static final MethodRef GBIGINT_DATA_FOR_VALUE =
       createPure(GbigintData.class, "forValue", BigInteger.class).asCheap();

@@ -57,6 +57,7 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
@@ -989,6 +990,12 @@ public final class JbcSrcRuntime {
   @Nullable
   public static SoyValue soyNullToJavaNull(SoyValue value) {
     return value == null || value.isNull() ? null : value;
+  }
+
+  @Keep
+  @Nullable
+  public static SoyValue javaToSoyNull(SoyValue value) {
+    return value == null ? NullData.INSTANCE : value;
   }
 
   @Keep

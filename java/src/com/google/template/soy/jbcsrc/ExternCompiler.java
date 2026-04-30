@@ -26,6 +26,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isNumericP
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 import static com.google.template.soy.jbcsrc.restricted.MethodRefs.IMMUTABLE_LIST_COPY_OF_ITERABLE;
+import static com.google.template.soy.jbcsrc.restricted.MethodRefs.JAVA_TO_SOY_NULL;
 import static java.util.Arrays.stream;
 
 import com.google.common.collect.ImmutableList;
@@ -574,6 +575,11 @@ public final class ExternCompiler {
   }
 
   private SoyExpression adaptReturnExpression(SoyExpression raw, SoyRuntimeType type) {
+    if (raw.isBoxed()) {
+      // Extern implementations can use Java null for SoyValue null but internally in Soy a
+      // SoyValue should never by Java null.
+      raw = SoyExpression.forRuntimeType(raw.soyRuntimeType(), JAVA_TO_SOY_NULL.invoke(raw));
+    }
     return raw.coerceTo(type);
   }
 
