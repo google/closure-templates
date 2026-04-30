@@ -46,13 +46,12 @@ import java.util.function.Supplier;
 final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
   private static final SoyErrorKind DUPLICATE_NAMESPACE =
       SoyErrorKind.of(
-          "Found another file ''{0}'' with the same namespace.  All files must have unique"
-              + " namespaces.",
+          "Namespace collision with: {0}. All files must have unique namespaces.",
           Impression.ERROR_BAN_DUPLICATE_NAMESPACES_PASS_DUPLICATE_NAMESPACE);
   private static final SoyErrorKind DUPLICATE_NAMESPACE_WARNING =
       SoyErrorKind.of(
-          "Found another file ''{0}'' with the same namespace.  All files should have unique"
-              + " namespaces. This will soon become an error.",
+          "Namespace collision with: {0}. All files should have unique namespaces. This will soon"
+              + " become an error.",
           Impression.WARNING_BAN_DUPLICATE_NAMESPACES_PASS_DUPLICATE_NAMESPACE_WARNING);
   private static final SoyErrorKind NAMESPACE_COLLISION =
       SoyErrorKind.of(
@@ -79,7 +78,10 @@ final class BanDuplicateNamespacesPass implements CompilerFileSetPass {
       if (filePaths.size() > 1) {
         String filePath = sourceFile.getFilePath().path();
         String otherFiles =
-            filePaths.stream().filter(path -> !path.equals(filePath)).collect(joining(", "));
+            filePaths.stream()
+                .filter(path -> !path.equals(filePath))
+                .map(path -> "'" + path + "'")
+                .collect(joining(", "));
         if (NamespaceExemptions.isKnownDuplicateNamespace(sourceFile.getNamespace())) {
           errorReporter.warn(
               sourceFile.getNamespaceDeclaration().getSourceLocation(),

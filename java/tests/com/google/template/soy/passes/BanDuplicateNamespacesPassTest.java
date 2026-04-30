@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.base.Joiner;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -37,19 +36,19 @@ public final class BanDuplicateNamespacesPassTest {
     ParseResult unused =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
-                    Joiner.on("\n")
-                        .join(
-                            "{namespace my.duplicate.namespace.testing}",
-                            "{template t}",
-                            "{/template}"),
+                    """
+                    {namespace my.duplicate.namespace.testing}
+                    {template t}
+                    {/template}\
+                    """,
                     SourceFilePath.forTest("file1.soy")),
                 SoyFileSupplier.Factory.create(
-                    Joiner.on("\n")
-                        .join(
-                            "{namespace my.duplicate.namespace.testing}",
-                            "{extern myExtern: (s: string) => string}",
-                            "  {jsimpl namespace=\"goog.string\" function=\"capitalize\" /}",
-                            "{/extern}"),
+                    """
+                    {namespace my.duplicate.namespace.testing}
+                    {extern myExtern: (s: string) => string}
+                      {jsimpl namespace="goog.string" function="capitalize" /}
+                    {/extern}\
+                    """,
                     SourceFilePath.forTest("file2.soy")))
             .errorReporter(errorReporter)
             .build()
@@ -57,12 +56,8 @@ public final class BanDuplicateNamespacesPassTest {
 
     assertThat(errorReporter.getErrors()).hasSize(2);
     assertThat(errorReporter.getErrors().get(0).message())
-        .isEqualTo(
-            "Found another file 'file2.soy' with the same namespace.  All files must have unique"
-                + " namespaces.");
+        .isEqualTo("Namespace collision with: 'file2.soy'. All files must have unique namespaces.");
     assertThat(errorReporter.getErrors().get(1).message())
-        .isEqualTo(
-            "Found another file 'file1.soy' with the same namespace.  All files must have unique"
-                + " namespaces.");
+        .isEqualTo("Namespace collision with: 'file1.soy'. All files must have unique namespaces.");
   }
 }
