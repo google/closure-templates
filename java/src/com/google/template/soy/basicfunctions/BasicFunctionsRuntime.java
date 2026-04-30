@@ -544,6 +544,7 @@ public final class BasicFunctionsRuntime {
     }
   }
 
+  @Nonnull
   public static String numberToFixed(double num, int decimalPlaces) {
     String pattern = "0";
     if (decimalPlaces > 0) {
@@ -606,12 +607,14 @@ public final class BasicFunctionsRuntime {
     return str.stringValue().length();
   }
 
+  @Nonnull
   public static String strSub(SoyValue str, NumberData start) {
     // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
     String string = str.stringValue();
     return string.substring(clampStrIndex(string, start));
   }
 
+  @Nonnull
   public static String strSub(SoyValue str, NumberData start, NumberData end) {
     // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
     if (start.floatValue() > end.floatValue()) {
