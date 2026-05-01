@@ -688,8 +688,8 @@ export class NullRenderer extends IncrementalDomRendererImpl {
  *     proposedKey -> 1c1b, currentPointerKey -> 1d1c1b1a
  */
 export function isMatchingKey(
-  proposedKey: unknown,
-  currentPointerKey: unknown,
+  proposedKey: incrementaldom.Key,
+  currentPointerKey: incrementaldom.Key,
 ): boolean {
   // Using "==" instead of "===" is intentional. SSR serializes attributes
   // differently than the type that keys are. For example "0" == 0.
@@ -697,18 +697,35 @@ export function isMatchingKey(
   if (proposedKey == currentPointerKey) {
     return true;
   }
-  // This is always true in Soy-IDOM, but Incremental DOM believes that it may
+
+  // This is always false in Soy-IDOM, but Incremental DOM believes that it may
   // be null or number.
   if (
-    typeof proposedKey === 'string' &&
-    typeof currentPointerKey === 'string'
+    typeof proposedKey !== 'string' ||
+    typeof currentPointerKey !== 'string'
   ) {
-    return (
-      proposedKey.startsWith(currentPointerKey) ||
-      currentPointerKey.startsWith(proposedKey)
-    );
+    return false;
   }
-  return false;
+
+  const proposedKeyLength = proposedKey.length;
+  const currentPointerKeyLength = currentPointerKey.length;
+  // If these have the same length, then they must be different or we would
+  // have returned true already. This is a cheap check and xids used for keys
+  // are usually(?) the same length.
+  if (proposedKeyLength === currentPointerKeyLength) {
+    return false;
+  }
+
+  // See if one string starts with the other. In order for this to be true, the
+  // shorter string must be a prefix of the longer string.
+  // Slice is fast (string views) and this is faster than using startsWith even
+  // with just one comparison in each direction. Perhaps the string views get
+  // reused with a computed hashcode?
+  if (proposedKeyLength > currentPointerKeyLength) {
+    return proposedKey.slice(0, currentPointerKeyLength) === currentPointerKey;
+  }
+
+  return currentPointerKey.slice(0, proposedKeyLength) === proposedKey;
 }
 
 function debugReplacerHashingMessages(k: unknown, v: unknown): unknown {
