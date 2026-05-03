@@ -20,6 +20,7 @@ import static com.google.template.soy.passes.TemplateImportProcessor.templateFqn
 
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -48,7 +49,9 @@ import com.google.template.soy.types.ImportType;
 import com.google.template.soy.types.NamespaceType;
 import com.google.template.soy.types.ProtoEnumImportType;
 import com.google.template.soy.types.ProtoImportType;
+import com.google.template.soy.types.ProtoOneofCaseImportType;
 import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyProtoOneofCaseEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateImportType;
@@ -175,15 +178,28 @@ final class ResolveDottedImportsPass implements CompilerFilePass {
     SoyType type = defn.type();
 
     if (defn.getSymbolKind() == SymbolKind.PROTO_ENUM) {
-      EnumDescriptor enumDescriptor = ((ProtoEnumImportType) type).getDescriptor();
-      EnumValueDescriptor val = enumDescriptor.findValueByName(fieldName);
       Identifier id = Identifier.create(refn.getName() + "." + fieldName, fullLocation);
-      SoyProtoEnumType soyType = typeRegistry.getOrCreateProtoEnumType(enumDescriptor);
-      if (val != null) {
-        return new ProtoEnumValueNode(id, soyType, val.getNumber());
-      } else {
-        errorReporter.report(fullLocation, ENUM_MEMBERSHIP_ERROR, fieldName, refn.getName());
-        return new ProtoEnumValueNode(id, soyType, 0);
+      if (type instanceof ProtoEnumImportType) {
+        EnumDescriptor enumDescriptor = ((ProtoEnumImportType) type).getDescriptor();
+        EnumValueDescriptor val = enumDescriptor.findValueByName(fieldName);
+        SoyProtoEnumType soyType = typeRegistry.getOrCreateProtoEnumType(enumDescriptor);
+        if (val != null) {
+          return new ProtoEnumValueNode(id, soyType, val.getNumber());
+        } else {
+          errorReporter.report(fullLocation, ENUM_MEMBERSHIP_ERROR, fieldName, refn.getName());
+          return new ProtoEnumValueNode(id, soyType, 0);
+        }
+      } else if (type instanceof ProtoOneofCaseImportType protoOneofCaseImportType) {
+        OneofDescriptor oneofDescriptor = protoOneofCaseImportType.getDescriptor();
+        SoyProtoOneofCaseEnumType soyType =
+            typeRegistry.getOrCreateProtoOneofCaseEnumType(oneofDescriptor);
+        Integer val = soyType.getValue(fieldName);
+        if (val != null) {
+          return new ProtoEnumValueNode(id, soyType, val);
+        } else {
+          errorReporter.report(fullLocation, ENUM_MEMBERSHIP_ERROR, fieldName, refn.getName());
+          return new ProtoEnumValueNode(id, soyType, 0);
+        }
       }
     }
 

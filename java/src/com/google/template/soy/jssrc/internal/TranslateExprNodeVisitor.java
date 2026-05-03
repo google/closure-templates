@@ -68,6 +68,7 @@ import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjection
 import static com.google.template.soy.passes.ContentSecurityPolicyNonceInjectionPass.CSP_STYLE_NONCE_VARIABLE_NAME;
 
 import com.google.common.base.Ascii;
+import com.google.common.base.CaseFormat;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -76,6 +77,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.Identifier;
@@ -153,6 +155,8 @@ import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NumberType;
+import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyProtoOneofCaseEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
@@ -344,10 +348,23 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitProtoEnumValueNode(ProtoEnumValueNode node) {
-    String module = node.getType().getNameForBackend(SoyBackendKind.JS_SRC);
+    String module;
+    String valueName;
+    if (node.getType() instanceof SoyProtoEnumType) {
+      SoyProtoEnumType enumType = (SoyProtoEnumType) node.getType();
+      module = enumType.getNameForBackend(SoyBackendKind.JS_SRC);
+      valueName = node.getEnumValueDescriptor().getName();
+    } else if (node.getType() instanceof SoyProtoOneofCaseEnumType) {
+      SoyProtoOneofCaseEnumType oneofCaseType = (SoyProtoOneofCaseEnumType) node.getType();
+      module = oneofCaseType.getNameForBackend(SoyBackendKind.JS_SRC);
+      valueName = oneofCaseType.getNameForValue((int) node.getValue());
+    } else {
+      throw new AssertionError("Unexpected type: " + node.getType());
+    }
+
     return GoogRequire.create(module)
         .reference()
-        .dotAccess(Id.create(Ascii.toUpperCase(node.getEnumValueDescriptor().getName())));
+        .dotAccess(Id.create(Ascii.toUpperCase(valueName)));
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -788,6 +805,27 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   type ->
                       ProtoCall.getReadonlyField(
                           fieldName, ((SoyProtoType) type).getFieldDescriptor(fieldName)));
+          return base.dotAccess(fieldAccess, nullSafe);
+        case GET_PROTO_ONEOF_CASE:
+          String oneofName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
+          fieldAccess =
+              genCodeForMaybeUnion(
+                  baseType,
+                  oneofName,
+                  sourceLocation,
+                  type -> {
+                    SoyProtoType protoType = (SoyProtoType) type;
+                    OneofDescriptor oneof =
+                        protoType.getDescriptor().getOneofs().stream()
+                            .filter(
+                                o ->
+                                    CaseFormat.LOWER_UNDERSCORE
+                                        .to(CaseFormat.LOWER_CAMEL, o.getName())
+                                        .equals(oneofName))
+                            .findFirst()
+                            .get();
+                    return ProtoCall.getOneofCase(oneofName, oneof);
+                  });
           return base.dotAccess(fieldAccess, nullSafe);
         // When adding new built-in methods it may be necessary to assert that the base expression
         // is not null in order to prevent a method call on a null instance from ever succeeding.

@@ -18,6 +18,7 @@ package com.google.template.soy.data;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.CaseFormat;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -27,8 +28,10 @@ import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
+import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
+import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.Int64ConversionMode;
@@ -60,12 +63,16 @@ public final class SoyProtoValue extends SoyRecord {
 
   private static final class ProtoClass {
     final ImmutableMap<String, FieldWithInterpreter> fields;
+    final ImmutableMap<String, OneofDescriptor> oneofs;
     final Message defaultInstance;
     final String topLevelName;
     final String fullName;
     final String importPath;
 
-    ProtoClass(Message defaultInstance, ImmutableMap<String, FieldWithInterpreter> fields) {
+    ProtoClass(
+        Message defaultInstance,
+        ImmutableMap<String, FieldWithInterpreter> fields,
+        ImmutableMap<String, OneofDescriptor> oneofs) {
       this.fullName = defaultInstance.getDescriptorForType().getFullName();
       Descriptor d = defaultInstance.getDescriptorForType();
       while (d.getContainingType() != null) {
@@ -75,6 +82,7 @@ public final class SoyProtoValue extends SoyRecord {
       this.importPath = defaultInstance.getDescriptorForType().getFile().getFullName();
       this.defaultInstance = checkNotNull(defaultInstance);
       this.fields = checkNotNull(fields);
+      this.oneofs = checkNotNull(oneofs);
     }
   }
 
@@ -137,9 +145,19 @@ public final class SoyProtoValue extends SoyRecord {
                 @Override
                 public ProtoClass load(Descriptor descriptor) throws Exception {
                   Set<FieldDescriptor> extensions = new LinkedHashSet<>();
+                  ImmutableMap.Builder<String, OneofDescriptor> oneofs = ImmutableMap.builder();
+                  descriptor
+                      .getOneofs()
+                      .forEach(
+                          o ->
+                              oneofs.put(
+                                  CaseFormat.LOWER_UNDERSCORE.to(
+                                      CaseFormat.LOWER_CAMEL, o.getName()),
+                                  o));
                   return new ProtoClass(
                       getDefaultInstance(descriptor),
-                      Field.getFieldsForType(descriptor, extensions, factory));
+                      Field.getFieldsForType(descriptor, extensions, factory),
+                      oneofs.build());
                 }
               });
 
@@ -260,6 +278,16 @@ public final class SoyProtoValue extends SoyRecord {
     } else {
       return proto.hasField(field.getDescriptor());
     }
+  }
+
+  public SoyValue getProtoOneofCase(String name) {
+    OneofDescriptor oneof = clazz().oneofs.get(name);
+    if (oneof == null) {
+      throw new IllegalArgumentException(
+          "Proto " + proto.getClass().getName() + " does not have a oneof of name " + name);
+    }
+    FieldDescriptor setField = proto.getOneofFieldDescriptor(oneof);
+    return IntegerData.forValue(setField != null ? setField.getNumber() : 0);
   }
 
   public void setAccessLocationKey(Object location) {

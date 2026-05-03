@@ -51,6 +51,8 @@ import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyProtoOneofCaseEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
@@ -161,8 +163,18 @@ final class IdomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
 
   @Override
   protected Expression visitProtoEnumValueNode(ProtoEnumValueNode node) {
-    return GoogRequire.create(node.getType().getNameForBackend(SoyBackendKind.JS_SRC))
-        .googModuleGet()
-        .dotAccess(Ascii.toUpperCase(node.getEnumValueDescriptor().getName()));
+    String module;
+    String valueName;
+    if (node.getType() instanceof SoyProtoEnumType enumType) {
+      module = enumType.getNameForBackend(SoyBackendKind.JS_SRC);
+      valueName = node.getEnumValueDescriptor().getName();
+    } else if (node.getType() instanceof SoyProtoOneofCaseEnumType oneofCaseType) {
+      module = oneofCaseType.getNameForBackend(SoyBackendKind.JS_SRC);
+      valueName = oneofCaseType.getNameForValue((int) node.getValue());
+    } else {
+      throw new AssertionError("Unexpected type: " + node.getType());
+    }
+
+    return GoogRequire.create(module).googModuleGet().dotAccess(Ascii.toUpperCase(valueName));
   }
 }

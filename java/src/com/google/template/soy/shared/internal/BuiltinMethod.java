@@ -31,6 +31,7 @@ import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -315,6 +316,74 @@ public enum BuiltinMethod implements SoyMethod {
     }
   },
 
+  GET_PROTO_ONEOF_CASE("get[X]Case", 0) {
+    @Override
+    public boolean appliesToBase(SoyType baseType) {
+      Preconditions.checkArgument(!SoyTypes.isNullish(baseType));
+      return MessageType.getInstance().isAssignableFromStrict(baseType);
+    }
+
+    @Override
+    public boolean appliesTo(String methodName, SoyType baseType) {
+      var oneofName = getOneofName(methodName);
+      return oneofName.isPresent() && appliesToProto(oneofName.get(), baseType);
+    }
+
+    private boolean appliesToProto(String oneofName, SoyType baseType) {
+      if (!appliesToBase(baseType)) {
+        return false;
+      }
+      for (SoyType type : SoyTypes.flattenUnionToSet(baseType)) {
+        SoyProtoType protoType = (SoyProtoType) type;
+        if (!hasOneof(protoType, oneofName)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    private boolean hasOneof(SoyProtoType protoType, String oneofName) {
+      return protoType.getDescriptor().getOneofs().stream()
+          .anyMatch(o -> toLowerCamel(o.getName()).equals(oneofName));
+    }
+
+    private String toLowerCamel(String snake) {
+      return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, snake);
+    }
+
+    @Override
+    public SoyType getReturnType(
+        String methodName,
+        SoyType baseType,
+        List<ExprNode> params,
+        SoyTypeRegistry soyTypeRegistry,
+        ErrorReporter errorReporter) {
+      String oneofName = getOneofName(methodName).get();
+      SoyProtoType protoType = (SoyProtoType) SoyTypes.flattenUnion(baseType).iterator().next();
+      OneofDescriptor oneof =
+          protoType.getDescriptor().getOneofs().stream()
+              .filter(o -> toLowerCamel(o.getName()).equals(oneofName))
+              .findFirst()
+              .get();
+      return soyTypeRegistry.getOrCreateProtoOneofCaseEnumType(oneof);
+    }
+
+    @Override
+    ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
+      if (!appliesToBase(baseType)) {
+        return ImmutableList.of();
+      }
+      SoyProtoType protoType = (SoyProtoType) SoyTypes.flattenUnion(baseType).iterator().next();
+      return protoType.getDescriptor().getOneofs().stream()
+          .map(
+              o ->
+                  "get"
+                      + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, o.getName())
+                      + "Case")
+          .collect(toImmutableSet());
+    }
+  },
+
   /** Soy method that gets a single value of a map. */
   MAP_GET("get", 1) {
 
@@ -469,6 +538,7 @@ public enum BuiltinMethod implements SoyMethod {
           BuiltinMethod.GET_PROTO_FIELD,
           BuiltinMethod.GET_PROTO_FIELD_OR_UNDEFINED,
           BuiltinMethod.GET_READONLY_PROTO_FIELD,
+          BuiltinMethod.GET_PROTO_ONEOF_CASE,
           BuiltinMethod.GET_EXTENSION,
           BuiltinMethod.GET_READONLY_EXTENSION);
 
@@ -487,6 +557,8 @@ public enum BuiltinMethod implements SoyMethod {
         return getGetOrUndefinedFieldName(methodName).get();
       case GET_READONLY_PROTO_FIELD:
         return getGetReadonlyFieldName(methodName).get();
+      case GET_PROTO_ONEOF_CASE:
+        return getOneofName(methodName).get();
       case GET_EXTENSION:
       case GET_READONLY_EXTENSION:
       case HAS_EXTENSION:
@@ -645,6 +717,7 @@ public enum BuiltinMethod implements SoyMethod {
       case GET_PROTO_FIELD:
       case GET_PROTO_FIELD_OR_UNDEFINED:
       case GET_READONLY_PROTO_FIELD:
+      case GET_PROTO_ONEOF_CASE:
       case MAP_GET:
       case FUNCTION_BIND:
       case BIND:
@@ -726,6 +799,17 @@ public enum BuiltinMethod implements SoyMethod {
       return Optional.empty();
     }
     String middle = methodName.substring(3, methodName.length() - "OrUndefined_asString".length());
+    if (middle.length() > 0 && !Ascii.isUpperCase(middle.charAt(0))) {
+      return Optional.empty();
+    }
+    return Optional.of(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, middle));
+  }
+
+  private static Optional<String> getOneofName(String methodName) {
+    if (!methodName.startsWith("get") || !methodName.endsWith("Case")) {
+      return Optional.empty();
+    }
+    String middle = methodName.substring(3, methodName.length() - "Case".length());
     if (middle.length() > 0 && !Ascii.isUpperCase(middle.charAt(0))) {
       return Optional.empty();
     }

@@ -729,6 +729,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case GET_READONLY_PROTO_FIELD:
           return ((SoyProtoValue) base)
               .getReadonlyProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
+        case GET_PROTO_ONEOF_CASE:
+          return ((SoyProtoValue) base)
+              .getProtoOneofCase(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode));
         case GET_PROTO_FIELD_OR_UNDEFINED:
           return ((SoyProtoValue) base)
               .getProtoFieldOrNull(
