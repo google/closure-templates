@@ -631,7 +631,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
   }
 
   @CanIgnoreReturnValue
-  private boolean resolveImplicitExtern(
+  @Nullable
+  private ExternNode resolveImplicitExtern(
       VarRefNode ref, Supplier<ImmutableList<SoyType>> paramTypes) {
     var defnDecl = ref.getDefnDecl();
     ExternNode e = implicitExterns.get(defnDecl);
@@ -639,7 +640,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       if (implicitExterns.containsKey(defnDecl)) {
         errorReporter.report(ref.getSourceLocation(), IMPLICIT_NOT_CALLED_ONCE);
       }
-      return false;
+      return null;
     }
     implicitExterns.put(defnDecl, null);
     ImmutableList<SoyType> impliedTypes = paramTypes.get();
@@ -674,7 +675,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
     e.getTypeNode().setResolvedType(newFnType, true);
     e.getVar().setType(newFnType);
-    return true;
+    return e;
   }
 
   @CanIgnoreReturnValue
@@ -2448,12 +2449,16 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         SoyType returnType = null;
         if (node.getNameExpr() instanceof VarRefNode varRefNode) {
           // Resolve implicit types for `liftedExtern(p1, ...)`
-          if (resolveImplicitExtern(
-              varRefNode,
-              () -> node.getParams().stream().map(ExprNode::getType).collect(toImmutableList()))) {
+          var resolvedExternNode =
+              resolveImplicitExtern(
+                  varRefNode,
+                  () ->
+                      node.getParams().stream().map(ExprNode::getType).collect(toImmutableList()));
+          if (resolvedExternNode != null) {
             returnType = ((FunctionType) varRefNode.getType()).getReturnType();
             node.setAllowedParamTypes(
                 node.getParams().stream().map(ExprNode::getType).collect(toImmutableList()));
+            ref = Metadata.forAst(resolvedExternNode);
           }
         }
         if (returnType == null) {
