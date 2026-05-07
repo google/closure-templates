@@ -21,6 +21,7 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.types.SanitizedType.ElementType;
 import java.util.Arrays;
@@ -171,6 +172,10 @@ public interface TypeInterner {
 
   default SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor) {
     return intern(SoyProtoEnumType.create(descriptor));
+  }
+
+  default SoyProtoOneofCaseEnumType getOrCreateProtoOneofCaseEnumType(OneofDescriptor descriptor) {
+    return intern(SoyProtoOneofCaseEnumType.create(descriptor));
   }
 
   default SoyType getOrCreateElementType(String tagName) {

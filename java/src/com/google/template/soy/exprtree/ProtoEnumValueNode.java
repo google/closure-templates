@@ -20,15 +20,17 @@ import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyProtoEnumType;
+import com.google.template.soy.types.SoyType;
+import javax.annotation.Nullable;
 
 /** Node representing a proto enum value. */
 public final class ProtoEnumValueNode extends AbstractPrimitiveNode {
 
   private final Identifier id;
-  private final SoyProtoEnumType type;
+  private final SoyType type;
   private final int enumNumber;
 
-  public ProtoEnumValueNode(Identifier id, SoyProtoEnumType type, int enumNumber) {
+  public ProtoEnumValueNode(Identifier id, SoyType type, int enumNumber) {
     super(id.location());
     this.id = id;
     this.type = type;
@@ -52,7 +54,7 @@ public final class ProtoEnumValueNode extends AbstractPrimitiveNode {
   }
 
   @Override
-  public SoyProtoEnumType getType() {
+  public SoyType getType() {
     return type;
   }
 
@@ -65,8 +67,12 @@ public final class ProtoEnumValueNode extends AbstractPrimitiveNode {
     return enumNumber;
   }
 
+  @Nullable
   public EnumValueDescriptor getEnumValueDescriptor() {
-    return type.getDescriptor().findValueByNumber(enumNumber);
+    if (type instanceof SoyProtoEnumType soyProtoEnumType) {
+      return soyProtoEnumType.getDescriptor().findValueByNumber(enumNumber);
+    }
+    return null;
   }
 
   @Override

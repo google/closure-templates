@@ -33,6 +33,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isPrimitiv
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
 
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -255,6 +256,55 @@ final class ProtoUtils {
                 int64Mode);
           });
     }
+  }
+
+  static SoyExpression accessOneofCase(
+      SoyExpression baseExpr,
+      String oneofName,
+      SoyType fieldType,
+      LocalVariableManager varManager) {
+    SoyType type = baseExpr.soyType().getEffectiveType();
+    if (type instanceof SoyProtoType soyProtoType) {
+      return accessOneofCase(soyProtoType, baseExpr, oneofName);
+    } else {
+      return accessProtoUnionField(
+          baseExpr,
+          oneofName,
+          fieldType,
+          varManager,
+          expr -> {
+            SoyProtoType protoType = expr.soyType().asType(SoyProtoType.class);
+            return accessOneofCase(protoType, expr, oneofName);
+          });
+    }
+  }
+
+  private static SoyExpression accessOneofCase(
+      SoyProtoType protoType, SoyExpression baseExpr, String oneofName) {
+    OneofDescriptor descriptor =
+        protoType.getDescriptor().getOneofs().stream()
+            .filter(
+                o ->
+                    CaseFormat.LOWER_UNDERSCORE
+                        .to(CaseFormat.LOWER_CAMEL, o.getName())
+                        .equals(oneofName))
+            .findFirst()
+            .get();
+    SoyRuntimeType unboxedRuntimeType = SoyRuntimeType.getUnboxedType(protoType).get();
+    Expression typedBaseExpr = baseExpr.unboxAsMessageUnchecked(unboxedRuntimeType.runtimeType());
+    MethodRef getCaseMethod = getOneOfCaseMethod(descriptor);
+    Expression invokeGetCase = typedBaseExpr.invoke(getCaseMethod);
+
+    MethodRef getNumberMethod =
+        MethodRef.createInstanceMethod(
+            TypeInfo.createClass(JavaQualifiedNames.getCaseEnumClassName(descriptor)),
+            new Method("getNumber", Type.INT_TYPE, MethodRef.NO_METHOD_ARGS),
+            MethodPureness.PURE);
+
+    Expression getNumber = invokeGetCase.invoke(getNumberMethod);
+    Expression longNumber = numericConversion(getNumber, Type.LONG_TYPE);
+
+    return SoyExpression.forInt(longNumber);
   }
 
   /**

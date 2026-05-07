@@ -1723,6 +1723,12 @@ final class ExpressionCompiler {
                 ProtoUtils.SingularFieldAccessMode.DEFAULT_IF_UNSET,
                 varManager,
                 Int64ConversionMode.FOLLOW_JS_TYPE);
+          case GET_PROTO_ONEOF_CASE:
+            return ProtoUtils.accessOneofCase(
+                baseExpr,
+                BuiltinMethod.getProtoFieldNameFromMethodCall(node),
+                node.getType(),
+                varManager);
           case GET_PROTO_FIELD:
             return ProtoUtils.accessField(
                 baseExpr,

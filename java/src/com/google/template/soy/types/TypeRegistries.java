@@ -19,6 +19,7 @@ package com.google.template.soy.types;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.types.SoyTypes.INT_OR_FLOAT;
 
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
@@ -29,6 +30,7 @@ import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
@@ -131,6 +133,9 @@ public final class TypeRegistries {
             if (d instanceof EnumDescriptor) {
               return ProtoEnumImportType.create((EnumDescriptor) d);
             }
+            if (d instanceof OneofDescriptor oneofDescriptor) {
+              return ProtoOneofCaseImportType.create(oneofDescriptor);
+            }
             if (d instanceof FieldDescriptor && ((FieldDescriptor) d).isExtension()) {
               return ProtoExtensionImportType.create((FieldDescriptor) d);
             }
@@ -172,6 +177,14 @@ public final class TypeRegistries {
         descriptor.getNestedTypes().forEach(t -> index.put(t.getName(), t));
         descriptor.getEnumTypes().forEach(t -> index.put(t.getName(), t));
         descriptor.getExtensions().forEach(t -> index.put(Field.computeSoyName(t), t));
+        descriptor
+            .getOneofs()
+            .forEach(
+                t ->
+                    index.put(
+                        CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, t.getName())
+                            + "Case",
+                        t));
       } else {
         throw new AssertionError(d.getClass().getName());
       }

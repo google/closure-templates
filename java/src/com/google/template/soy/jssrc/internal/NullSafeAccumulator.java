@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -478,6 +479,7 @@ final class NullSafeAccumulator {
       GET("get", ""),
       GET_OR_UNDEFINED("get", "OrUndefined"),
       GET_READONLY("getReadonly", ""),
+      GET_ONEOF_CASE("get", "Case"),
       HAS("has", "");
 
       private final String prefix;
@@ -536,6 +538,12 @@ final class NullSafeAccumulator {
 
     static ProtoCall hasField(String fieldName, FieldDescriptor desc) {
       return accessor(fieldName, desc, Type.HAS);
+    }
+
+    static ProtoCall getOneofCase(String oneofName, OneofDescriptor desc) {
+      String getter = "get" + LOWER_CAMEL.to(UPPER_CAMEL, oneofName) + "Case";
+      return new AutoValue_NullSafeAccumulator_ProtoCall(
+          getter, /* getterArg= */ null, /* accessType= */ null, /* unpackFunction= */ null);
     }
 
     private static ProtoCall accessor(String fieldName, FieldDescriptor desc, Type type) {

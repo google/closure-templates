@@ -118,6 +118,24 @@ public final class JspbTest {
   }
 
   @Test
+  public void testProtoOneofCase() {
+    assertThatSoyExpr(expr("$msg.getTheseCase()").withParam("{@param msg: Proto3Message}"))
+        .withProtoImports(DESCRIPTORS)
+        .generatesCode("opt_data.msg.getTheseCase();");
+  }
+
+  @Test
+  public void testProtoOneofCaseComparison() {
+    assertThatSoyExpr(
+            expr("$msg.getTheseCase() == Proto3Message.TheseCase.ANOTHER_INT_FIELD")
+                .withParam("{@param msg: Proto3Message}"))
+        .withProtoImports(DESCRIPTORS)
+        .generatesCode(
+            "opt_data.msg.getTheseCase() =="
+                + " proto.soy.test3.Proto3Message.TheseCase.ANOTHER_INT_FIELD;");
+  }
+
+  @Test
   public void testGetExtension() {
     assertThatSoyExpr(
             expr("$proto.getExtension(someIntExtension)")
