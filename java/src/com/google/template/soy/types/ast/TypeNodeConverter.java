@@ -57,7 +57,6 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.OmitType;
 import com.google.template.soy.types.PickType;
 import com.google.template.soy.types.ProtoTypeRegistry;
-import com.google.template.soy.types.QueryType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.ElementType;
@@ -655,13 +654,6 @@ public final class TypeNodeConverter
       errorReporter.report(literal.getSourceLocation(), INVALID_LITERAL_TYPE);
       type = NeverType.getInstance();
     }
-    node.setResolvedType(type);
-    return type;
-  }
-
-  @Override
-  public SoyType visit(TypeQueryNode node) {
-    SoyType type = QueryType.create(node.query());
     node.setResolvedType(type);
     return type;
   }

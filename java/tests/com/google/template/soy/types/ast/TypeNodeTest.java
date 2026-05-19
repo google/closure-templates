@@ -303,11 +303,6 @@ public final class TypeNodeTest {
         assert_().fail();
         return null;
       }
-
-      @Override
-      public Void visit(TypeQueryNode node) {
-        throw new UnsupportedOperationException();
-      }
     }.exec(left);
   }
 

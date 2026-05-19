@@ -172,7 +172,6 @@ import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
-import com.google.template.soy.types.ast.TypeQueryNode;
 import com.google.template.soy.types.ast.UnionTypeNode;
 import java.io.Reader;
 import java.io.StringReader;
@@ -1482,7 +1481,6 @@ TOKEN_MGR_DECLS: {
 | < BAR_BAR: "||" >       // Precedence 2 operators
 | < QQ: "??" >
 | < AS_OP: "as" >
-| < TYPEOF_OP: "typeof" >
 | < INSTANCEOF: "instanceof" >
 | < SPREAD: "..." >
 | < AMP_AMP: "&&" >
@@ -5479,7 +5477,6 @@ private TypeNode TypeExprPrec3() :
   | type = UnknownType()
   | type = RecordType()
   | type = StringLiteralType()
-  | type = TypeQuery()
   )
 
   { return type; }
@@ -5690,64 +5687,6 @@ private TypeNode StringLiteralType() :
   {
     return LiteralTypeNode.create(literal);
   }
-}
-
-/**
- * TypeQuery -> "typeof" Expr
- */
-private TypeNode TypeQuery() :
-{
-  Token typeOf;
-  ExprNode expr;
-}
-{
-  typeOf = <TYPEOF_OP>
-  expr = TypeQueryExpression()
-  {
-    return TypeQueryNode.create(createSrcLoc(typeOf, expr), expr);
-  }
-}
-
-private ExprNode TypeQueryExpression() :
-{
-  ExprNode expr, keyExpr;
-  Token ident, open, close, op;
-}
-{
-  ident = <IDENT>
-  {
-    expr = new VarRefNode(ident.image, createSrcLoc(ident), null);
-  }
-  (
-    (
-      (
-        op = <DOT>
-      )
-      ident = <IDENT>
-      {
-        expr =
-            new FieldAccessNode(
-                expr,
-                ident.image,
-                createSrcLoc(op, ident),
-                false);
-      }
-    |
-      (
-        open = <LBRACKET>
-      )
-      keyExpr = StringLiteral()
-      close = <RBRACKET>
-      { expr =
-            new ItemAccessNode(
-                expr,
-                keyExpr,
-                createSrcLoc(open, close),
-                false);
-      }
-    )
-  )*
-  { return expr; }
 }
 
 /**

@@ -58,7 +58,6 @@ import com.google.template.soy.types.ast.RecordTypeNode.Property;
 import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeVisitor;
-import com.google.template.soy.types.ast.TypeQueryNode;
 import com.google.template.soy.types.ast.TypesHolderNode;
 import com.google.template.soy.types.ast.UnionTypeNode;
 import java.util.ArrayList;
@@ -614,11 +613,6 @@ public final class SoyTreeUtils {
 
         @Override
         public List<? extends TypeNode> visit(LiteralTypeNode node) {
-          return ImmutableList.of();
-        }
-
-        @Override
-        public List<? extends TypeNode> visit(TypeQueryNode node) {
           return ImmutableList.of();
         }
       };
