@@ -101,7 +101,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
-import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -173,8 +172,8 @@ import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ConstNode;
-import com.google.template.soy.soytree.EvalNode;
 import com.google.template.soy.soytree.ExternNode;
+import com.google.template.soy.soytree.FileMetadata;
 import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -198,6 +197,7 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -206,6 +206,7 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.DelegatingSoyTypeRegistry;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
@@ -217,6 +218,7 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.MutableListType;
 import com.google.template.soy.types.MutableMapType;
+import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.ProtoImportType;
@@ -238,6 +240,7 @@ import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
 import com.google.template.soy.types.VeType;
+import com.google.template.soy.types.ast.IntersectionTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import com.google.template.soy.types.ast.TypesHolderNode;
@@ -559,20 +562,31 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyErrorKind.of(
           "This invocation did not resolve all implicit types in the callee.",
           Impression.UNKNOWN_IMPRESSION);
+  private static final SoyErrorKind TYPE_NAME_BUILTIN_COLLISION =
+      SoyErrorKind.of(
+          "Type ''{0}'' name is already a built-in or imported type {1}.",
+          Impression.ERROR_RESOLVE_DECLARED_TYPES_PASS_TYPE_NAME_BUILTIN_COLLISION);
+  private static final SoyErrorKind TYPE_NAME_COLLISION =
+      SoyErrorKind.of(
+          "Type ''{0}'' is already defined in this file.",
+          Impression.ERROR_RESOLVE_DECLARED_TYPES_PASS_TYPE_NAME_COLLISION);
+  private static final SoyErrorKind INTERSECTION_NOT_ALLOWED =
+      SoyErrorKind.of(
+          "An intersection type is not allowed here. Extract into a '{type}' instead.",
+          Impression.ERROR_RESOLVE_DECLARED_TYPES_PASS_INTERSECTION_NOT_ALLOWED);
 
   private final ErrorReporter errorReporter;
-
+  private final boolean disableAllTypeChecking;
+  private final boolean allowMissingSoyDeps;
   private final SoyMethod.Registry methodRegistry;
   private final boolean rewriteShortFormCalls;
 
   /** Cached map that converts a string representation of types to actual soy types. */
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
 
-  private final ResolveTypesExprVisitor exprVisitor =
-      new ResolveTypesExprVisitor(/* inferringParam= */ false);
-  private final ResolveTypesExprVisitor paramInfExprVisitor =
-      new ResolveTypesExprVisitor(/* inferringParam= */ true);
-  private final ResolveTypesExprVisitor constExprVisitor = new ResolveTypesConstNodeVisitor();
+  private final ResolveTypesExprVisitor exprVisitor;
+  private final ResolveTypesExprVisitor paramInfExprVisitor;
+  private final ResolveTypesExprVisitor constExprVisitor;
   private final FieldRegistry fieldRegistry;
   private final TypeAssignmentSoyVisitor typeAssignmentSoyVisitor = new TypeAssignmentSoyVisitor();
 
@@ -580,8 +594,9 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
   private TypeSubstitutions substitutions;
 
   private final ExprEquivalence exprEquivalence;
-  private SoyTypeRegistry typeRegistry;
-  private TypeNodeConverter pluginTypeConverter;
+  private AccumulatingTypeRegistry typeRegistry;
+  private TypeNodeConverter typeNodeConverter;
+  private TypeNodeConverter typeNodeConverterForSignature;
   private final PluginResolver.Mode pluginResolutionMode;
   private SoyFileNode currentFile;
   private boolean inAutoExtern;
@@ -591,11 +606,23 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
       PluginResolver pluginResolver,
+      boolean disableAllTypeChecking,
       boolean allowMissingSoyDeps,
       boolean rewriteShortFormCalls,
       Supplier<FileSetMetadata> templateRegistryFromDeps) {
     super(templateRegistryFromDeps);
+    if (!disableAllTypeChecking) {
+      exprVisitor = new ResolveTypesExprVisitor(/* inferringParam= */ false);
+      paramInfExprVisitor = new ResolveTypesExprVisitor(/* inferringParam= */ true);
+      constExprVisitor = new ResolveTypesConstNodeVisitor();
+    } else {
+      exprVisitor = null;
+      paramInfExprVisitor = null;
+      constExprVisitor = null;
+    }
     this.errorReporter = errorReporter;
+    this.disableAllTypeChecking = disableAllTypeChecking;
+    this.allowMissingSoyDeps = allowMissingSoyDeps;
     this.pluginResolutionMode =
         allowMissingSoyDeps
             ? PluginResolver.Mode.ALLOW_UNDEFINED
@@ -618,11 +645,16 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
   private void prepFile(SoyFileNode file) {
     substitutions = new TypeSubstitutions(exprEquivalence);
-    typeRegistry = file.getSoyTypeRegistry();
+    typeRegistry = new AccumulatingTypeRegistry(file.getSoyTypeRegistry());
     currentFile = file;
-    pluginTypeConverter =
+    typeNodeConverter =
         TypeNodeConverter.builder(errorReporter)
             .setTypeRegistry(typeRegistry)
+            .setReportMissingTypes(!disableAllTypeChecking && !allowMissingSoyDeps)
+            .build();
+    typeNodeConverterForSignature =
+        TypeNodeConverter.builder(errorReporter)
+            .setTypeRegistry(file.getSoyTypeRegistry())
             .setSystemExternal(true)
             .build();
   }
@@ -702,7 +734,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
               }
             });
 
-    typeAssignmentSoyVisitor.calculateTemplateType(t);
+    ((TemplateImportType) t.asVarDefn().type()).setBasicTemplateType(Metadata.buildTemplateType(t));
+
     if (SoyTypes.transitivelyContainsKind(
         SoyTypes.getTemplateType(t.asVarDefn().type()), Kind.IMPLICIT)) {
       errorReporter.report(ref.getSourceLocation(), IMPLICIT_INCOMPLETE);
@@ -715,6 +748,30 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     @Override
     protected void visitSoyFileNode(SoyFileNode node) {
+      if (disableAllTypeChecking) {
+        // For historical reasons some types must be set even when type checking is off.
+        node.getExterns().forEach(this::calculateExternType);
+        node.getTemplates().forEach(this::calculateTemplateType);
+        SoyTreeUtils.allNodesOfType(node, TypesHolderNode.class)
+            .forEach(
+                n -> {
+                  if (n instanceof TypeDefNode || n instanceof TypeLiteralNode) {
+                    visitTypesHolderNode(n);
+                  }
+                });
+        return;
+      }
+
+      // Visit in order of what types of nodes can reference other types of nodes.
+      // Alternately, we could do a topological traversal to allow more types of references.
+      node.getImports().forEach(this::visit);
+      node.getTypeDefs().forEach(this::visit);
+      node.getExterns().forEach(this::calculateExternType);
+      // The following ordering means that we have decided to allow constants to reference templates
+      // in the same file, at the cost of having to disallow params from omitting a type and having
+      // a default value that's a const in the same file.
+      node.getTemplates().forEach(this::calculateTemplateType);
+
       implicitExterns = new HashMap<>();
       implicitTemplates = new HashMap<>();
       List<ExternNode> nonImplicitExterns = new ArrayList<>();
@@ -734,18 +791,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         }
       }
 
-      // Visit in order of what types of nodes can reference other types of nodes.
-      // Alternately, we could do a topological traversal to allow more types of references.
-      node.getImports().forEach(this::visit);
-      node.getTypeDefs().forEach(this::visit);
-      node.getExterns().forEach(this::calculateExternType);
-
-      // The following ordering means that we have decided to allow constants to reference templates
-      // in the same file, at the cost of having to disallow params from omitting a type and having
-      // a default value that's a const in the same file.
-      node.getTemplates().forEach(this::calculateTemplateType);
       node.getConstants().forEach(this::visit);
-
       nonImplicitExterns.forEach(this::visit);
       nonImplicitTemplates.forEach(this::visit);
 
@@ -764,6 +810,33 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       } else if (node.getImportType() != ImportType.TEMPLATE) {
         return;
       }
+
+      FileMetadata fileMetadata = getFileMetadata(node.getSourceFilePath());
+      if (fileMetadata != null) {
+        if (node.isModuleImport()) {
+          fileMetadata
+              .getTypeDefs()
+              .forEach(
+                  typeDef -> {
+                    boolean unusedTrue =
+                        typeRegistry.addTypeAlias(
+                            node.getModuleAlias() + "." + typeDef.getName(), typeDef.getType());
+                  });
+        } else {
+          node.getIdentifiers().stream()
+              .filter(v -> v.getSymbolKind() == SymbolKind.TYPEDEF)
+              .forEach(
+                  var -> {
+                    if (!var.hasType()) {
+                      FileMetadata.TypeDef typeDef = fileMetadata.getTypeDef(var.getSymbol());
+                      var.setType(typeDef.getType());
+                    }
+                    boolean unusedTrue =
+                        typeRegistry.addTypeAlias(var.name(), (NamedType) var.authoredType());
+                  });
+        }
+      }
+
       node.visitVars(
           (var) -> {
             if (var.getSymbolKind() == SymbolKind.TEMPLATE) {
@@ -778,19 +851,77 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           });
     }
 
+    @Override
+    protected void visitTypeDefNode(TypeDefNode node) {
+      super.visitTypeDefNode(node);
+      if (typeRegistry.hasType(node.getName())) {
+        errorReporter.report(
+            node.getNameLocation(),
+            TYPE_NAME_BUILTIN_COLLISION,
+            node.getName(),
+            typeRegistry.getType(node.getName()).getKind()
+                + " "
+                + typeRegistry.getType(node.getName()));
+      } else {
+        NamedType namedType = node.asNamedType();
+        if (!typeRegistry.addTypeAlias(node.getName(), namedType)) {
+          errorReporter.report(node.getNameLocation(), TYPE_NAME_COLLISION, node.getName());
+        }
+      }
+    }
+
     private void calculateTemplateType(TemplateNode node) {
-      // We only need to visit params for which we will infer the type from the default value. These
-      // params have a default value and no type declaration. Because we never infer types from
-      // template types this is safe to do without regards to topological ordering of calls.
-      node.getHeaderParams().stream()
-          .filter(headerVar -> headerVar.hasDefault() && !headerVar.hasType())
-          .forEach(
-              headerVar -> {
-                paramInfExprVisitor.exec(headerVar.defaultValue());
-                headerVar.setType(headerVar.defaultValue().getRoot().getType());
-              });
+      for (var param : node.getParams()) {
+        calculateHeaderVarType(param, paramInfExprVisitor);
+      }
+
       ((TemplateImportType) node.asVarDefn().type())
           .setBasicTemplateType(Metadata.buildTemplateType(node));
+    }
+
+    private void calculateHeaderVarType(
+        TemplateHeaderVarDefn param, ResolveTypesExprVisitor exprVisitor) {
+      if (param.getTypeNode() != null) {
+        if (!param.hasType()) {
+          // Disallow inline intersection types because there's no way to model them inline in JSC
+          // annotations. Params are part of the JS template API so it's important to not type them
+          // as `?`. We could allow this if we extract all inline defs into local named types.
+          noIntersection(param.getTypeNode());
+
+          SoyType paramType;
+          if (!param.getTypeNode().isTypeResolved()) {
+            paramType = typeNodeConverter.getOrCreateType(param.getTypeNode());
+          } else {
+            paramType = param.getTypeNode().getResolvedType();
+          }
+
+          if (param.isExplicitlyOptional()) {
+            paramType = SoyTypes.unionWithUndefined(paramType);
+          } else if (param.hasDefault()
+              && !(param instanceof TemplateStateVar)
+              && param.defaultValue().getRoot().getKind() != ExprNode.Kind.UNDEFINED_NODE) {
+            paramType = SoyTypes.excludeUndefined(paramType);
+          }
+          param.setType(paramType);
+        }
+      } else if (param.hasDefault() && !param.hasType()) {
+        // We only need to visit params for which we will infer the type from the default value.
+        // These params have a default value and no type declaration. Because we never infer types
+        // from template types this is safe to do without regards to topological ordering of calls.
+        if (disableAllTypeChecking) {
+          param.setType(UnknownType.getInstance());
+        } else {
+          exprVisitor.exec(param.defaultValue());
+          param.setType(param.defaultValue().getRoot().getType());
+        }
+      }
+    }
+
+    private void noIntersection(TypeNode node) {
+      SoyTreeUtils.allTypeNodes(node)
+          .filter(IntersectionTypeNode.class::isInstance)
+          .findFirst()
+          .ifPresent(n -> errorReporter.report(n.sourceLocation(), INTERSECTION_NOT_ALLOWED));
     }
 
     @Override
@@ -805,6 +936,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       // value parameter, which won't work because it's looking up the type of the parameter when it
       // hasn't been inferred yet.  So report an error and override the type to be the errortype
       for (TemplateHeaderVarDefn headerVar : headerVars) {
+        calculateHeaderVarType(headerVar, exprVisitor);
         if (headerVar instanceof TemplateStateVar stateVar) {
           allStateVars.add(stateVar);
         }
@@ -893,20 +1025,20 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitPrintNode(PrintNode node) {
       allowShortFormCall(node.getExpr());
-      visitSoyNode(node);
-    }
-
-    @Override
-    protected void visitEvalNode(EvalNode node) {
-      visitSoyNode(node);
+      super.visitPrintNode(node);
     }
 
     private void calculateExternType(ExternNode node) {
+      visitTypesHolderNode(node);
+      for (TemplateParam paramVar : node.getParamVars()) {
+        paramVar.setType(paramVar.getTypeNode().getResolvedType());
+      }
       node.getVar().setType(node.getType());
     }
 
     @Override
     protected void visitConstNode(ConstNode node) {
+      visitTypesHolderNode(node);
       constExprVisitor.exec(node.getExpr());
       SoyType inferredType = node.getExpr().getType();
       if (isNullish(inferredType)) {
@@ -936,7 +1068,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitLetValueNode(LetValueNode node) {
       allowShortFormCall(node.getExpr());
-      visitSoyNode(node);
+      super.visitLetValueNode(node);
       node.getVar().setType(node.getExpr().getType());
     }
 
@@ -954,7 +1086,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitCallParamValueNode(CallParamValueNode node) {
       allowShortFormCall(node.getExpr());
-      visitSoyNode(node);
+      super.visitCallParamValueNode(node);
     }
 
     private final ImmutableSet<Kind> templateKinds =
@@ -973,7 +1105,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     @Override
     protected void visitLetContentNode(LetContentNode node) {
-      visitSoyNode(node);
+      super.visitLetContentNode(node);
       if (node.isImplicitContentKind()) {
         SanitizedContentKind inferredKind =
             SoyTreeUtils.inferSanitizedContentKindFromChildren(node);
@@ -1192,6 +1324,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     @Override
     protected void visitSoyNode(SoyNode node) {
+      if (node instanceof TypesHolderNode typesHolderNode) {
+        visitTypesHolderNode(typesHolderNode);
+      }
+
       if (node instanceof ExprHolderNode exprHolderNode) {
         visitExpressions(exprHolderNode);
       }
@@ -1200,6 +1336,16 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         visitChildren(parentSoyNode);
       }
     }
+  }
+
+  private void visitTypesHolderNode(TypesHolderNode node) {
+    node.getTypeNodes()
+        .forEach(
+            typeNode -> {
+              if (!typeNode.isTypeResolved()) {
+                SoyType unused = typeNodeConverter.exec(typeNode);
+              }
+            });
   }
 
   private void visitExpressions(ExprHolderNode node) {
@@ -1294,6 +1440,13 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     @Override
+    protected void visitExprNode(ExprNode node) {
+      if (node instanceof TypesHolderNode typesHolderNode) {
+        visitTypesHolderNode(typesHolderNode);
+      }
+    }
+
+    @Override
     protected void visitExprRootNode(ExprRootNode node) {
       visitChildren(node);
       ExprNode expr = node.getRoot();
@@ -1319,11 +1472,6 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       } else {
         node.setType(excludeNullish(type));
       }
-    }
-
-    @Override
-    protected void visitPrimitiveNode(PrimitiveNode node) {
-      // We don't do anything here because primitive nodes already have type information.
     }
 
     @Override
@@ -2425,7 +2573,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         if (paramType == null) {
           return null;
         }
-        paramTypes.add(pluginTypeConverter.getOrCreateType(paramType));
+        paramTypes.add(typeNodeConverterForSignature.getOrCreateType(paramType));
       }
       TypeNode returnType =
           SoyFileParser.parseType(signature.returnType(), classFilePath, errorReporter);
@@ -2434,7 +2582,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
       resolvedSignature =
           ResolvedSignature.create(
-              paramTypes.build(), pluginTypeConverter.getOrCreateType(returnType));
+              paramTypes.build(), typeNodeConverterForSignature.getOrCreateType(returnType));
       signatureMap.put(signature, resolvedSignature);
       return resolvedSignature;
     }
@@ -3469,6 +3617,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitFunctionNode(FunctionNode node) {
       if (node.isResolved()
+          && !(node.getSoyFunction() instanceof Extern)
           && node.getSoyFunction() != BuiltinFunction.NEW_SET
           && node.getSoyFunction() != BuiltinFunction.PROTO_INIT
           && node.getSoyFunction() != BuiltinFunction.CSS
@@ -3616,7 +3765,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
   private SoyType parseType(String t, SourceFilePath path) {
     TypeNode typeNode = SoyFileParser.parseType(t, path, errorReporter);
     return typeNode != null
-        ? pluginTypeConverter.getOrCreateType(typeNode)
+        ? typeNodeConverterForSignature.getOrCreateType(typeNode)
         : UnknownType.getInstance();
   }
 
@@ -3707,5 +3856,31 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                             : SanitizedType.getTypeForContentKind(
                                 ((CallParamContentNode) p).getContentKind())))
             .collect(toImmutableList()));
+  }
+
+  /** A SoyTypeRegistry that we add all `{type}` named types to as we traverse the AST. */
+  static class AccumulatingTypeRegistry extends DelegatingSoyTypeRegistry {
+
+    private final Map<String, SoyType> localTypes = new HashMap<>();
+
+    public AccumulatingTypeRegistry(SoyTypeRegistry delegate) {
+      super(delegate);
+    }
+
+    @CanIgnoreReturnValue
+    public boolean addTypeAlias(String alias, NamedType type) {
+      SoyType previous = localTypes.put(alias, type);
+      return previous == null;
+    }
+
+    @Nullable
+    @Override
+    public SoyType getType(String typeName) {
+      SoyType local = localTypes.get(typeName);
+      if (local != null) {
+        return local;
+      }
+      return super.getType(typeName);
+    }
   }
 }

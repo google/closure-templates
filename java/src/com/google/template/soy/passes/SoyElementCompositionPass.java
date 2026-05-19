@@ -363,7 +363,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       Optional<ExprNode> conditional) {
     if (c.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE) {
       HtmlAttributeNode attrNode = (HtmlAttributeNode) c;
-      if (ElementAttributePass.getStaticOrMergingKey(attrNode) != null) {
+      if (RewriteElementAttributePass.getStaticOrMergingKey(attrNode) != null) {
         CallParamNode param =
             consumeAttribute(
                 attrNode,
@@ -375,7 +375,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 call,
                 conditional);
         if (param != null) {
-          param.setOriginalName(ElementAttributePass.getStaticOrMergingKey(attrNode));
+          param.setOriginalName(RewriteElementAttributePass.getStaticOrMergingKey(attrNode));
           call.addChild(param);
         }
         return;
@@ -475,7 +475,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       Optional<ExprNode> condition) {
     SourceLocation unknown = attr.getSourceLocation().clearRange();
 
-    String attrName = ElementAttributePass.getStaticOrMergingKey(attr);
+    String attrName = RewriteElementAttributePass.getStaticOrMergingKey(attr);
     boolean isSoyAttr = attrName.startsWith("@");
     if (isSoyAttr) {
       attrName = attrName.substring(1);
@@ -496,7 +496,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       ExprNode val = new VarRefNode("$" + paramName, unknown, attrs.get(paramName));
       Preconditions.checkState(
           !condition.isPresent(), "{if ...}@attr{/if} should not pass parser.");
-      if (ElementAttributePass.getMergingKey(attr) == null) {
+      if (RewriteElementAttributePass.getMergingKey(attr) == null) {
         return new CallParamValueNode(
             nodeIdGen.genId(),
             attr.getSourceLocation(),
@@ -651,12 +651,12 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     PrintNode printNode = (PrintNode) attr.getChild(0);
     FunctionNode func = (FunctionNode) printNode.getExpr().getRoot();
     FunctionNode newFunc =
-        ElementAttributePass.getMergingKey(attr).equals("@class")
+        RewriteElementAttributePass.getMergingKey(attr).equals("@class")
             ? FunctionNode.newPositional(
                 Identifier.create("buildClassValue", SourceLocation.UNKNOWN),
                 BasicFunctions.BUILD_CLASS_VALUE_FUNCTION,
                 SourceLocation.UNKNOWN)
-            : ElementAttributePass.getMergingKey(attr).equals("@style")
+            : RewriteElementAttributePass.getMergingKey(attr).equals("@style")
                 ? FunctionNode.newPositional(
                     Identifier.create("buildStyleValue", SourceLocation.UNKNOWN),
                     BasicFunctions.BUILD_STYLE_VALUE_FUNCTION,
@@ -679,7 +679,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
               UndefinedType.getInstance()));
     }
     newFunc.setType(
-        ElementAttributePass.getMergingKey(attr).equals("@style")
+        RewriteElementAttributePass.getMergingKey(attr).equals("@style")
             ? StyleType.getInstance()
             : StringType.getInstance());
     newFunc.setAllowedParamTypes(allowedTypes.build());

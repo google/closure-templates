@@ -24,6 +24,7 @@ import com.google.common.primitives.Doubles;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.types.SoyType;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -356,7 +357,10 @@ public final class ExprEquivalence {
 
     @Override
     protected Boolean visitTypeLiteralNode(TypeLiteralNode node) {
-      return node.getType().equals(other.getType());
+      SoyType t1 = node.getTypeNode().isTypeResolved() ? node.getType() : null;
+      SoyType t2 =
+          ((TypeLiteralNode) other).getTypeNode().isTypeResolved() ? other.getType() : null;
+      return Objects.equals(t1, t2);
     }
 
     @Override

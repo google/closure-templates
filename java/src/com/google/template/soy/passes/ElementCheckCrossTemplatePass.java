@@ -78,7 +78,7 @@ final class ElementCheckCrossTemplatePass implements CompilerFileSetPass {
   }
 
   private void processTemplate(TemplateNode template) {
-    HtmlOpenTagNode openTagNode = ElementAttributePass.getElementOpen(template);
+    HtmlOpenTagNode openTagNode = RewriteElementAttributePass.getElementOpen(template);
     if (openTagNode == null) {
       return;
     }

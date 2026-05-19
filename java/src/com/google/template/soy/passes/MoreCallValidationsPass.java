@@ -354,7 +354,7 @@ final class MoreCallValidationsPass implements CompilerFileSetPass {
       ImmutableMap<String, Parameter> allParamsByParamName,
       boolean hasAllAttributes,
       ImmutableSet<String> reservedAttributes) {
-    String name = ElementAttributePass.getStaticOrMergingKey(attr);
+    String name = RewriteElementAttributePass.getStaticOrMergingKey(attr);
     SourceLocation loc = attr.getChild(0).getSourceLocation();
     if (name == null) {
       if (attr.numChildren() != 1) {

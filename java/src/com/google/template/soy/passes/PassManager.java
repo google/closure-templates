@@ -547,23 +547,10 @@ public final class PassManager {
                   errorReporter, v -> accumulatedState.topologicallyOrderedFiles = v))
           .add(new ModernFeatureInvariantsEnforcementPass(errorReporter))
           .add(new RestoreGlobalsPass())
-          .add(new RestoreCompilerChecksPass(errorReporter))
-          // needs to come early since it is necessary to create template metadata objects for
-          // header compilation
-          .add(
-              new ResolveDeclaredTypesPass(
-                  errorReporter,
-                  disableAllTypeChecking,
-                  allowMissingSoyDeps,
-                  accumulatedState::registryFromDeps));
+          .add(new RestoreCompilerChecksPass(errorReporter));
 
       // needs to come before SoyConformancePass
       passes.add(new ResolvePluginsPass(pluginResolver));
-      // When type checking is disabled, extern implementations will likely not be loaded.
-      if (!disableAllTypeChecking) {
-        passes.add(
-            new ValidateExternsPass(errorReporter, javaPluginValidator, validateJavaMethods));
-      }
 
       // Must come after ResolvePluginsPass.
       if (astRewrites.isAll()) {
@@ -625,22 +612,25 @@ public final class PassManager {
       }
       if (astRewrites.rewriteAttributeParams()) {
         passes.add(
-            new ElementAttributePass(
-                errorReporter, accumulatedState::registryFromDeps, desugarIdomFeatures));
+            new ValidateElementAttributePass(errorReporter, accumulatedState::registryFromDeps));
       }
       if (!disableAllTypeChecking) {
         passes
-            .add(new CheckDeclaredTypesPass(errorReporter))
             // Run before ResolveExpressionTypesPass since this makes type analysis on null safe
             // accesses simpler.
-            .add(new NullSafeAccessPass())
-            .add(
-                new ResolveExpressionTypesPass(
-                    errorReporter,
-                    pluginResolver,
-                    allowMissingSoyDeps,
-                    astRewrites.rewriteShortFormCalls(),
-                    accumulatedState::registryFromDeps))
+            .add(new NullSafeAccessPass());
+      }
+      passes.add(
+          new ResolveExpressionTypesPass(
+              errorReporter,
+              pluginResolver,
+              disableAllTypeChecking,
+              allowMissingSoyDeps,
+              astRewrites.rewriteShortFormCalls(),
+              accumulatedState::registryFromDeps));
+      if (!disableAllTypeChecking) {
+        passes
+            .add(new CheckDeclaredTypesPass(errorReporter))
             .add(new VeDefValidationPass(errorReporter))
             .add(new RewriteNullishChecksPass());
 
@@ -656,6 +646,14 @@ public final class PassManager {
           passes.add(new CheckModifiableTemplatesPass(errorReporter));
         }
         passes.add(new ValidateAutoJavaExternPass(errorReporter));
+      }
+      if (astRewrites.rewriteAttributeParams()) {
+        passes.add(new RewriteElementAttributePass(errorReporter, desugarIdomFeatures));
+      }
+      // When type checking is disabled, extern implementations will likely not be loaded.
+      if (!disableAllTypeChecking) {
+        passes.add(
+            new ValidateExternsPass(errorReporter, javaPluginValidator, validateJavaMethods));
       }
       passes.add(new CheckAllFunctionsResolvedPass(pluginResolver));
 

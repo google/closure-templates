@@ -29,7 +29,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.passes.ResolveDeclaredTypesPass.AccumulatingTypeRegistry;
+import com.google.template.soy.passes.ResolveExpressionTypesPass.AccumulatingTypeRegistry;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.IfCondNode;

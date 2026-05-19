@@ -81,7 +81,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Checks various invariants related to externs. */
-@RunBefore(ResolveExpressionTypesPass.class)
+@RunAfter(ResolveExpressionTypesPass.class)
 class ValidateExternsPass implements CompilerFilePass {
 
   private static final SoyErrorKind ATTRIBUTE_REQUIRED =
