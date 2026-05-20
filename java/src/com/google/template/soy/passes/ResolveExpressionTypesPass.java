@@ -16,8 +16,10 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.common.collect.Iterables.getOnlyElement;
@@ -48,10 +50,12 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
@@ -241,8 +245,10 @@ import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
 import com.google.template.soy.types.VeType;
 import com.google.template.soy.types.ast.IntersectionTypeNode;
+import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
+import com.google.template.soy.types.ast.TypeQueryNode;
 import com.google.template.soy.types.ast.TypesHolderNode;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -259,6 +265,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /** Visitor which resolves all expression types. */
@@ -574,6 +581,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyErrorKind.of(
           "An intersection type is not allowed here. Extract into a '{type}' instead.",
           Impression.ERROR_RESOLVE_DECLARED_TYPES_PASS_INTERSECTION_NOT_ALLOWED);
+  private static final SoyErrorKind FORWARD_DEP_CYCLE =
+      SoyErrorKind.of(
+          "Illegal cyclic dependency between this node and the nodes at: {0}.",
+          Impression.UNKNOWN_IMPRESSION);
 
   private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
@@ -762,38 +773,38 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         return;
       }
 
-      // Visit in order of what types of nodes can reference other types of nodes.
-      // Alternately, we could do a topological traversal to allow more types of references.
+      // Visit imports, which come first.
       node.getImports().forEach(this::visit);
-      node.getTypeDefs().forEach(this::visit);
-      node.getExterns().forEach(this::calculateExternType);
-      // The following ordering means that we have decided to allow constants to reference templates
-      // in the same file, at the cost of having to disallow params from omitting a type and having
-      // a default value that's a const in the same file.
-      node.getTemplates().forEach(this::calculateTemplateType);
 
       implicitExterns = new HashMap<>();
       implicitTemplates = new HashMap<>();
-      List<ExternNode> nonImplicitExterns = new ArrayList<>();
-      for (ExternNode extern : node.getExterns()) {
-        if (hasImplicitType(extern)) {
-          implicitExterns.put(extern.getVar(), extern);
-        } else {
-          nonImplicitExterns.add(extern);
-        }
-      }
-      List<TemplateNode> nonImplicitTemplates = new ArrayList<>();
-      for (TemplateNode template : node.getTemplates()) {
-        if (hasImplicitType(template)) {
-          implicitTemplates.put(template.asVarDefn(), template);
-        } else {
-          nonImplicitTemplates.add(template);
+      List<SoyNode> nonImplicitNodes = new ArrayList<>();
+
+      // All other members are type checked in topological order. Extern and template signatures
+      // are checked in a first pass, along with types and consts. Their bodies are checked in a
+      // second pass.
+      for (SoyNode child : topoSortedFileMembers(node)) {
+        if (child instanceof TypeDefNode || child instanceof ConstNode) {
+          visit(child);
+        } else if (child instanceof ExternNode externNode) {
+          calculateExternType(externNode);
+          if (hasImplicitType(externNode)) {
+            implicitExterns.put(externNode.getVar(), externNode);
+          } else {
+            nonImplicitNodes.add(externNode);
+          }
+        } else if (child instanceof TemplateNode templateNode) {
+          calculateTemplateType(templateNode);
+          if (hasImplicitType(templateNode)) {
+            implicitTemplates.put(templateNode.asVarDefn(), templateNode);
+          } else {
+            nonImplicitNodes.add(templateNode);
+          }
         }
       }
 
-      node.getConstants().forEach(this::visit);
-      nonImplicitExterns.forEach(this::visit);
-      nonImplicitTemplates.forEach(this::visit);
+      // Second pass to type check the bodies of externs and templates.
+      nonImplicitNodes.forEach(this::visit);
 
       implicitExterns.values().stream()
           .filter(Objects::nonNull)
@@ -1721,7 +1732,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           // sanity check, default params and state params have complex type initialization logic
           // double check that it worked.
           throw new IllegalStateException(
-              "VarRefNode @" + varRef.getSourceLocation() + " doesn't have a type!");
+              "VarRefNode @"
+                  + varRef.getSourceLocation()
+                  + " doesn't have a "
+                  + (varRef.getDefnDecl() == null ? "declaration" : "type")
+                  + "!");
         }
       }
     }
@@ -3067,7 +3082,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
       SoyType existingType = node.getType();
       if (existingType instanceof TemplateImportType) {
-        Preconditions.checkNotNull(
+        checkNotNull(
             node.getType(),
             "No type for %s (%s)",
             node.getResolvedName(),
@@ -3881,6 +3896,124 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         return local;
       }
       return super.getType(typeName);
+    }
+  }
+
+  /**
+   * Topologically sorts members of a Soy file (const, type, extern, template) so that they can be
+   * type checked in a single pass in order. This is an approximation of "hoisting" in TSJS, in
+   * which functions and type declarations exist on a higher plane and allow forward and backward
+   * references.
+   *
+   * <p>Because Soy does not allow recursive types it does not support 100% of the hoist semantics
+   * of TSJS. In particular Soy does not support cycles of references between types, externs, and
+   * templates and will fail to compile if these exist.
+   *
+   * <p>Although consts are included in the sort, previous passes prevent forward references among
+   * them.
+   */
+  private ImmutableList<SoyNode> topoSortedFileMembers(SoyFileNode node) {
+    ImmutableList<SoyNode> children =
+        node.getChildren().stream()
+            .filter(
+                n ->
+                    n instanceof ConstNode
+                        || n instanceof TypeDefNode
+                        || n instanceof ExternNode
+                        || n instanceof TemplateNode)
+            .collect(toImmutableList());
+
+    ImmutableMap<VarDefn, SoyNode> varDefns =
+        children.stream()
+            .filter(n -> !(n instanceof TypeDefNode))
+            .collect(
+                toImmutableMap(
+                    n -> {
+                      if (n instanceof ConstNode constNode) {
+                        return constNode.getVar();
+                      }
+                      if (n instanceof ExternNode externNode) {
+                        return externNode.getVar();
+                      }
+                      if (n instanceof TemplateNode templateNode) {
+                        return templateNode.asVarDefn();
+                      }
+                      throw new AssertionError();
+                    },
+                    n -> n));
+
+    ImmutableMap<String, TypeDefNode> types =
+        children.stream()
+            .filter(TypeDefNode.class::isInstance)
+            .map(TypeDefNode.class::cast)
+            .collect(toImmutableMap(TypeDefNode::getName, n -> n));
+
+    var topoSort = new TopoSort<SoyNode>();
+
+    try {
+      return topoSort.sort(
+          children,
+          (n) -> {
+            Stream<TypeNode> typeNodes;
+            Stream<ExprNode> exprNodes;
+            if (n instanceof ConstNode constNode) {
+              // Earlier passes prevent forward deps between consts.
+              typeNodes = constNode.getTypeNodes();
+              exprNodes = Stream.of(constNode.getExpr());
+            } else if (n instanceof TypeDefNode typeDefNode) {
+              typeNodes = typeDefNode.getTypeNodes();
+              exprNodes = Stream.empty();
+            } else if (n instanceof ExternNode externNode) {
+              typeNodes = externNode.getTypeNodes();
+              exprNodes = Stream.empty();
+            } else if (n instanceof TemplateNode templateNode) {
+              typeNodes = templateNode.getTypeNodes();
+              exprNodes =
+                  templateNode.getAllParams().stream()
+                      .filter(TemplateParam::hasDefault)
+                      .map(TemplateParam::defaultValue);
+            } else {
+              throw new AssertionError();
+            }
+
+            ImmutableList<TypeNode> allTypeNodes =
+                typeNodes.flatMap(SoyTreeUtils::allTypeNodes).collect(toImmutableList());
+
+            Stream<? extends SoyNode> depsViaTypes =
+                allTypeNodes.stream()
+                    .filter(NamedTypeNode.class::isInstance)
+                    .map(NamedTypeNode.class::cast)
+                    .map(ntn -> ntn.name().identifier())
+                    .distinct()
+                    .map(types::get)
+                    .filter(Objects::nonNull);
+
+            Stream<? extends SoyNode> depsViaExprs =
+                Streams.concat(
+                        exprNodes,
+                        allTypeNodes.stream()
+                            .filter(TypeQueryNode.class::isInstance)
+                            .map(TypeQueryNode.class::cast)
+                            .map(TypeQueryNode::query))
+                    .flatMap(ex -> SoyTreeUtils.allNodesOfType(ex, VarRefNode.class))
+                    .map(VarRefNode::getDefnDecl)
+                    .distinct()
+                    .map(varDefns::get)
+                    .filter(Objects::nonNull);
+
+            return Streams.concat(depsViaTypes, depsViaExprs).collect(toImmutableList());
+          });
+    } catch (NoSuchElementException e) {
+      ImmutableList<SoyNode> cycle = topoSort.getCyclicKeys();
+      errorReporter.report(
+          cycle.get(0).getSourceLocation(),
+          FORWARD_DEP_CYCLE,
+          cycle.stream()
+              .skip(1)
+              .map(SoyNode::getSourceLocation)
+              .map(Objects::toString)
+              .collect(joining(", ")));
+      return children;
     }
   }
 }

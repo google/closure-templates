@@ -42,14 +42,12 @@ import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
-import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -241,11 +239,6 @@ final class LocalVariablesNodeVisitor {
     }
 
     @Override
-    protected void visitTypeDefNode(TypeDefNode node) {
-      super.visitTypeDefNode(node);
-    }
-
-    @Override
     protected void visitAutoImplNode(AutoImplNode node) {
       // Create a scope for all parameters.
       localVariables.enterScope();
@@ -271,11 +264,6 @@ final class LocalVariablesNodeVisitor {
 
       super.visitTemplateNode(node);
       localVariables.exitScope();
-    }
-
-    @Override
-    protected void visitPrintNode(PrintNode node) {
-      visitSoyNode(node);
     }
 
     @Override
@@ -412,6 +400,7 @@ final class LocalVariablesNodeVisitor {
 
     @Override
     public final Void exec(ExprNode node, LocalVariables localVariables) {
+      Preconditions.checkState(this.localVariables == null, "Non-reentrant.");
       this.localVariables = localVariables;
       exec(node);
       this.localVariables = null;
@@ -427,11 +416,6 @@ final class LocalVariablesNodeVisitor {
 
     protected LocalVariables getLocalVariables() {
       return Preconditions.checkNotNull(localVariables);
-    }
-
-    @Override
-    protected void visitExprRootNode(ExprRootNode node) {
-      visitChildren(node);
     }
 
     @Override
