@@ -519,19 +519,20 @@ function visit(element, logger) {
     }
   }
   replaceFunctionAttributes(element, logger);
-  if (element.children) {
-    let children = Array.from(element.children);
-    for (let i = 0; i < children.length; i++) {
-      const newChildren = visit(children[i], logger);
-      // VEATTR nodes only have one children and are a direct replacement.
-      if (children[i].tagName === 'VEATTR') {
-        replaceChild(
-            element, children[i], visit(children[i].children[0], logger));
-      } else {
-        replaceChild(element, children[i], newChildren);
-      }
+
+  let child = element.firstElementChild;
+  while (child) {
+    const next = child.nextElementSibling;
+    const newChildren = visit(child, logger);
+    // VEATTR nodes only have one children and are a direct replacement.
+    if (child.tagName === 'VEATTR') {
+      replaceChild(element, child, visit(/** @type {!Element} */ (child.firstElementChild), logger));
+    } else {
+      replaceChild(element, child, newChildren);
     }
+    child = next;
   }
+
   if (logIndex === -1) {
     return [element];
   }
@@ -568,9 +569,11 @@ function replaceChild(parent, oldChild, newChildren) {
       parent.replaceChild(newChildren[0], oldChild);
     }
   } else {
+    const fragment = document.createDocumentFragment();
     for (const newChild of newChildren) {
-      parent.insertBefore(newChild, oldChild);
+      fragment.appendChild(newChild);
     }
+    parent.insertBefore(fragment, oldChild);
     parent.removeChild(oldChild);
   }
 }
@@ -582,6 +585,9 @@ function replaceChild(parent, oldChild, newChildren) {
  * @param {!Logger} logger
  */
 function replaceFunctionAttributes(element, logger) {
+  if (!element.hasAttributes()) {
+    return;
+  }
   let /** !Array<string>|undefined */ newAttrs;
   // Iterates from the end to the beginning, since we are removing attributes
   // in place.
