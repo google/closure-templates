@@ -52,6 +52,7 @@ import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -194,25 +195,38 @@ final class LocalVariablesNodeVisitor {
       localVariables.errorReporter = getErrorReporter();
       localVariables.enterScope();
 
-      // Define all templates in scope before visiting them so that any template can reference
-      // any other template.
-      for (TemplateNode template : node.getTemplates()) {
-        localVariables.define(template.asVarDefn(), template);
-      }
-
-      // Allow forward references between externs.
-      for (ExternNode extern : node.getExterns()) {
-        VarDefn var = extern.getVar();
-        VarDefn preexisting = localVariables.lookup(var.refName());
-        if (preexisting instanceof SymbolVar symbolVar
-            && symbolVar.getSymbolKind() == SymbolKind.EXTERN) {
-          // Allow multiple externs with the same name.
-          continue;
+      List<ConstNode> constNodes = new ArrayList<>();
+      List<SoyNode> scopedChildren = new ArrayList<>();
+      for (SoyNode child : node.getChildren()) {
+        // Step 1: "Hoist" (like TSJS) function-like Soy nodes -- {template} and {extern} -- before
+        // visiting their bodies. Allows for forward and backward references between these nodes.
+        if (child instanceof TemplateNode template) {
+          localVariables.define(template.asVarDefn(), template);
+          scopedChildren.add(template);
+        } else if (child instanceof ExternNode extern) {
+          // Allow forward references between externs.
+          VarDefn var = extern.getVar();
+          VarDefn preexisting = localVariables.lookup(var.refName());
+          if (preexisting instanceof SymbolVar symbolVar
+              && symbolVar.getSymbolKind() == SymbolKind.EXTERN) {
+            // Allow multiple externs with the same name.
+            continue;
+          }
+          localVariables.define(var, node);
+          scopedChildren.add(extern);
+        } else if (child instanceof ConstNode constNode) {
+          constNodes.add(constNode);
+        } else {
+          visit(child);
         }
-        localVariables.define(var, node);
       }
 
-      super.visitSoyFileNode(node);
+      // Step 2: Define file-level constants.
+      constNodes.forEach(this::visit);
+
+      // Step 3: Visit the bodies of templates and externs.
+      scopedChildren.forEach(this::visit);
+
       if (cleanUpFileScope()) {
         localVariables.exitScope();
         localVariables = null;
