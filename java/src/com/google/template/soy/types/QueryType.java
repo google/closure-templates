@@ -18,18 +18,18 @@ package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
-import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /** The query type: `typeof $expr`. */
 @AutoValue
 public abstract class QueryType extends ComputedType {
 
-  public static QueryType create(ExprNode query) {
+  public static QueryType create(ExprRootNode query) {
     return new AutoValue_QueryType(query);
   }
 
-  public abstract ExprNode query();
+  public abstract ExprRootNode query();
 
   @Override
   public SoyType getEffectiveType() {
@@ -48,6 +48,6 @@ public abstract class QueryType extends ComputedType {
 
   @Override
   protected void doToProto(SoyTypeP.Builder builder) {
-    throw new UnsupportedOperationException();
+    getEffectiveType().doToProto(builder);
   }
 }

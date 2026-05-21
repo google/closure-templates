@@ -882,6 +882,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     private void calculateTemplateType(TemplateNode node) {
+      visitTypesHolderNode(node, exprVisitor);
       for (var param : node.getParams()) {
         calculateHeaderVarType(param, paramInfExprVisitor);
       }
