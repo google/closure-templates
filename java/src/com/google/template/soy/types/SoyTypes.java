@@ -725,7 +725,8 @@ public final class SoyTypes {
           } else if (type instanceof ExtractType extractType) {
             return ImmutableList.of(extractType.getType(), extractType.getExtracted());
           } else {
-            throw new AssertionError("" + type);
+            // QueryType. Cannot reference directly due to circular deps.
+            return ImmutableList.of();
           }
         case ITERABLE:
         case LIST:

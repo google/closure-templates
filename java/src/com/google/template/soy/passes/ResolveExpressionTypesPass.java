@@ -767,7 +767,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             .forEach(
                 n -> {
                   if (n instanceof TypeDefNode || n instanceof TypeLiteralNode) {
-                    visitTypesHolderNode(n);
+                    visitTypesHolderNode(n, null);
                   }
                 });
         return;
@@ -1040,7 +1040,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     private void calculateExternType(ExternNode node) {
-      visitTypesHolderNode(node);
+      visitTypesHolderNode(node, exprVisitor);
       for (TemplateParam paramVar : node.getParamVars()) {
         paramVar.setType(paramVar.getTypeNode().getResolvedType());
       }
@@ -1049,7 +1049,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     @Override
     protected void visitConstNode(ConstNode node) {
-      visitTypesHolderNode(node);
+      visitTypesHolderNode(node, constExprVisitor);
       constExprVisitor.exec(node.getExpr());
       SoyType inferredType = node.getExpr().getType();
       if (isNullish(inferredType)) {
@@ -1335,8 +1335,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-      if (node instanceof TypesHolderNode typesHolderNode) {
-        visitTypesHolderNode(typesHolderNode);
+      if (node instanceof TypesHolderNode typeHolderNode) {
+        visitTypesHolderNode(typeHolderNode, checkNotNull(exprVisitor));
       }
 
       if (node instanceof ExprHolderNode exprHolderNode) {
@@ -1349,12 +1349,20 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
   }
 
-  private void visitTypesHolderNode(TypesHolderNode node) {
+  private void visitTypesHolderNode(
+      TypesHolderNode node, @Nullable ResolveTypesExprVisitor visitor) {
     node.getTypeNodes()
         .forEach(
-            typeNode -> {
-              if (!typeNode.isTypeResolved()) {
-                SoyType unused = typeNodeConverter.exec(typeNode);
+            tn -> {
+              if (!tn.isTypeResolved()) {
+                SoyType unused = typeNodeConverter.exec(tn);
+              }
+
+              if (visitor != null) {
+                SoyTreeUtils.allTypeNodes(tn)
+                    .filter(TypeQueryNode.class::isInstance)
+                    .map(TypeQueryNode.class::cast)
+                    .forEach(tqn -> visitor.exec(tqn.query()));
               }
             });
   }
@@ -1453,7 +1461,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitExprNode(ExprNode node) {
       if (node instanceof TypesHolderNode typesHolderNode) {
-        visitTypesHolderNode(typesHolderNode);
+        visitTypesHolderNode(typesHolderNode, this);
       }
     }
 

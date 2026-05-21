@@ -63,7 +63,6 @@ java_library(
         "//java/src/com/google/template/soy/soytree:metadata_impl",
         "//java/src/com/google/template/soy/soytree:soynode",
         "//java/src/com/google/template/soy/soytree/defn",
-        "//java/src/com/google/template/soy/treebuilder",
         "//java/src/com/google/template/soy/types",
         "//java/src/com/google/template/soy/types/ast",
         "//java/src/com/google/template/soy/types/ast:types_holder_node",

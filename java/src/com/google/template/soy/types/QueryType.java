@@ -31,12 +31,18 @@ public abstract class QueryType extends ComputedType {
 
   public abstract ExprNode query();
 
+  @Override
   public SoyType getEffectiveType() {
     return Preconditions.checkNotNull(query().getType());
   }
 
   @Override
-  public String toString() {
+  public boolean isComputed() {
+    return query().getType() != null;
+  }
+
+  @Override
+  public final String toString() {
     return "typeof " + query().toSourceString();
   }
 

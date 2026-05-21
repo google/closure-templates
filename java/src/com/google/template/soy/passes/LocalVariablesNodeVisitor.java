@@ -47,10 +47,14 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TypeDefNode;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
+import com.google.template.soy.types.ast.TypeQueryNode;
+import com.google.template.soy.types.ast.TypesHolderNode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -216,6 +220,8 @@ final class LocalVariablesNodeVisitor {
           scopedChildren.add(extern);
         } else if (child instanceof ConstNode constNode) {
           constNodes.add(constNode);
+        } else if (child instanceof TypeDefNode) {
+          scopedChildren.add(child); // For `typeof $expr`.
         } else {
           visit(child);
         }
@@ -318,6 +324,15 @@ final class LocalVariablesNodeVisitor {
 
     @Override
     protected void visitSoyNode(SoyNode node) {
+      if (node instanceof TypesHolderNode typeHolderNode) {
+        typeHolderNode
+            .getTypeNodes()
+            .flatMap(SoyTreeUtils::allTypeNodes)
+            .filter(TypeQueryNode.class::isInstance)
+            .map(TypeQueryNode.class::cast)
+            .forEach(tn -> getExprVisitor().exec(tn.query(), localVariables));
+      }
+
       if (node instanceof ExprHolderNode exprHolderNode) {
         visitExpressions(exprHolderNode);
       }
@@ -434,6 +449,14 @@ final class LocalVariablesNodeVisitor {
 
     @Override
     protected void visitExprNode(ExprNode node) {
+      if (node instanceof TypesHolderNode typeHolderNode) {
+        typeHolderNode
+            .getTypeNodes()
+            .flatMap(SoyTreeUtils::allTypeNodes)
+            .filter(TypeQueryNode.class::isInstance)
+            .map(TypeQueryNode.class::cast)
+            .forEach(tn -> visit(tn.query()));
+      }
       if (node instanceof ParentExprNode parentExprNode) {
         visitChildren(parentExprNode);
       }
