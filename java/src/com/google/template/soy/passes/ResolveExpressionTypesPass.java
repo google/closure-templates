@@ -1743,6 +1743,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                   + (varRef.getDefnDecl() == null ? "declaration" : "type")
                   + "!");
         }
+      } else if (varRef.getType() instanceof TemplateImportType tii) {
+        // Variable references to a template symbol (possible in `typeof $expr`) should have the
+        // expanded template type.
+        varRef.setSubstituteType(tii.getBasicTemplateType());
       }
     }
 

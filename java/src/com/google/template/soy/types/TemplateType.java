@@ -23,9 +23,11 @@ import static java.util.stream.Collectors.joining;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.base.CaseFormat;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -130,7 +132,11 @@ public abstract class TemplateType extends SoyType {
 
   public abstract ImmutableList<DataAllCallSituation> getDataAllCallSituations();
 
-  public abstract String getIdentifierForDebugging();
+  private String identifierForDebugging; // Prevent from affecting equals/hashCode.
+
+  public String getIdentifierForDebugging() {
+    return identifierForDebugging;
+  }
 
   public abstract SoyType getUseVariantType();
 
@@ -141,7 +147,11 @@ public abstract class TemplateType extends SoyType {
   // TODO(b/239930786): These are only needed for supporting legacydeltemplatenamespace.
   public abstract String getLegacyDeltemplateNamespace();
 
-  public abstract Builder toBuilder();
+  abstract Builder autoToBuilder();
+
+  public Builder toBuilder() {
+    return autoToBuilder().setIdentifierForDebugging(identifierForDebugging);
+  }
 
   public static Builder builder() {
     return new AutoValue_TemplateType.Builder()
@@ -153,6 +163,8 @@ public abstract class TemplateType extends SoyType {
   /** Builder pattern. */
   @AutoValue.Builder
   public abstract static class Builder {
+
+    private String identifierForDebugging;
 
     public abstract Builder setAllowExtraAttributes(boolean allowAttributes);
 
@@ -169,7 +181,11 @@ public abstract class TemplateType extends SoyType {
     public abstract Builder setDataAllCallSituations(
         ImmutableList<DataAllCallSituation> dataAllCallSituations);
 
-    public abstract Builder setIdentifierForDebugging(String identifierForDebugging);
+    @CanIgnoreReturnValue
+    public Builder setIdentifierForDebugging(String identifierForDebugging) {
+      this.identifierForDebugging = identifierForDebugging;
+      return this;
+    }
 
     public abstract Builder setUseVariantType(SoyType useVariantType);
 
@@ -179,7 +195,13 @@ public abstract class TemplateType extends SoyType {
 
     public abstract Builder setLegacyDeltemplateNamespace(String legacyDeltemplateNamespace);
 
-    public abstract TemplateType build();
+    abstract TemplateType autoBuild();
+
+    public TemplateType build() {
+      TemplateType result = autoBuild();
+      result.identifierForDebugging = Preconditions.checkNotNull(identifierForDebugging);
+      return result;
+    }
   }
 
   /**
