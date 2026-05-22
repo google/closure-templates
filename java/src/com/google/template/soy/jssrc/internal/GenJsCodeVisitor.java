@@ -411,6 +411,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     state.enterFile(templateTranslationContext, jsTypeRegistry, templateAliases, sourceMapHelper);
 
+    // Do this before visiting nodes to allow forward references to type definitions.
+    node.getTypeDefs()
+        .forEach(
+            td -> {
+              jsTypeRegistry.addTypeMap(
+                  td.asNamedType(),
+                  JsType.localTypedef("!" + topLevelName(td, td.isExported(), td.getName())));
+            });
+
     for (ImportNode importNode : node.getImports()) {
       visit(importNode);
     }
@@ -669,11 +678,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @Override
   protected void visitTypeDefNode(TypeDefNode node) {
-    NamedType thisNamedType = node.asNamedType();
-    jsTypeRegistry.addTypeMap(
-        thisNamedType,
-        JsType.localTypedef("!" + topLevelName(node, node.isExported(), node.getName())));
-
     SoyType type = node.getType();
     ByteSpan imputesSpan = SoyTreeUtils.getByteSpan(node, node.getNameLocation());
 
@@ -728,7 +732,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           // points back to the member @typedef.
           SoyType indexedPropType =
               IndexedType.create(
-                  thisNamedType, LiteralType.create(StringData.forValue(recordMember.name())));
+                  node.asNamedType(), LiteralType.create(StringData.forValue(recordMember.name())));
           // JSC gets confused by ! when it references a @typedef. The ! needs to match whether
           // the source typedef is `|null` or `|undefined`.
           String memberSymbol =
