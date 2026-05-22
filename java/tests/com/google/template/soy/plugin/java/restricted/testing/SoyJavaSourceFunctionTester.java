@@ -224,7 +224,7 @@ public class SoyJavaSourceFunctionTester {
     return TypeNodeConverter.builder(ErrorReporter.exploding())
         .setTypeRegistry(SoyTypeRegistryBuilder.create())
         .build()
-        .getOrCreateType(parsed);
+        .resolve(parsed);
   }
 
   /**

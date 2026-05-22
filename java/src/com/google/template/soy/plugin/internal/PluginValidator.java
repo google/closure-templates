@@ -127,6 +127,6 @@ public final class PluginValidator {
             .setTypeRegistry(typeRegistry)
             .setSystemExternal(true)
             .build()
-            .getOrCreateType(typeNode);
+            .resolve(typeNode);
   }
 }

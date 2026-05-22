@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static com.google.template.soy.passes.TypeNarrowingConditionVisitor.instanceOfIntersection;
@@ -58,15 +57,12 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NamedType;
 import com.google.template.soy.types.NullType;
-import com.google.template.soy.types.QueryType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
-import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
-import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
@@ -1557,7 +1553,7 @@ public final class ResolveExpressionTypesPassTest {
     return TypeNodeConverter.builder(errorReporter)
         .setTypeRegistry(typeRegistry)
         .build()
-        .getOrCreateType(parsed);
+        .resolve(parsed);
   }
 
   /**
@@ -1631,20 +1627,6 @@ public final class ResolveExpressionTypesPassTest {
             fn -> {
               StringNode expected = (StringNode) fn.getChild(0);
               SoyType actualType = fn.getChild(1).getType();
-              if (SoyTypes.allLogicalTypes(actualType, typeRegistry)
-                  .anyMatch(QueryType.class::isInstance)) {
-                if (actualType instanceof QueryType) {
-                  actualType = actualType.getEffectiveType();
-                } else if (actualType instanceof UnionType unionType) {
-                  actualType =
-                      UnionType.of(
-                          unionType.getMembers().stream()
-                              .map(SoyType::getEffectiveType)
-                              .collect(toImmutableList()));
-                } else {
-                  throw new AssertionError(actualType.getClass().getName());
-                }
-              }
               assertWithMessage("assertion @ %s", fn.getSourceLocation())
                   .that(actualType.toString())
                   .isEqualTo(expected.getValue());

@@ -50,7 +50,6 @@ java_library(
         "//java/src/com/google/template/soy/testing:shared_test_utils",
         "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
         "//java/src/com/google/template/soy/types",
-        "//java/src/com/google/template/soy/types:more_types",
         "//java/src/com/google/template/soy/types/ast",
         "//java/tests/com/google/template/soy/passes/htmlmatcher:test_utils",
         "//src/main/protobuf:logging_config_java_proto",

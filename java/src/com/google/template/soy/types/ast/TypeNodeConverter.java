@@ -34,6 +34,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
@@ -57,7 +58,6 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.OmitType;
 import com.google.template.soy.types.PickType;
 import com.google.template.soy.types.ProtoTypeRegistry;
-import com.google.template.soy.types.QueryType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.ElementType;
@@ -75,6 +75,7 @@ import com.google.template.soy.types.VeType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -357,6 +358,7 @@ public final class TypeNodeConverter
     private ProtoTypeRegistry protoRegistry;
     private boolean reportMissingTypes = true;
     private boolean systemExternal = false;
+    private Consumer<ExprRootNode> expressionHandler = (expr) -> {};
 
     private Builder() {}
 
@@ -389,13 +391,25 @@ public final class TypeNodeConverter
       return this;
     }
 
+    /**
+     * Sets a handler that will be notified for each expression that is encountered while converting
+     * type nodes to type objects. Currently, this is only for {@link TypeQueryNode}. The handler
+     * must ensure that the received ExprRootNode has its type set before returning.
+     */
+    @CanIgnoreReturnValue
+    public Builder setExpressionHandler(Consumer<ExprRootNode> expressionHandler) {
+      this.expressionHandler = Preconditions.checkNotNull(expressionHandler);
+      return this;
+    }
+
     public TypeNodeConverter build() {
       Preconditions.checkState(typeRegistry != null);
       return new TypeNodeConverter(
           errorReporter,
           systemExternal ? TypeRegistries.builtinTypeRegistry() : typeRegistry,
           systemExternal ? protoRegistry : null,
-          reportMissingTypes);
+          reportMissingTypes,
+          expressionHandler);
     }
   }
 
@@ -403,16 +417,26 @@ public final class TypeNodeConverter
   private final TypeRegistry typeRegistry;
   private final ProtoTypeRegistry protoRegistry;
   private final boolean reportMissingTypes;
+  private final Consumer<ExprRootNode> expressionHandler;
 
   private TypeNodeConverter(
       ErrorReporter errorReporter,
       TypeRegistry typeRegistry,
       ProtoTypeRegistry protoRegistry,
-      boolean reportMissingTypes) {
+      boolean reportMissingTypes,
+      Consumer<ExprRootNode> expressionHandler) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
     this.protoRegistry = protoRegistry;
     this.reportMissingTypes = reportMissingTypes;
+    this.expressionHandler = expressionHandler;
+  }
+
+  public SoyType getOrResolve(TypeNode node) {
+    if (node.isTypeResolved()) {
+      return node.getResolvedType();
+    }
+    return exec(node);
   }
 
   /**
@@ -420,8 +444,10 @@ public final class TypeNodeConverter
    *
    * <p>If any errors are encountered they are reported to the error reporter.
    */
-  public SoyType getOrCreateType(TypeNode node) {
-    return exec(node);
+  public SoyType resolve(TypeNode node) {
+    var type = exec(node);
+    Preconditions.checkState(node.isTypeResolved());
+    return type;
   }
 
   @Override
@@ -666,9 +692,12 @@ public final class TypeNodeConverter
 
   @Override
   public SoyType visit(TypeQueryNode node) {
-    SoyType type = QueryType.create(node.query());
-    node.setResolvedType(type);
-    return type;
+    expressionHandler.accept(node.query());
+    SoyType resolvedType =
+        Preconditions.checkNotNull(
+            node.query().getType(), "This TypeNodeConverter does not support TypeQueryNode.");
+    node.setResolvedType(resolvedType);
+    return resolvedType;
   }
 
   private SoyType handleReturnTypeOfTemplateType(TypeNode node) {

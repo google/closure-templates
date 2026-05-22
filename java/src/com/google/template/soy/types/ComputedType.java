@@ -18,14 +18,6 @@ package com.google.template.soy.types;
 
 abstract class ComputedType extends SoyType {
 
-  /**
-   * Whether the effective type is available. Some computed types require compiler passes to run
-   * before they are available.
-   */
-  public boolean isComputed() {
-    return true;
-  }
-
   @Override
   final boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
     return getEffectiveType().isAssignableFromInternal(srcType, policy);
@@ -33,9 +25,6 @@ abstract class ComputedType extends SoyType {
 
   @Override
   public final boolean isOfKind(Kind kind) {
-    if (!isComputed()) {
-      return false;
-    }
     return getEffectiveType().isOfKind(kind);
   }
 

@@ -1333,7 +1333,7 @@ public class SoyTypesTest {
         ? TypeNodeConverter.builder(ErrorReporter.exploding())
             .setTypeRegistry(registry)
             .build()
-            .getOrCreateType(typeNode)
+            .resolve(typeNode)
         : UnknownType.getInstance();
   }
 

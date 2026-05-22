@@ -662,12 +662,23 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         TypeNodeConverter.builder(errorReporter)
             .setTypeRegistry(typeRegistry)
             .setReportMissingTypes(!disableAllTypeChecking && !allowMissingSoyDeps)
+            .setExpressionHandler(this::evalTypeExpression)
             .build();
     typeNodeConverterForSignature =
         TypeNodeConverter.builder(errorReporter)
             .setTypeRegistry(file.getSoyTypeRegistry())
             .setSystemExternal(true)
             .build();
+  }
+
+  private void evalTypeExpression(ExprRootNode expr) {
+    if (expr.getType() == null) {
+      if (exprVisitor != null) {
+        exprVisitor.exec(expr);
+      } else {
+        expr.setType(UnknownType.getInstance());
+      }
+    }
   }
 
   private TypeNarrowingConditionVisitor createTypeNarrowingConditionVisitor() {
@@ -767,7 +778,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             .forEach(
                 n -> {
                   if (n instanceof TypeDefNode || n instanceof TypeLiteralNode) {
-                    visitTypesHolderNode(n, null);
+                    visitTypesHolderNode(n);
                   }
                 });
         return;
@@ -882,7 +893,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     private void calculateTemplateType(TemplateNode node) {
-      visitTypesHolderNode(node, exprVisitor);
+      visitTypesHolderNode(node);
       for (var param : node.getParams()) {
         calculateHeaderVarType(param, paramInfExprVisitor);
       }
@@ -900,12 +911,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           // as `?`. We could allow this if we extract all inline defs into local named types.
           noIntersection(param.getTypeNode());
 
-          SoyType paramType;
-          if (!param.getTypeNode().isTypeResolved()) {
-            paramType = typeNodeConverter.getOrCreateType(param.getTypeNode());
-          } else {
-            paramType = param.getTypeNode().getResolvedType();
-          }
+          SoyType paramType = typeNodeConverter.getOrResolve(param.getTypeNode());
 
           if (param.isExplicitlyOptional()) {
             paramType = SoyTypes.unionWithUndefined(paramType);
@@ -1041,7 +1047,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     private void calculateExternType(ExternNode node) {
-      visitTypesHolderNode(node, exprVisitor);
+      visitTypesHolderNode(node);
       for (TemplateParam paramVar : node.getParamVars()) {
         paramVar.setType(paramVar.getTypeNode().getResolvedType());
       }
@@ -1050,7 +1056,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     @Override
     protected void visitConstNode(ConstNode node) {
-      visitTypesHolderNode(node, constExprVisitor);
+      visitTypesHolderNode(node);
       constExprVisitor.exec(node.getExpr());
       SoyType inferredType = node.getExpr().getType();
       if (isNullish(inferredType)) {
@@ -1337,7 +1343,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitSoyNode(SoyNode node) {
       if (node instanceof TypesHolderNode typeHolderNode) {
-        visitTypesHolderNode(typeHolderNode, checkNotNull(exprVisitor));
+        visitTypesHolderNode(typeHolderNode);
       }
 
       if (node instanceof ExprHolderNode exprHolderNode) {
@@ -1350,21 +1356,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
   }
 
-  private void visitTypesHolderNode(
-      TypesHolderNode node, @Nullable ResolveTypesExprVisitor visitor) {
+  private void visitTypesHolderNode(TypesHolderNode node) {
     node.getTypeNodes()
         .forEach(
             tn -> {
-              if (!tn.isTypeResolved()) {
-                SoyType unused = typeNodeConverter.exec(tn);
-              }
-
-              if (visitor != null) {
-                SoyTreeUtils.allTypeNodes(tn)
-                    .filter(TypeQueryNode.class::isInstance)
-                    .map(TypeQueryNode.class::cast)
-                    .forEach(tqn -> visitor.exec(tqn.query()));
-              }
+              SoyType unused = typeNodeConverter.getOrResolve(tn);
             });
   }
 
@@ -1462,7 +1458,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     @Override
     protected void visitExprNode(ExprNode node) {
       if (node instanceof TypesHolderNode typesHolderNode) {
-        visitTypesHolderNode(typesHolderNode, this);
+        visitTypesHolderNode(typesHolderNode);
       }
     }
 
@@ -2597,7 +2593,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         if (paramType == null) {
           return null;
         }
-        paramTypes.add(typeNodeConverterForSignature.getOrCreateType(paramType));
+        paramTypes.add(typeNodeConverterForSignature.resolve(paramType));
       }
       TypeNode returnType =
           SoyFileParser.parseType(signature.returnType(), classFilePath, errorReporter);
@@ -2606,7 +2602,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
       resolvedSignature =
           ResolvedSignature.create(
-              paramTypes.build(), typeNodeConverterForSignature.getOrCreateType(returnType));
+              paramTypes.build(), typeNodeConverterForSignature.resolve(returnType));
       signatureMap.put(signature, resolvedSignature);
       return resolvedSignature;
     }
@@ -3789,7 +3785,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
   private SoyType parseType(String t, SourceFilePath path) {
     TypeNode typeNode = SoyFileParser.parseType(t, path, errorReporter);
     return typeNode != null
-        ? typeNodeConverterForSignature.getOrCreateType(typeNode)
+        ? typeNodeConverterForSignature.resolve(typeNode)
         : UnknownType.getInstance();
   }
 
