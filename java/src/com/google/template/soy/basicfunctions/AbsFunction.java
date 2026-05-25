@@ -49,7 +49,8 @@ final class AbsFunction
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.global("Math").invokeMethod("abs", args.get(0));
+    JavaScriptValue arg = args.get(0);
+    return factory.global("Math").invokeMethod("abs", arg);
   }
 
   @Override
