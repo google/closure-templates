@@ -27,6 +27,7 @@ import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
+import com.google.protobuf.LegacyUnredactedTextFormat;
 import com.google.protobuf.Message;
 import com.google.protobuf.TextFormat;
 import com.google.template.soy.data.restricted.UndefinedData;
@@ -409,7 +410,7 @@ public final class SoyProtoValue extends SoyRecord {
   public String coerceToString() {
     // TODO(gboyer): Make this consistent with JavaScript.
     // TODO(gboyer): Respect ProtoUtils.shouldJsIgnoreField(...)?
-    return proto.toString();
+    return LegacyUnredactedTextFormat.legacyUnredactedToString(proto);
   }
 
   @Override
