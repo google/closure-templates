@@ -279,9 +279,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       if (calleeType.isModifying()) {
         errorReporter.report(node.getSourceLocation(), CANNOT_CALL_MODIFYING_TEMPLATE_DIRECTLY);
       }
-      if (node.isLazy() && !node.isHtml()) {
-        errorReporter.report(node.getCalleeExpr().getSourceLocation(), LAZY_CALL_NOT_HTML);
-      }
+      // if (node.isLazy() && !node.isHtml()) {
+      //   errorReporter.report(node.getCalleeExpr().getSourceLocation(), LAZY_CALL_NOT_HTML);
+      // }
     }
 
     void checkCall(SoyFileNode file, TemplateNode callerTemplate, CallDelegateNode node) {
