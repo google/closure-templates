@@ -113,11 +113,10 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
   protected ImmutableList<SoyMsgPart> findPartsForGender(
       ImmutableList<SoyMsgPart> parts, GrammaticalGender viewerGrammaticalGender) {
     var firstPart = parts.get(0);
-    if (firstPart instanceof SoyMsgViewerGrammaticalGenderPart) {
+    if (firstPart instanceof SoyMsgViewerGrammaticalGenderPart genderPart) {
       // If there's a gender part, it will include the whole message and be the only part.
       Preconditions.checkState(parts.size() == 1);
-      return ((SoyMsgViewerGrammaticalGenderPart) firstPart)
-          .getPartsForGender(viewerGrammaticalGender);
+      return genderPart.getPartsForGender(viewerGrammaticalGender);
     }
     return parts;
   }

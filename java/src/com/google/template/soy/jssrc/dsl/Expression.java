@@ -268,9 +268,9 @@ public abstract class Expression extends CodeChunk {
     // We don't want to elide in the general case because if a user actually writes `a!?b`',
     // changing it to `a!.b` could change the runtime behavior.
     return nullSafe
-            && !(this instanceof UnaryOperation
-                && ((UnaryOperation) this).operator().equals("!")
-                && ((UnaryOperation) this).isForGenTsxTypeNarrowing())
+            && !(this instanceof UnaryOperation unaryOp
+                && unaryOp.operator().equals("!")
+                && unaryOp.isForGenTsxTypeNarrowing())
         ? Dot.createNullSafe(this, Expressions.id(identifier))
         : Dot.create(this, Expressions.id(identifier));
   }
@@ -362,8 +362,8 @@ public abstract class Expression extends CodeChunk {
 
   @Override
   final void doFormatInitialStatements(FormattingContext ctx) {
-    if (this instanceof HasInitialStatements) {
-      ((HasInitialStatements) this).initialStatements().forEach(ctx::appendInitialStatements);
+    if (this instanceof HasInitialStatements hasInitialStatements) {
+      hasInitialStatements.initialStatements().forEach(ctx::appendInitialStatements);
     }
     // Do not traverse into a new scope since any initial statements therein should appear inside
     // the scope.

@@ -55,7 +55,6 @@ import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode.CssPath;
-import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
@@ -240,7 +239,8 @@ final class TemplateCompiler {
             .build();
 
     TemplateMetadata.DelTemplateMetadata deltemplateMetadata;
-    if (templateNode.getKind() == SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
+    if (templateNode.getKind()
+        == com.google.template.soy.soytree.SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
       TemplateDelegateNode delegateNode = (TemplateDelegateNode) templateNode;
       deltemplateMetadata =
           createDelTemplateMetadata(
