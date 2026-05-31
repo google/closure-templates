@@ -20,7 +20,6 @@ import static java.util.Comparator.comparing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocationMapper;
 import com.google.template.soy.error.ErrorReporter;
@@ -36,6 +35,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -65,7 +65,7 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
   public SoyMsgBundle exec(SoyNode node) {
     Preconditions.checkArgument(node instanceof SoyFileSetNode || node instanceof SoyFileNode);
 
-    msgs = Lists.newArrayList();
+    msgs = new ArrayList<>();
     visit(node);
     // the messages in this list only have one source location.
     // messages gain extra source locations when merged together in a bundle.

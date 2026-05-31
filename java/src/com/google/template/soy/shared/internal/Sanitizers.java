@@ -27,7 +27,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.escape.Escaper;
 import com.google.common.flogger.GoogleLogger;
 import com.google.common.net.PercentEscaper;
@@ -46,6 +45,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1280,7 +1280,7 @@ public final class Sanitizers {
                   // Keep track of tags that need closing.
                   if (!HTML5_VOID_ELEMENTS.contains(tagName)) {
                     if (openTags.get() == null) {
-                      openTags.set(Lists.newArrayList());
+                      openTags.set(new ArrayList<>());
                     }
                     openTags.get().add(tagName);
                   }

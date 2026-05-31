@@ -24,7 +24,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceLogicalPath;
@@ -44,6 +43,7 @@ import com.google.template.soy.soytree.PartialFileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.types.SoyTypeRegistry;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -312,7 +312,7 @@ public final class PassManager {
     private boolean addHtmlAttributesForLogging = true;
     private AstRewrites astRewrites = AstRewrites.ALL;
     private final Map<Class<? extends CompilerPass>, PassContinuationRule>
-        passContinuationRegistry = Maps.newHashMap();
+        passContinuationRegistry = new HashMap<>();
     private boolean building;
     private boolean validateJavaMethods = true;
     private final AccumulatedState accumulatedState = new AccumulatedState();

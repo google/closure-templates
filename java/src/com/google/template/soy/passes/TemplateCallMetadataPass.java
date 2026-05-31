@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.Lists.newArrayList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
@@ -56,6 +55,7 @@ import com.google.template.soy.templatecall.TemplateCallMetadata.TemplateCall;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -337,7 +337,7 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
    */
   private static ImmutableList<TemplateCallMetadata.ParamArg> getFunctionParams(
       List<Identifier> keys, List<ExprNode> values) {
-    List<TemplateCallMetadata.ParamArg> callParamArgs = newArrayList();
+    List<TemplateCallMetadata.ParamArg> callParamArgs = new ArrayList<>();
     if (keys.size() != values.size()) {
       throw new IllegalArgumentException("Both keys and values must be the same size");
     }

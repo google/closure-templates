@@ -18,7 +18,6 @@ package com.google.template.soy.msgs.internal;
 
 import static java.util.stream.Collectors.toList;
 
-import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.compilermetrics.Impression;
@@ -43,6 +42,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -138,7 +138,7 @@ public final class InsertMsgsVisitor {
    */
   private void buildReplacementNodesFromTranslation(MsgNode msg, SoyMsg translation) {
 
-    currReplacementNodes = Lists.newArrayList();
+    currReplacementNodes = new ArrayList<>();
 
     for (SoyMsgPart msgPart : translation.getParts()) {
 
@@ -190,7 +190,7 @@ public final class InsertMsgsVisitor {
    */
   private void buildReplacementNodesFromSource(MsgNode msg) {
 
-    currReplacementNodes = Lists.newArrayList();
+    currReplacementNodes = new ArrayList<>();
 
     for (StandaloneNode child : msg.getChildren()) {
 

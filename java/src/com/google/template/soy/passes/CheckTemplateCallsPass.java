@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -536,7 +535,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
      */
     private void checkCallParamNames(CallNode caller, TemplateType callee) {
       // Get param keys passed by caller.
-      Set<String> callerParamKeys = Sets.newHashSet();
+      Set<String> callerParamKeys = new HashSet<>();
       for (CallParamNode callerParam : caller.getChildren()) {
         boolean isUnique = callerParamKeys.add(callerParam.getKey().identifier());
         if (!isUnique) {
@@ -571,7 +570,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       if (caller.numChildren() == 0) {
         return;
       }
-      Set<String> paramNames = Sets.newHashSet();
+      Set<String> paramNames = new HashSet<>();
       for (TemplateType.Parameter param : callee.getParameters()) {
         paramNames.add(param.getName());
       }

@@ -21,10 +21,10 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.template.soy.msgs.GrammaticalGender;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.RenderOnlySoyMsgBundleImpl.RenderOnlySoyMsg;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.Before;
@@ -157,7 +157,7 @@ public class RenderOnlySoyMsgBundleImplTest {
 
   @Test
   public void testIterator() {
-    List<SoyMsg> actualMessages = Lists.newArrayList();
+    List<SoyMsg> actualMessages = new ArrayList<>();
     long lastId = -1;
     for (SoyMsg message : bundle) {
       actualMessages.add(message);

@@ -26,7 +26,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.CheckReturnValue;
@@ -45,6 +44,7 @@ import com.google.template.soy.types.TemplateType;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -764,7 +764,7 @@ abstract class Context {
   /** Parses a condensed string version of a context, for use in tests. */
   @VisibleForTesting
   static Context parse(String text) {
-    Queue<String> parts = Lists.newLinkedList(Arrays.asList(text.split(" ")));
+    Queue<String> parts = new LinkedList<>(Arrays.asList(text.split(" ")));
     Context.Builder builder = HTML_PCDATA.toBuilder();
     builder.withState(HtmlContext.valueOf(parts.remove()));
     if (!parts.isEmpty()) {

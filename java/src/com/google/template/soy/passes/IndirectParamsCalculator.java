@@ -23,15 +23,14 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -205,8 +204,8 @@ public final class IndirectParamsCalculator {
 
   public IndirectParamsInfo calculateIndirectParams(TemplateType template) {
 
-    visitedCallSituations = Sets.newHashSet();
-    indirectParams = Maps.newHashMap();
+    visitedCallSituations = new HashSet<>();
+    indirectParams = new HashMap<>();
     paramKeyToCalleesMultimap = HashMultimap.create();
     indirectParamTypes = LinkedHashMultimap.create();
     mayHaveIndirectParamsInExternalCalls = false;

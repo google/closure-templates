@@ -20,12 +20,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.template.soy.shared.internal.EscapingConventions.EscapingLanguage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -92,7 +92,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
   }
 
   /** JavaScript source files that use the generated helper functions. */
-  private List<FileRef> inputs = Lists.newArrayList();
+  private List<FileRef> inputs = new ArrayList<>();
 
   /** A file which receives the JavaScript source from the inputs and the generated helpers. */
   private FileRef output;
@@ -256,19 +256,19 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     // First we collect all the side tables.
 
     // Like { '\n': '\\n', ... } that map characters to escape.
-    List<Map<Character, String>> escapeMaps = Lists.newArrayList();
+    List<Map<Character, String>> escapeMaps = new ArrayList<>();
     // Mangled directive names corresponding to escapeMaps used to generate <namespace>..._ names.
-    List<String> escapeMapNames = Lists.newArrayList();
+    List<String> escapeMapNames = new ArrayList<>();
     // Like /[\n\r'"]/g or r'[\n\r\'"]'that match all the characters that need escaping.
-    List<String> matchers = Lists.newArrayList();
+    List<String> matchers = new ArrayList<>();
     // Mangled directive names corresponding to matchers.
-    List<String> matcherNames = Lists.newArrayList();
+    List<String> matcherNames = new ArrayList<>();
     // RegExps that vet input values.
-    List<String> filters = Lists.newArrayList();
+    List<String> filters = new ArrayList<>();
     // Mangled directive names corresponding to filters.
-    List<String> filterNames = Lists.newArrayList();
+    List<String> filterNames = new ArrayList<>();
     // Bundles of directiveNames and indices into escapeMaps, matchers, etc.
-    List<DirectiveDigest> digests = Lists.newArrayList();
+    List<DirectiveDigest> digests = new ArrayList<>();
 
     escaperLoop:
     for (EscapingConventions.CrossLanguageStringXform escaper :

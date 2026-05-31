@@ -19,10 +19,10 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.msgs.SoyMsgBundle;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +41,7 @@ public class SoyMsgBundleImplTest {
   @Test
   public void testBasic() {
 
-    List<SoyMsg> inMsgs = Lists.newArrayList();
+    List<SoyMsg> inMsgs = new ArrayList<>();
 
     inMsgs.add(
         SoyMsg.builder()

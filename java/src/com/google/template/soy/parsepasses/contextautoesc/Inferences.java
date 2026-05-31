@@ -19,7 +19,6 @@ package com.google.template.soy.parsepasses.contextautoesc;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.FileSetMetadata;
@@ -54,10 +53,10 @@ public final class Inferences {
 
   /** Maps print, msg and call commands to the inferred escaping modes. */
   private final IdentityHashMap<SoyNode, ImmutableList<EscapingMode>> nodeToEscapingModes =
-      Maps.newIdentityHashMap();
+      new IdentityHashMap<>();
 
   /** Maps print, msg and call commands to the context. */
-  private final IdentityHashMap<SoyNode, Context> nodeToContext = Maps.newIdentityHashMap();
+  private final IdentityHashMap<SoyNode, Context> nodeToContext = new IdentityHashMap<>();
 
   public void setTemplateRegistry(FileSetMetadata fileSetMetadata) {
     this.fileSetMetadata = fileSetMetadata;

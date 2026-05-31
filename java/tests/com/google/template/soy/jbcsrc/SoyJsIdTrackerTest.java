@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.SourceFilePath;
@@ -32,6 +31,7 @@ import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.SoyJsIdTracker;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.junit.Test;
@@ -43,8 +43,8 @@ public final class SoyJsIdTrackerTest {
 
   @Test
   public void testCallingTemplates_recordJsObjectIds() throws IOException {
-    List<String> jsIds = Lists.newArrayList();
-    List<String> jsXids = Lists.newArrayList();
+    List<String> jsIds = new ArrayList<>();
+    List<String> jsXids = new ArrayList<>();
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(
