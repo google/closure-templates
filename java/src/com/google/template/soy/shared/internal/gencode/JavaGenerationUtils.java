@@ -23,7 +23,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
@@ -42,6 +41,7 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -141,7 +141,7 @@ public final class JavaGenerationUtils {
     if (wrapAt100Chars) {
       // Actual wrap length is less because of indent and because of space used by Javadoc chars.
       int wrapLen = 100 - ilb.getCurrIndentLen() - 7;
-      List<String> wrappedLines = Lists.newArrayList();
+      List<String> wrappedLines = new ArrayList<>();
       for (String line : Splitter.on('\n').split(doc)) {
         while (line.length() > wrapLen) {
           int spaceIndex = line.lastIndexOf(' ', wrapLen);

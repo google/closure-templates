@@ -19,7 +19,6 @@ package com.google.template.soy.data;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.StringData;
 import java.util.Collections;
@@ -45,7 +44,7 @@ public final class SoyMapData extends SoyDict implements CollectionData {
   private final Map<String, SoyValue> map;
 
   public SoyMapData() {
-    map = Maps.newLinkedHashMap();
+    map = new LinkedHashMap<>();
   }
 
   /** Initializes this SoyMapData from an existing map. */

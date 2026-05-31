@@ -23,7 +23,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.DoNotCall;
@@ -590,7 +589,7 @@ public final class TypeNodeConverter
   @Override
   public SoyType visit(RecordTypeNode node) {
     // LinkedHashMap insertion order iteration on values() is important here.
-    Map<String, RecordType.Member> map = Maps.newLinkedHashMap();
+    Map<String, RecordType.Member> map = new LinkedHashMap<>();
     for (RecordTypeNode.Property property : node.properties()) {
       SoyType propertyType = exec(property.type());
       RecordType.Member duplicatePropertyNameMember =

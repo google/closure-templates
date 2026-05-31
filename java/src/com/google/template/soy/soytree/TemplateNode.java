@@ -23,7 +23,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
@@ -56,6 +55,7 @@ import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypesHolderNode;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -249,7 +249,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         ErrorReporter errorReporter,
         NamespaceDeclaration namespaceDeclaration,
         Collection<AliasDeclaration> aliases) {
-      Map<String, String> map = Maps.newLinkedHashMap();
+      Map<String, String> map = new LinkedHashMap<>();
       String aliasForFileNamespace =
           BaseUtils.extractPartAfterLastDot(namespaceDeclaration.getNamespace());
       for (AliasDeclaration aliasDeclaration : aliases) {

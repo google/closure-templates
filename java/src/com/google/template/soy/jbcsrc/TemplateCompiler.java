@@ -30,7 +30,6 @@ import static java.util.stream.Collectors.toCollection;
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
@@ -71,6 +70,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -252,7 +252,7 @@ final class TemplateCompiler {
     } else {
       deltemplateMetadata = createDefaultDelTemplateMetadata();
     }
-    Set<String> namespaces = Sets.newLinkedHashSet();
+    Set<String> namespaces = new LinkedHashSet<>();
     // This ordering is critical to preserve css hierarchy.
     namespaces.addAll(templateNode.getParent().getRequiredCssNamespaces());
     templateNode.getParent().getAllRequiredCssPaths().stream()
@@ -262,7 +262,7 @@ final class TemplateCompiler {
     namespaces.addAll(templateNode.getRequiredCssNamespaces());
 
     // Require paths.
-    Set<String> cssPaths = Sets.newLinkedHashSet();
+    Set<String> cssPaths = new LinkedHashSet<>();
     templateNode.getParent().getAllRequiredCssPaths().stream()
         // Temporary, to avoid double requesting w/ the above.
         .filter(p -> p.getNamespace() == null)

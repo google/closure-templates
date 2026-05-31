@@ -16,7 +16,6 @@
 
 package com.google.template.soy.xliffmsgplugin;
 
-import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgException;
@@ -26,6 +25,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.xml.parsers.ParserConfigurationException;
@@ -112,7 +112,7 @@ class XliffParser {
     private String currRawTextPart;
 
     public XliffSaxHandler() {
-      msgs = Lists.newArrayList();
+      msgs = new ArrayList<>();
       isInMsg = false;
     }
 
@@ -154,7 +154,7 @@ class XliffParser {
 
       } else if (qName.equals("target")) {
         // Start 'target': Prepare to collect the message parts (coming next).
-        currMsgParts = Lists.newArrayList();
+        currMsgParts = new ArrayList<>();
         currRawTextPart = null;
         isInMsg = true;
 

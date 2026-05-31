@@ -26,7 +26,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.RecordProperty;
@@ -196,11 +195,11 @@ public class CompiledTemplates {
   public ImmutableList<String> getAllRequiredCssNamespaces(
       String templateName, Predicate<String> enabledMods, boolean collectCssFromDelvariants) {
     TemplateData templateData = getTemplateData(templateName);
-    Set<TemplateData> orderedTemplateCalls = Sets.newLinkedHashSet();
-    Set<TemplateData> visited = Sets.newLinkedHashSet();
+    Set<TemplateData> orderedTemplateCalls = new LinkedHashSet<>();
+    Set<TemplateData> visited = new LinkedHashSet<>();
     collectTransitiveCallees(
         templateData, orderedTemplateCalls, visited, enabledMods, collectCssFromDelvariants);
-    LinkedHashSet<String> requiredNamespaces = Sets.newLinkedHashSet();
+    LinkedHashSet<String> requiredNamespaces = new LinkedHashSet<>();
     for (TemplateData callee : orderedTemplateCalls) {
       requiredNamespaces.addAll(callee.requiredCssNamespaces);
     }
@@ -213,11 +212,11 @@ public class CompiledTemplates {
   public ImmutableList<String> getAllRequiredCssPaths(
       String templateName, Predicate<String> enabledMods, boolean collectCssFromDelvariants) {
     TemplateData templateData = getTemplateData(templateName);
-    Set<TemplateData> orderedTemplateCalls = Sets.newLinkedHashSet();
-    Set<TemplateData> visited = Sets.newLinkedHashSet();
+    Set<TemplateData> orderedTemplateCalls = new LinkedHashSet<>();
+    Set<TemplateData> visited = new LinkedHashSet<>();
     collectTransitiveCallees(
         templateData, orderedTemplateCalls, visited, enabledMods, collectCssFromDelvariants);
-    LinkedHashSet<String> requiredPaths = Sets.newLinkedHashSet();
+    LinkedHashSet<String> requiredPaths = new LinkedHashSet<>();
     for (TemplateData callee : orderedTemplateCalls) {
       requiredPaths.addAll(callee.requiredCssPaths);
     }
