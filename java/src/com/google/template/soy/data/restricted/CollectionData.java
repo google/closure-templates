@@ -16,12 +16,12 @@
 
 package com.google.template.soy.data.restricted;
 
+import com.google.common.collect.Lists;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyListData;
 import com.google.template.soy.data.SoyMapData;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -404,7 +404,7 @@ public interface CollectionData {
    */
   private static List<String> split(String str, char delim) {
 
-    List<String> result = new ArrayList<>();
+    List<String> result = Lists.newArrayList();
 
     int currPartStart = 0;
     while (true) {

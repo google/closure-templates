@@ -18,12 +18,12 @@ package com.google.template.soy.base.internal;
 
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import java.io.File;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -34,7 +34,8 @@ public final class BaseUtils {
   private BaseUtils() {}
 
   /** Used by {@code ensureDirsExistInPath()}. Keeps track of known existing directory paths. */
-  private static final Set<String> knownExistingDirs = Collections.synchronizedSet(new HashSet<>());
+  private static final Set<String> knownExistingDirs =
+      Collections.synchronizedSet(Sets.newHashSet());
 
   /** Names of Soy constructs that can't be used as plugin names. */
   public static final ImmutableSet<String> ILLEGAL_PLUGIN_NAMES = ImmutableSet.of("map", "record");

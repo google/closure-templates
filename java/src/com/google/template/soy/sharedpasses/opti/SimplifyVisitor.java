@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.template.soy.base.SourceLocation;
@@ -534,7 +535,7 @@ public final class SimplifyVisitor {
       //     children after it, if any. Can stop processing after doing this, because the new
       //     IfElseNode is now the last child.
       // (b) If the condition is constant false: Remove the child.
-      var children = new ArrayList<>(node.getChildren()); // make a copy to enable mutations
+      var children = Lists.newArrayList(node.getChildren()); // make a copy to enable mutations
       for (int condIndex = 0; condIndex < children.size(); condIndex++) {
         SoyNode child = children.get(condIndex);
         if (child instanceof IfCondNode) {
@@ -564,7 +565,7 @@ public final class SimplifyVisitor {
             } else {
               // ------ Constant false. ------
               node.removeChild(condNode);
-              children = new ArrayList<>(node.getChildren());
+              children = Lists.newArrayList(node.getChildren());
               condIndex--;
             }
           } else {
@@ -572,7 +573,7 @@ public final class SimplifyVisitor {
               // If we have no children, then we can just modify the _next_ nodes condition
               // expression to include the negation of ours.
               node.removeChild(condNode);
-              children = new ArrayList<>(node.getChildren());
+              children = Lists.newArrayList(node.getChildren());
               int nextNodeIndex = condIndex;
               condIndex--;
               if (nextNodeIndex < children.size()) {
@@ -681,7 +682,7 @@ public final class SimplifyVisitor {
       //     SwitchDefaultNode and remove all children after it, if any. Can stop processing after
       //     doing this, because the new SwitchDefaultNode is now the last child.
       // (b) If the case has all constant exprs and none match: Remove the child.
-      for (SoyNode child : new ArrayList<>(node.getChildren()) /*copy*/) {
+      for (SoyNode child : Lists.newArrayList(node.getChildren()) /*copy*/) {
         if (child instanceof SwitchCaseNode) {
           SwitchCaseNode caseNode = (SwitchCaseNode) child;
 

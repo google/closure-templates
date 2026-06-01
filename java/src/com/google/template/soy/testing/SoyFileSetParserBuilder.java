@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.joining;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
@@ -57,7 +58,6 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CompilationUnitAndKind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -375,7 +375,7 @@ public final class SoyFileSetParserBuilder {
 
   private static List<SoyFileSupplier> buildTestSoyFileSuppliers(String... soyFileContents) {
 
-    List<SoyFileSupplier> soyFileSuppliers = new ArrayList<>();
+    List<SoyFileSupplier> soyFileSuppliers = Lists.newArrayList();
     for (int i = 0; i < soyFileContents.length; i++) {
       String soyFileContent = soyFileContents[i];
       // Names are now required to be unique in a SoyFileSet. Use one-based indexing.

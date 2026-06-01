@@ -18,9 +18,9 @@ package com.google.template.soy.shared.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.Sets;
 import java.lang.reflect.Modifier;
 import java.net.URLEncoder;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,8 +40,8 @@ public class EscapingConventionsTest {
   @Test
   public void testAllEscapersIterated() {
     // Make sure that all Escapers are present in getAllEscapers().
-    Set<String> actual = new LinkedHashSet<>();
-    Set<String> expected = new LinkedHashSet<>();
+    Set<String> actual = Sets.newLinkedHashSet();
+    Set<String> expected = Sets.newLinkedHashSet();
     for (EscapingConventions.CrossLanguageStringXform directive :
         EscapingConventions.getAllEscapers()) {
       expected.add(directive.getClass().getSimpleName());

@@ -19,6 +19,7 @@ package com.google.template.soy.xliffmsgplugin;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.error.ErrorReporter;
@@ -29,7 +30,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -83,7 +83,7 @@ public final class XliffMsgPluginTest {
 
     assertEquals(5, msgBundle.getNumMsgs());
 
-    List<SoyMsg> msgs = new ArrayList<>();
+    List<SoyMsg> msgs = Lists.newArrayList();
     for (SoyMsg msg : msgBundle) {
       msgs.add(msg);
     }

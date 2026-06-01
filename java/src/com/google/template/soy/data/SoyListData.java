@@ -16,12 +16,12 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.collect.Lists;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.CollectionData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -42,7 +42,7 @@ public final class SoyListData extends SoyList implements Iterable<SoyValue>, Co
   private final List<SoyValue> list;
 
   public SoyListData() {
-    list = new ArrayList<>();
+    list = Lists.newArrayList();
   }
 
   /**

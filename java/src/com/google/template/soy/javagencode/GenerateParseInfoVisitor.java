@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
@@ -65,12 +66,10 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -160,7 +159,7 @@ public final class GenerateParseInfoVisitor
   private final SoyFileNodeTransformer soyFileNodeTransformer;
 
   /** Cache for results of calls to {@code Utils.convertToUpperUnderscore()}. */
-  private final Map<String, String> convertedIdents = new LinkedHashMap<>();
+  private final Map<String, String> convertedIdents = Maps.newLinkedHashMap();
 
   /** The contents of the generated Java files. */
   private ImmutableList.Builder<GeneratedFile> generatedFiles;
@@ -226,7 +225,7 @@ public final class GenerateParseInfoVisitor
       baseGeneratedClassNameToSoyFilesMap.put(
           javaClassNameSource.generateBaseClassName(soyFile), soyFile);
     }
-    soyFileToJavaClassNameMap = new HashMap<>();
+    soyFileToJavaClassNameMap = Maps.newHashMap();
     for (String baseClassName : baseGeneratedClassNameToSoyFilesMap.keySet()) {
       Collection<SoyFileNode> soyFiles = baseGeneratedClassNameToSoyFilesMap.get(baseClassName);
       if (soyFiles.size() == 1) {
@@ -259,8 +258,8 @@ public final class GenerateParseInfoVisitor
     // + all the param keys from all templates (including private),
     // + for each param key, the list of templates that list it directly.
     // + for any params whose type is a proto, get the proto name and Java class name.
-    LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = new LinkedHashMap<>();
-    Set<String> allParamKeys = new LinkedHashSet<>();
+    LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = Maps.newLinkedHashMap();
+    Set<String> allParamKeys = Sets.newLinkedHashSet();
     Map<String, TemplateParam> indexOfParamNameToFirstParam = new HashMap<>();
     SetMultimap<String, TemplateNode> paramKeyToTemplatesMultimap = LinkedHashMultimap.create();
     for (TemplateNode template : node.getTemplates()) {
@@ -461,7 +460,7 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("__NAMESPACE__,");
 
     // Templates.
-    List<String> itemSnippets = new ArrayList<>();
+    List<String> itemSnippets = Lists.newArrayList();
     itemSnippets.addAll(publicBasicTemplateMap.keySet());
     appendImmutableList(ilb, "<SoyTemplateInfo>", itemSnippets);
     ilb.appendLineEnd(",");
@@ -524,7 +523,7 @@ public final class GenerateParseInfoVisitor
     }
 
     // First build list of all transitive params (direct and indirect).
-    Set<String> directParamNames = new HashSet<>();
+    Set<String> directParamNames = Sets.newHashSet();
     // Direct params.
     for (TemplateParam param : node.getParams()) {
       if (!param.isImplicit()) {
@@ -649,7 +648,7 @@ public final class GenerateParseInfoVisitor
     if (!nodeMetadata.getTemplateType().getParameters().isEmpty()
         || !indirectParamsInfo.indirectParams.isEmpty()) {
       ImmutableMap.Builder<String, String> entrySnippetPairs = ImmutableMap.builder();
-      Set<String> seenParams = new HashSet<>();
+      Set<String> seenParams = Sets.newHashSet();
       for (Parameter param :
           Iterables.concat(
               nodeMetadata.getTemplateType().getParameters(),

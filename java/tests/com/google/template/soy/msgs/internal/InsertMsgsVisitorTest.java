@@ -19,6 +19,7 @@ package com.google.template.soy.msgs.internal;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -36,7 +37,6 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -129,7 +129,7 @@ public final class InsertMsgsVisitorTest {
     assertThat(((RawTextNode) msgHtmlTag4.getChild(0)).getRawText()).isEqualTo("</a>");
 
     // Build the translated message bundle.
-    List<SoyMsg> translatedMsgs = new ArrayList<>();
+    List<SoyMsg> translatedMsgs = Lists.newArrayList();
     // Original (en): random{{FOO}}{{START_LINK}}slimy{{END_LINK}}
     // Translation (x-zz): {{START_LINK}}zslimy{{END_LINK}}{{FOO}}zrandom
     translatedMsgs.add(
@@ -287,7 +287,7 @@ public final class InsertMsgsVisitorTest {
     assertThat(((MsgFallbackGroupNode) template.getChild(3)).numChildren()).isEqualTo(2);
 
     // Build the translated message bundle.
-    List<SoyMsg> translatedMsgs = new ArrayList<>();
+    List<SoyMsg> translatedMsgs = Lists.newArrayList();
     MsgNode trans1FirstInstance = ((MsgFallbackGroupNode) template.getChild(1)).getChild(0);
     translatedMsgs.add(
         SoyMsg.builder()

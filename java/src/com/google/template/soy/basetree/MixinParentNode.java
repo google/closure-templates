@@ -19,7 +19,6 @@ package com.google.template.soy.basetree;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Lists;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -47,7 +46,7 @@ public final class MixinParentNode<N extends Node> {
    */
   public MixinParentNode(ParentNode<N> master) {
     this.master = checkNotNull(master);
-    this.children = new ArrayList<>();
+    this.children = Lists.newArrayList();
   }
 
   /**
@@ -209,7 +208,7 @@ public final class MixinParentNode<N extends Node> {
    * @param children The children to add.
    */
   public void addChildren(int index, List<? extends N> children) {
-    List<N> origChildren = new ArrayList<>(this.children);
+    List<N> origChildren = Lists.newArrayList(this.children);
     int origNumChildren = this.children.size();
     // Temporarily remove the original children from index onward (in reverse order).
     for (int i = origNumChildren - 1; i >= index; i--) {
