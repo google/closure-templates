@@ -59,10 +59,12 @@ import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.ConcatMapsMethod;
 import com.google.template.soy.basicfunctions.KeysFunction;
@@ -179,6 +181,7 @@ import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.FileMetadata;
 import com.google.template.soy.soytree.FileMetadata.Extern;
+import com.google.template.soy.soytree.FileMetadata.TypeDef;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
@@ -231,6 +234,7 @@ import com.google.template.soy.types.RecordType.Member;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SetType;
+import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -569,6 +573,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       SoyErrorKind.of(
           "This invocation did not resolve all implicit types in the callee.",
           Impression.UNKNOWN_IMPRESSION);
+  private static final SoyErrorKind IMPLICIT_DEPENDS_ON_UNAVAILABLE_TYPE =
+      SoyErrorKind.of(
+          "This implicit type depends on ''{0}'', which is either not exported or is not a direct"
+              + " dependency of this compilation.",
+          Impression.UNKNOWN_IMPRESSION);
   private static final SoyErrorKind TYPE_NAME_BUILTIN_COLLISION =
       SoyErrorKind.of(
           "Type ''{0}'' name is already a built-in or imported type {1}.",
@@ -727,6 +736,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     FunctionType newFnType = FunctionType.of(newParams, newReturnType);
     if (SoyTypes.transitivelyContainsKind(newFnType, Kind.IMPLICIT)) {
       errorReporter.report(ref.getSourceLocation(), IMPLICIT_INCOMPLETE);
+    } else {
+      checkTypesAvailable(newFnType, e.getTypeNode().sourceLocation());
     }
     e.getTypeNode().setResolvedType(newFnType, true);
     e.getVar().setType(newFnType);
@@ -756,14 +767,59 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
               }
             });
 
-    ((TemplateImportType) t.asVarDefn().type()).setBasicTemplateType(Metadata.buildTemplateType(t));
+    TemplateType newType = Metadata.buildTemplateType(t);
+    ((TemplateImportType) t.asVarDefn().type()).setBasicTemplateType(newType);
 
-    if (SoyTypes.transitivelyContainsKind(
-        SoyTypes.getTemplateType(t.asVarDefn().type()), Kind.IMPLICIT)) {
+    if (SoyTypes.transitivelyContainsKind(newType, Kind.IMPLICIT)) {
       errorReporter.report(ref.getSourceLocation(), IMPLICIT_INCOMPLETE);
+    } else {
+      checkTypesAvailable(newType, t.getTemplateNameLocation());
     }
+
     typeAssignmentSoyVisitor.exec(t);
     return true;
+  }
+
+  private void checkTypesAvailable(SoyType newType, SourceLocation errorLoc) {
+    SoyTypes.allLogicalTypes(newType, typeRegistry)
+        .filter(
+            t -> {
+              String protoFile = null;
+              if (t instanceof SoyProtoType protoType) {
+                protoFile = protoType.getDescriptor().getFile().getFullName();
+              } else if (t instanceof SoyProtoEnumType protoEnumType) {
+                protoFile = protoEnumType.getDescriptor().getFile().getFullName();
+              }
+              if (protoFile != null) {
+                // We could check:
+                // typeRegistry.getProtoRegistry().getDepKind(SourceLogicalPath.create(protoFile))
+                // However, an indirect dep here does not appear to cause a SoyJS/SoyIDOM
+                // compilation error.
+                return false;
+              }
+
+              if (t instanceof NamedType nt) {
+                SourceLogicalPath path = this.getPathForNamespace(nt.getNamespace());
+                if (path == null) {
+                  return false;
+                }
+                FileMetadata metadata = this.getFileMetadata(path);
+                if (metadata == null) {
+                  return false;
+                }
+                if (metadata.getSoyFileKind() == SoyFileKind.INDIRECT_DEP) {
+                  return true;
+                }
+                TypeDef typeDef = metadata.getTypeDef(nt.getName());
+                return typeDef == null || !typeDef.isExported();
+              }
+              return false;
+            })
+        .findFirst()
+        .ifPresent(
+            nt -> {
+              errorReporter.report(errorLoc, IMPLICIT_DEPENDS_ON_UNAVAILABLE_TYPE, nt);
+            });
   }
 
   private final class TypeAssignmentSoyVisitor extends AbstractSoyNodeVisitor<Void> {

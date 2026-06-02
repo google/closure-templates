@@ -37,6 +37,7 @@ abstract class AbstractTopologicallyOrderedPass
 
   private final Supplier<FileSetMetadata> fileSetMetadataFromDeps;
   private final Map<SourceLogicalPath, FileMetadata> astMetadata = new HashMap<>();
+  private final Map<String, SourceLogicalPath> namespaceIndex = new HashMap<>();
 
   protected AbstractTopologicallyOrderedPass(Supplier<FileSetMetadata> fileSetMetadataFromDeps) {
     this.fileSetMetadataFromDeps = fileSetMetadataFromDeps;
@@ -49,6 +50,7 @@ abstract class AbstractTopologicallyOrderedPass
     for (SoyFileNode file : sourceFiles) {
       run(file, idGenerator);
       astMetadata.put(file.getFilePath().asLogicalPath(), Metadata.forAst(file));
+      namespaceIndex.put(file.getNamespace(), file.getFilePath().asLogicalPath());
     }
     return Result.CONTINUE;
   }
@@ -60,5 +62,14 @@ abstract class AbstractTopologicallyOrderedPass
       metadata = fileSetMetadataFromDeps.get().getFile(path);
     }
     return metadata;
+  }
+
+  @Nullable
+  protected SourceLogicalPath getPathForNamespace(String namespace) {
+    SourceLogicalPath path = namespaceIndex.get(namespace);
+    if (path == null) {
+      path = fileSetMetadataFromDeps.get().getPathForNamespace(namespace);
+    }
+    return path;
   }
 }
