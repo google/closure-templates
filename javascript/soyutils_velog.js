@@ -569,11 +569,9 @@ function replaceChild(parent, oldChild, newChildren) {
       parent.replaceChild(newChildren[0], oldChild);
     }
   } else {
-    const fragment = document.createDocumentFragment();
     for (const newChild of newChildren) {
-      fragment.appendChild(newChild);
+      parent.insertBefore(newChild, oldChild);
     }
-    parent.insertBefore(fragment, oldChild);
     parent.removeChild(oldChild);
   }
 }
