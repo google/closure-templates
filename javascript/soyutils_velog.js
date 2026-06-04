@@ -588,44 +588,34 @@ function replaceFunctionAttributes(element, logger) {
   if (!element.hasAttributes()) {
     return;
   }
-  let /** !Array<string>|undefined */ newAttrs;
-  // Iterates from the end to the beginning, since we are removing attributes
-  // in place.
+  // Iterates through the attribute names. Safe to remove in place because
+  // attributeNames is a static array.
   let elementToAddTo = element;
   if (element.tagName === 'VEATTR') {
     // The attribute being replaced belongs on the direct child.
     elementToAddTo = /** @type {!Element} */ (element.firstElementChild);
   }
-  const attrs = element.attributes;
-  for (let i = attrs.length - 1; i >= 0; --i) {
-    const attr = attrs[i];
-    const attributeName = attr.name;
+  for (const attributeName of element.getAttributeNames()) {
     if (startsWith(attributeName, FUNCTION_ATTR)) {
+      const attrValue =
+          /** @type {string} */ (element.getAttribute(attributeName));
       // Delay evaluation of the attributes until we reach the element itself.
       if (elementToAddTo.hasAttribute(ELEMENT_ATTR) &&
           element.tagName === 'VEATTR') {
         elementToAddTo.setAttribute(
-            attributeName, attr.value);
+            attributeName, attrValue);
         continue;
       }
-      const funcIndex = parseInt(attr.value, 10);
+      const funcIndex = parseInt(attrValue, 10);
       assert(
           !Number.isNaN(funcIndex) && funcIndex < metadata.functions.length,
           'Invalid logging attribute.');
       const funcMetadata = metadata.functions[funcIndex];
       const actualAttrName = attributeName.substring(FUNCTION_ATTR.length);
-      (newAttrs ??= [])
-          .push(
-              actualAttrName,
-              logger.evalLoggingFunction(funcMetadata.name, funcMetadata.args));
-      elementToAddTo.removeAttribute(attributeName);
-    }
-  }
-  if (newAttrs) {
-    for (let i = 0; i < newAttrs.length; i += 2) {
-      const attrName = newAttrs[i];
-      const attrValue = newAttrs[i + 1];
-      elementToAddTo.setAttribute(attrName, attrValue);
+      elementToAddTo.setAttribute(
+          actualAttrName,
+          logger.evalLoggingFunction(funcMetadata.name, funcMetadata.args));
+      element.removeAttribute(attributeName);
     }
   }
 }
