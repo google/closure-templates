@@ -491,8 +491,9 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
     }
 
     @SuppressWarnings("Immutable")
-    protected static SoyValueProvider asTemplateValue(TemplateInterface template) {
-      return TemplateValue.createFromTemplate(template);
+    protected static SoyValueProvider asTemplateValue(
+        @javax.annotation.Nullable TemplateInterface template) {
+      return template == null ? NullData.INSTANCE : TemplateValue.createFromTemplate(template);
     }
 
     /** Throws if not required parameters are set. */
