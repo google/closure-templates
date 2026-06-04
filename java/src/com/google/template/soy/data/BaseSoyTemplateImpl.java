@@ -492,7 +492,13 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
 
     @SuppressWarnings("Immutable")
     protected static SoyValueProvider asTemplateValue(TemplateInterface template) {
-      return TemplateValue.createFromTemplate(template);
+      return TemplateValue.createFromTemplate(checkNotNull(template));
+    }
+
+    @SuppressWarnings("Immutable")
+    protected static SoyValueProvider asNullableTemplateValue(
+        @Nullable TemplateInterface template) {
+      return template == null ? NullData.INSTANCE : TemplateValue.createFromTemplate(template);
     }
 
     /** Throws if not required parameters are set. */

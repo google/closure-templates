@@ -25,6 +25,8 @@ public final class TemplateJavaType extends JavaType {
 
   private static final CodeGenUtils.Member AS_TEMPLATE_VALUE =
       CodeGenUtils.castFunction("asTemplateValue");
+  private static final CodeGenUtils.Member AS_NULLABLE_TEMPLATE_VALUE =
+      CodeGenUtils.castFunction("asNullableTemplateValue");
 
   private final TemplateType type;
 
@@ -57,6 +59,6 @@ public final class TemplateJavaType extends JavaType {
 
   @Override
   public String asInlineCast(String variable, int depth) {
-    return AS_TEMPLATE_VALUE + "(" + variable + ")";
+    return (isNullable() ? AS_NULLABLE_TEMPLATE_VALUE : AS_TEMPLATE_VALUE) + "(" + variable + ")";
   }
 }
