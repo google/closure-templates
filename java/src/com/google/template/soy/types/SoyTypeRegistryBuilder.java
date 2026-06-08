@@ -59,7 +59,7 @@ public final class SoyTypeRegistryBuilder {
 
   /** Creates a type registry with only the built-in types. Mostly used for testing. */
   public static SoyTypeRegistry create() {
-    return TypeRegistries.newComposite(TypeRegistries.builtinTypeRegistry());
+    return TypeRegistries.newSoyTypeRegistry(TypeRegistries.builtinTypeRegistry());
   }
 
   private final ImmutableList.Builder<GenericDescriptor> descriptors = ImmutableList.builder();

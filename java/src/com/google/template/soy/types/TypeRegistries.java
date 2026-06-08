@@ -56,8 +56,8 @@ public final class TypeRegistries {
     return INSTANCE;
   }
 
-  public static SoyTypeRegistry newComposite(TypeRegistry typeRegistry) {
-    return new CompositeSoyTypeRegistry(typeRegistry);
+  public static SoyTypeRegistry newSoyTypeRegistry(TypeRegistry typeRegistry) {
+    return new SoyTypeRegistryImpl(typeRegistry);
   }
 
   /**
@@ -132,7 +132,7 @@ public final class TypeRegistries {
     }
   }
 
-  private static final class CompositeSoyTypeRegistry implements SoyTypeRegistry {
+  private static final class SoyTypeRegistryImpl implements SoyTypeRegistry {
 
     private final TypeRegistry typeRegistry;
     private final Map<String, SoyProtoType> protoTypes = new ConcurrentHashMap<>();
@@ -140,7 +140,7 @@ public final class TypeRegistries {
         protoMembersCache = new ConcurrentHashMap<>();
     private final Map<GenericDescriptor, ImportType> protoImportTypes = new ConcurrentHashMap<>();
 
-    public CompositeSoyTypeRegistry(TypeRegistry typeRegistry) {
+    SoyTypeRegistryImpl(TypeRegistry typeRegistry) {
       this.typeRegistry = typeRegistry;
     }
 
@@ -187,14 +187,14 @@ public final class TypeRegistries {
     @Override
     public SoyType getProtoImportType(FileDescriptor descriptor, String member) {
       return getProtoImportType(
-          protoMembersCache.computeIfAbsent(descriptor, CompositeSoyTypeRegistry::buildMemberIndex),
+          protoMembersCache.computeIfAbsent(descriptor, SoyTypeRegistryImpl::buildMemberIndex),
           member);
     }
 
     @Override
     public SoyType getProtoImportType(Descriptor descriptor, String member) {
       return getProtoImportType(
-          protoMembersCache.computeIfAbsent(descriptor, CompositeSoyTypeRegistry::buildMemberIndex),
+          protoMembersCache.computeIfAbsent(descriptor, SoyTypeRegistryImpl::buildMemberIndex),
           member);
     }
 

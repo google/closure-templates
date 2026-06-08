@@ -895,22 +895,18 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           fileMetadata
               .getTypeDefs()
               .forEach(
-                  typeDef -> {
-                    boolean unusedTrue =
-                        typeRegistry.addTypeAlias(
-                            node.getModuleAlias() + "." + typeDef.getName(), typeDef.getType());
-                  });
-        } else {
-          node.getIdentifiers().stream()
-              .filter(v -> v.getSymbolKind() == SymbolKind.TYPEDEF)
+                  typeDef ->
+                      typeRegistry.addTypeAlias(
+                          node.getModuleAlias() + "." + typeDef.getName(), typeDef.getType()));
+          fileMetadata
+              .getConstants()
               .forEach(
-                  var -> {
-                    if (!var.hasType()) {
-                      FileMetadata.TypeDef typeDef = fileMetadata.getTypeDef(var.getSymbol());
-                      var.setType(typeDef.getType());
+                  c -> {
+                    SoyType recordValueType = SoyTypes.getEnumValueType(c.getType());
+                    if (recordValueType != null) {
+                      typeRegistry.addTypeAlias(
+                          node.getModuleAlias() + "." + c.getName(), recordValueType);
                     }
-                    boolean unusedTrue =
-                        typeRegistry.addTypeAlias(var.name(), (NamedType) var.authoredType());
                   });
         }
       }
@@ -925,7 +921,19 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             } else if (var.hasType()) {
               return;
             }
-            TemplateImportProcessor.setSymbolType(var, getFileMetadata(var.getSourceFilePath()));
+            TemplateImportProcessor.setSymbolType(var, fileMetadata);
+          });
+
+      node.visitVars(
+          (var) -> {
+            if (var.getSymbolKind() == SymbolKind.TYPEDEF) {
+              typeRegistry.addTypeAlias(var.name(), var.authoredType());
+            } else if (var.getSymbolKind() == SymbolKind.CONST) {
+              SoyType recordValueType = SoyTypes.getEnumValueType(var.type());
+              if (recordValueType != null) {
+                typeRegistry.addTypeAlias(var.name(), recordValueType);
+              }
+            }
           });
     }
 
@@ -1130,6 +1138,11 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         inferredType = declaredType;
       }
       node.getVar().setType(inferredType);
+
+      SoyType recordValueType = SoyTypes.getEnumValueType(inferredType);
+      if (recordValueType != null) {
+        typeRegistry.addTypeAlias(node.getVar().name(), recordValueType);
+      }
     }
 
     @Override
@@ -3948,7 +3961,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     @CanIgnoreReturnValue
-    public boolean addTypeAlias(String alias, NamedType type) {
+    public boolean addTypeAlias(String alias, SoyType type) {
       SoyType previous = localTypes.put(alias, type);
       return previous == null;
     }

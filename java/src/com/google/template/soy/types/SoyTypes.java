@@ -460,6 +460,29 @@ public final class SoyTypes {
   }
 
   /**
+   * If `type` is a record type with at least one member and all the members have the same declared
+   * type -- string or number, returns that member type. Otherwise, returns null.
+   */
+  @Nullable
+  public static SoyType getEnumValueType(SoyType type) {
+    if (type.getEffectiveType() instanceof RecordType recordType
+        && !recordType.getMembers().isEmpty()) {
+      var members = recordType.getMembers();
+      SoyType firstType = members.get(0).declaredType();
+      if (!(firstType.getKind() == Kind.NUMBER
+          || firstType.getKind() == Kind.STRING
+          || firstType.getKind() == Kind.INT
+          || firstType.getKind() == Kind.FLOAT)) {
+        return null;
+      }
+      if (members.stream().skip(1).allMatch(m -> m.declaredType().equals(firstType))) {
+        return firstType;
+      }
+    }
+    return null;
+  }
+
+  /**
    * A type resolver interface that can be passed into getSoyTypeForBinaryOperator method.
    *
    * <p>All operators modeled by this interface should evaluate to a type that is not nullable. e.g.
