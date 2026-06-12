@@ -44,3 +44,12 @@ import * as ns from 'path/to/file_2.soy';
   ...
 {/template}
 ```
+
+## Importing into TypeScript/JavaScript {#typescript}
+
+Exported type aliases can be imported directly into TypeScript or JavaScript
+files:
+
+```typescript
+import {SHARED_TYPE} from 'path/to/file_1.soy';
+```
