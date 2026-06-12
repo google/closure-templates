@@ -89,10 +89,12 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcExternRuntime;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractIterableType;
 import com.google.template.soy.types.AbstractMapType;
+import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.GbigintType;
 import com.google.template.soy.types.ListType;
@@ -329,9 +331,22 @@ final class ProtoUtils {
       SoyType fieldType,
       LocalVariableManager varManager,
       Function<SoyExpression, SoyExpression> memberGenerator) {
-    return new ProtoUnionAccessorGenerator(
-            baseExpr, fieldName, fieldType, varManager, memberGenerator)
-        .generate();
+    if (SoyTypes.isNullish(baseExpr.soyType())
+        || baseExpr.soyType().equals(AnyType.getInstance())
+        || baseExpr.soyType().equals(UnknownType.getInstance())) {
+      MethodRef helperRef =
+          MethodRef.createPure(
+              JbcSrcExternRuntime.class, "getProtoUnionField", SoyValue.class, String.class);
+      Expression helperCall = helperRef.invoke(baseExpr.box(), constant(fieldName));
+      Expression soyValueCall = JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE.invoke(helperCall);
+      SoyRuntimeType resultType = SoyRuntimeType.getBoxedType(fieldType);
+      return SoyExpression.forSoyValue(
+          fieldType, soyValueCall.checkedCast(resultType.runtimeType()));
+    } else {
+      return new ProtoUnionAccessorGenerator(
+              baseExpr, fieldName, fieldType, varManager, memberGenerator)
+          .generate();
+    }
   }
 
   private abstract static class BaseGenerator {
