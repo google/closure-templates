@@ -104,7 +104,7 @@ public final class SoyTemplateData {
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof SoyTemplateData && data.equals(((SoyTemplateData) o).data);
+    return o instanceof SoyTemplateData that && data.equals(that.data);
   }
 
   @Override

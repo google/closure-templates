@@ -67,18 +67,14 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
   }
 
   private static SoyMsgPart fromRawPart(Object part) {
-    if (part instanceof String) {
-      return SoyMsgRawTextPart.of((String) part);
-    } else if (part instanceof PlaceholderName) {
-      return new SoyMsgPlaceholderPart(((PlaceholderName) part).name());
-    } else if (part instanceof SoyMsgPluralPartForRendering) {
-      return ((SoyMsgPluralPartForRendering) part).toPluralPart();
-    } else if (part instanceof SoyMsgSelectPartForRendering) {
-      return ((SoyMsgSelectPartForRendering) part).toSelectPart();
-    } else if (part instanceof SoyMsgViewerGrammaticalGenderPartForRendering) {
-      return ((SoyMsgViewerGrammaticalGenderPartForRendering) part).toGenderPart();
-    }
-    throw new IllegalArgumentException("Unsupported part type: " + part.getClass());
+    return switch (part) {
+      case String s -> SoyMsgRawTextPart.of(s);
+      case PlaceholderName placeholderName -> new SoyMsgPlaceholderPart(placeholderName.name());
+      case SoyMsgPluralPartForRendering pluralPart -> pluralPart.toPluralPart();
+      case SoyMsgSelectPartForRendering selectPart -> selectPart.toSelectPart();
+      case SoyMsgViewerGrammaticalGenderPartForRendering genderPart -> genderPart.toGenderPart();
+      default -> throw new IllegalArgumentException("Unsupported part type: " + part.getClass());
+    };
   }
 
   ImmutableList<SoyMsgPart> toSoyMsgParts() {
@@ -112,19 +108,16 @@ public abstract class SoyMsgRawParts implements Iterable<Object> {
   }
 
   private static Object toRawPart(SoyMsgPart part) {
-    if (part instanceof SoyMsgRawTextPart) {
-      return ((SoyMsgRawTextPart) part).getRawText();
-    } else if (part instanceof SoyMsgPlaceholderPart) {
-      return PlaceholderName.create(((SoyMsgPlaceholderPart) part).getPlaceholderName());
-    } else if (part instanceof SoyMsgPluralPart) {
-      return new SoyMsgPluralPartForRendering((SoyMsgPluralPart) part);
-    } else if (part instanceof SoyMsgSelectPart) {
-      return new SoyMsgSelectPartForRendering(((SoyMsgSelectPart) part));
-    } else if (part instanceof SoyMsgViewerGrammaticalGenderPart) {
-      return new SoyMsgViewerGrammaticalGenderPartForRendering(
-          ((SoyMsgViewerGrammaticalGenderPart) part));
-    }
-    throw new IllegalArgumentException("Unsupported part type: " + part.getClass());
+    return switch (part) {
+      case SoyMsgRawTextPart rawTextPart -> rawTextPart.getRawText();
+      case SoyMsgPlaceholderPart placeholderPart ->
+          PlaceholderName.create(placeholderPart.getPlaceholderName());
+      case SoyMsgPluralPart pluralPart -> new SoyMsgPluralPartForRendering(pluralPart);
+      case SoyMsgSelectPart selectPart -> new SoyMsgSelectPartForRendering(selectPart);
+      case SoyMsgViewerGrammaticalGenderPart genderPart ->
+          new SoyMsgViewerGrammaticalGenderPartForRendering(genderPart);
+      default -> throw new IllegalArgumentException("Unsupported part type: " + part.getClass());
+    };
   }
 
   /** A builder for raw parts */
