@@ -420,7 +420,7 @@ class ValidateExternsPass implements CompilerFilePass {
 
   private boolean typesAreCompatible(
       TypeReference parameterizedType, SoyType soyType, ExternNode extern, Mode mode) {
-    return typesAreCompatible(parameterizedType, soyType, extern, mode, false);
+    return typesAreCompatible(parameterizedType, soyType, extern, mode, true);
   }
 
   private boolean typesAreCompatible(

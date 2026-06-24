@@ -321,7 +321,7 @@ public final class ExternCompiler {
    * implementation.
    */
   static SoyRuntimeType getRuntimeType(SoyType type) {
-    SoyType nonNullable = SoyTypes.excludeNullish(type.getEffectiveType());
+    SoyType nonNullable = SoyTypes.excludeNull(type.getEffectiveType());
     SoyRuntimeType runtimeType =
         SoyRuntimeType.getUnboxedType(nonNullable)
             .orElseGet(() -> SoyRuntimeType.getBoxedType(nonNullable));
@@ -439,7 +439,7 @@ public final class ExternCompiler {
       return JbcSrcExternRuntime.CONVERT_SOY_VALUE_TO_BIG_INTEGER.invoke(actualParam.box());
     }
 
-    SoyType nonNullableSoyType = SoyTypes.excludeNullish(soyType.getEffectiveType());
+    SoyType nonNullableSoyType = SoyTypes.excludeNull(soyType.getEffectiveType());
 
     // For protos, we need to unbox as Message & then cast.
     if (nonNullableSoyType instanceof MessageType) {
