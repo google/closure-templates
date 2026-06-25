@@ -628,6 +628,9 @@ public final class PassManager {
               allowMissingSoyDeps,
               astRewrites.rewriteShortFormCalls(),
               accumulatedState::registryFromDeps));
+      if (options.getExperimentalFeatures().contains("annotate_html_source_locations")) {
+        passes.add(new AddProtoSourceLocationsPass());
+      }
       if (!disableAllTypeChecking) {
         passes
             .add(new CheckDeclaredTypesPass(errorReporter))
