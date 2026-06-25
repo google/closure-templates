@@ -26,7 +26,6 @@ import {IdomFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
 import {TemplateAcceptor} from './soyutils_idom';
 import {IjData} from './templates';
-
 export {attributes} from './api_idom_attributes';
 export {type IdomTemplate as Template} from './templates';
 
@@ -83,6 +82,20 @@ function wrapAsGeneric<R>(
   return fnCreator(patchConfig);
 }
 
+function wrapAsGenericForBetweenCommentOrTextNodes<R>(
+  fnCreator: <T>(
+    patchConfig: incrementaldom.PatchConfig,
+  ) => incrementaldom.PatchBetweenCommentOrTextNodesFunction<T, R>,
+  patchConfig: incrementaldom.PatchConfig,
+): <T>(
+  startNode: Comment | Text,
+  endNode: Comment | Text,
+  template: (a: T | undefined) => void,
+  data?: T | undefined,
+) => R {
+  return fnCreator(patchConfig);
+}
+
 /** PatchInner using Soy-IDOM semantics. */
 export const patchInner: <T>(
   node: Element | DocumentFragment,
@@ -95,6 +108,16 @@ export const patchOuter: <T>(
   template: (a: T | undefined) => void,
   data?: T | undefined,
 ) => Node | null = wrapAsGeneric(incrementaldom.createPatchOuter, patchConfig);
+/** PatchBetweenCommentOrTextNodes using Soy-IDOM semantics. */
+export const patchBetweenCommentOrTextNodes: <T>(
+  startNode: Comment | Text,
+  endNode: Comment | Text,
+  template: (a: T | undefined) => void,
+  data?: T | undefined,
+) => Node = wrapAsGenericForBetweenCommentOrTextNodes(
+  incrementaldom.createPatchBetweenCommentOrTextNodes,
+  patchConfig,
+);
 /** PatchInner using Soy-IDOM semantics. */
 export const patch: <T>(
   node: Element | DocumentFragment,
