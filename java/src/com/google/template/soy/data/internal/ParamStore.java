@@ -38,6 +38,15 @@ import javax.annotation.Nonnull;
 public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValueProvider>
     implements BiConsumer<RecordProperty, SoyValueProvider> {
 
+  public static ParamStore fromMap(Map<String, SoyValueProvider> map) {
+    ParamStore paramStore = new ParamStore(map.size());
+    for (Entry<String, SoyValueProvider> entry : map.entrySet()) {
+      paramStore.setField(RecordProperty.get(entry.getKey()), entry.getValue());
+    }
+    paramStore.freeze();
+    return paramStore;
+  }
+
   public static ParamStore merge(ParamStore store1, ParamStore store2) {
     // Merging with empty stores is common due to the way we bind template literals.
     var store1Size = store1.size();

@@ -40,6 +40,7 @@ import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.data.PartialSoyTemplate;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyVisualElement;
@@ -524,6 +525,9 @@ class ValidateExternsPass implements CompilerFilePass {
         yield collectionTypeIsCompatible(soyType, parameterizedType, extern, mode);
       }
       case MAP, RECORD -> {
+        if (soyType.getKind() == Kind.RECORD && javaType == SoyRecord.class) {
+          yield true;
+        }
         if (!(mode == Mode.EXTENDS
             ? Map.class.isAssignableFrom(javaType)
             : javaType == Map.class || javaType == ImmutableMap.class)) {
