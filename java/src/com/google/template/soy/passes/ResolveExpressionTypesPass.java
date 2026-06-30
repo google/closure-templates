@@ -2821,7 +2821,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
               externTypes =
                   getFileMetadata(((SymbolVar) defn).getSourceFilePath())
                       .getExterns(((SymbolVar) defn).getSymbol());
-            } else if (defn.kind() == VarDefn.Kind.LOCAL_VAR || defn.kind() == VarDefn.Kind.PARAM) {
+            } else if (defn.kind() == VarDefn.Kind.LOCAL_VAR
+                || defn.kind() == VarDefn.Kind.PARAM
+                || defn.kind() == VarDefn.Kind.STATE
+                || defn.kind() == VarDefn.Kind.COMPREHENSION_VAR) {
               node.setSoyFunction(FunctionNode.FUNCTION_POINTER);
               node.setType(SoyTypes.getFunctionReturnType(nameExprType));
               return;

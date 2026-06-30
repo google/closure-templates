@@ -139,6 +139,28 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
+  public void testFunctionPointerTypes() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructElementFileSource(
+                    "{@param pFunc: (p: string) => string}",
+                    "{@state sFunc := $pFunc}",
+                    "<div>",
+                    "{assertType('string', $pFunc('a'))}",
+                    "{assertType('string', $sFunc('a'))}",
+                    "{for $cFunc in [$pFunc]}",
+                    "  {assertType('string', $cFunc('a'))}",
+                    "{/for}",
+                    "</div>"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .desugarHtmlNodes(false)
+            .desugarIdomFeatures(false)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
   public void testDefaultParam() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
