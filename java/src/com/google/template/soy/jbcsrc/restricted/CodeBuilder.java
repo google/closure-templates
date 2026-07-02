@@ -153,6 +153,10 @@ public final class CodeBuilder extends MethodVisitor {
     return adapter.getArgumentTypes();
   }
 
+  public Type getReturnType() {
+    return adapter.getReturnType();
+  }
+
   /** See {@link GeneratorAdapter#pop()} */
   public void pop() {
     adapter.pop();

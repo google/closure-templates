@@ -182,6 +182,11 @@ interface ExpressionDetacher {
           cb.ifZCmp(Opcodes.IFNE, end); // Stack: SVP, RR
 
           saveOperation.gen(cb);
+          System.out.println("Jetski: BasicDetacher in method: " + cb.getThisMethodName());
+          if (cb.getReturnType().getSort() == org.objectweb.asm.Type.VOID) {
+            cb.pop(); // Pop RR
+            cb.pop(); // Pop SVP
+          }
           cb.returnValue();
           cb.mark(end);
           cb.pop(); // Stack: SVP
