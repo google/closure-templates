@@ -895,6 +895,19 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
               SOY_PY_SRC_METHOD_NOT_FOUND,
               methodCallNode.getMethodName());
           return ".ERROR";
+        case INVOKE_FUNCTION_PROPERTY:
+          // Compiles a dynamic function property invocation in Python (e.g. `$myRecord.fn()`).
+          // We extract the field access (e.g. `base.get('fn')`) and wrap it in a
+          // PyFunctionExprBuilder to generate the Python function call syntax
+          // `base.get('fn')(...)`.
+          PyFunctionExprBuilder builder =
+              new PyFunctionExprBuilder(
+                  genCodeForLiteralKeyAccess(
+                      containerExpr, methodCallNode.getMethodName().identifier()));
+          for (ExprNode param : methodCallNode.getParams()) {
+            builder.addArg(visit(param));
+          }
+          return builder.asPyExpr().getText();
       }
     } else if (method instanceof SoySourceFunctionMethod) {
       SoySourceFunction function = ((SoySourceFunctionMethod) method).getImpl();

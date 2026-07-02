@@ -806,10 +806,18 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return base.transform(
               nullSafe,
               (baseExpr) -> genCodeForBind(baseExpr, visit(methodCallNode.getParam(0)), baseType));
+        case INVOKE_FUNCTION_PROPERTY:
+          // Compiles a dynamic function property invocation in JS (e.g. `$myRecord.fn()`).
+          // We compile this down to a standard JavaScript property access and call:
+          // `base.fn(...)`. FieldAccess.call handles exactly this.
+          return base.dotAccess(
+              FieldAccess.call(
+                  methodCallNode.getMethodName().identifier(),
+                  methodCallNode.getParams().stream().map(this::visit).collect(toImmutableList())),
+              nullSafe);
       }
       throw new AssertionError(builtinMethod);
-    } else if (soyMethod instanceof SoySourceFunctionMethod) {
-      SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) soyMethod;
+    } else if (soyMethod instanceof SoySourceFunctionMethod sourceMethod) {
 
       return base.functionCall(
           nullSafe,
