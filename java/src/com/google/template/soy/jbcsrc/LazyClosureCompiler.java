@@ -700,14 +700,14 @@ final class LazyClosureCompiler {
       switch (renderUnit.getContentKind()) {
         case HTML:
         case HTML_ELEMENT:
-          return false;
         case TRUSTED_RESOURCE_URI:
         case ATTRIBUTES:
         case TEXT:
         case CSS:
         case JS:
         case URI:
-          return true;
+          // TODO(user): Just testing for now...
+          return false;
       }
       throw new AssertionError("unreachable");
     }
