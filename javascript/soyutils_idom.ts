@@ -51,9 +51,53 @@ import {
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
 
-const defaultIdomRenderer: IncrementalDomRendererImpl =
-  new IncrementalDomRendererImpl();
-const htmlToStringRenderer = new IncrementalDomRendererImpl();
+interface ProxyConstructor {
+  new <T extends object, TOut extends object>(
+    target: T,
+    handler: {
+      get?(target: T, p: string | symbol, receiver: object): unknown;
+      getPrototypeOf?(target: T): object | null;
+    },
+  ): TOut;
+}
+declare var Proxy: ProxyConstructor;
+
+interface Reflect {
+  get(target: object, propertyKey: string | symbol, receiver?: object): unknown;
+}
+declare var Reflect: Reflect;
+
+let defaultIdomRendererInstance: IncrementalDomRendererImpl | undefined;
+const defaultIdomRenderer: IncrementalDomRendererImpl = new Proxy(
+  {} as object,
+  {
+    get(target: object, prop: string | symbol, receiver: object) {
+      if (!defaultIdomRendererInstance) {
+        defaultIdomRendererInstance = new IncrementalDomRendererImpl();
+      }
+      return Reflect.get(defaultIdomRendererInstance, prop, receiver);
+    },
+    getPrototypeOf(target: object) {
+      return IncrementalDomRendererImpl.prototype;
+    },
+  },
+);
+
+let htmlToStringRendererInstance: IncrementalDomRendererImpl | undefined;
+const htmlToStringRenderer: IncrementalDomRendererImpl = new Proxy(
+  {} as object,
+  {
+    get(target: object, prop: string | symbol, receiver: object) {
+      if (!htmlToStringRendererInstance) {
+        htmlToStringRendererInstance = new IncrementalDomRendererImpl();
+      }
+      return Reflect.get(htmlToStringRendererInstance, prop, receiver);
+    },
+    getPrototypeOf(target: object) {
+      return IncrementalDomRendererImpl.prototype;
+    },
+  },
+);
 
 const NODE_PART = '<?child-node-part?><?/child-node-part?>';
 
