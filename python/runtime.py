@@ -427,6 +427,17 @@ def list_indexof(l, item, start_index=0):
   return -1
 
 
+def list_lastindexof(l, item, start_index=None):
+  """Equivalent getting the last index of `item in l` but using soy's equality algorithm."""
+  if start_index is None or start_index >= len(l):
+    start_index = len(l) - 1
+  clamped_start_index = clamp_list_start_index(l, start_index)
+  for i in range(clamped_start_index, -1, -1):
+    if strict_eq(l[i], item):
+      return i
+  return -1
+
+
 def strict_eq(first, second):
   """An equality function that handles JS primitive types as primitives."""
   if (
