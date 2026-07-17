@@ -51,9 +51,69 @@ import {
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
 
-const defaultIdomRenderer: IncrementalDomRendererImpl =
-  new IncrementalDomRendererImpl();
-const htmlToStringRenderer = new IncrementalDomRendererImpl();
+interface ProxyConstructor {
+  new <T extends object, TOut extends object>(
+    target: T,
+    handler: {
+      get?(target: T, p: string | symbol, receiver: object): unknown;
+      set?(
+        target: T,
+        p: string | symbol,
+        value: unknown,
+        receiver: object,
+      ): boolean;
+      getPrototypeOf?(target: T): object | null;
+      has?(target: T, p: string | symbol): boolean;
+    },
+  ): TOut;
+}
+declare var Proxy: ProxyConstructor;
+
+interface Reflect {
+  get(target: object, propertyKey: string | symbol, receiver?: object): unknown;
+  set(target: object, propertyKey: string | symbol, value: unknown): boolean;
+  has(target: object, propertyKey: string | symbol): boolean;
+}
+declare var Reflect: Reflect;
+
+function createRendererProxy(
+  getInstance: () => IncrementalDomRendererImpl,
+): IncrementalDomRendererImpl {
+  return new Proxy({} as object, {
+    get(target: object, prop: string | symbol, receiver: object) {
+      return Reflect.get(getInstance(), prop, receiver);
+    },
+    set(target: object, prop: string | symbol, value: unknown) {
+      return Reflect.set(getInstance(), prop, value);
+    },
+    getPrototypeOf(target: object) {
+      return IncrementalDomRendererImpl.prototype;
+    },
+    has(target: object, prop: string | symbol) {
+      return Reflect.has(getInstance(), prop);
+    },
+  }) as IncrementalDomRendererImpl;
+}
+
+let defaultIdomRendererInstance: IncrementalDomRendererImpl | undefined;
+const defaultIdomRenderer: IncrementalDomRendererImpl = createRendererProxy(
+  () => {
+    if (!defaultIdomRendererInstance) {
+      defaultIdomRendererInstance = new IncrementalDomRendererImpl();
+    }
+    return defaultIdomRendererInstance;
+  },
+);
+
+let htmlToStringRendererInstance: IncrementalDomRendererImpl | undefined;
+const htmlToStringRenderer: IncrementalDomRendererImpl = createRendererProxy(
+  () => {
+    if (!htmlToStringRendererInstance) {
+      htmlToStringRendererInstance = new IncrementalDomRendererImpl();
+    }
+    return htmlToStringRendererInstance;
+  },
+);
 
 const NODE_PART = '<?child-node-part?><?/child-node-part?>';
 
