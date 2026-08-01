@@ -237,6 +237,9 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     // we can tag the element. in SSR, we do best effort guessing using
     // child nodes.
     if (!el || el.__hasBeenRendered || el.hasChildNodes()) {
+      if (el) {
+        el.__hasBeenRendered = true;
+      }
       this.skip();
       // And exit its node so that we will continue with the next node.
       this.close();
