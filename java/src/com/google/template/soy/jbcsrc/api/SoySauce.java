@@ -155,6 +155,13 @@ public interface SoySauce {
     @CanIgnoreReturnValue
     Renderer setPluginInstances(Map<String, ? extends Supplier<Object>> pluginInstances);
 
+    /**
+     * Overrides plugin instances associated with the SoySauce instance for a given renderer, useful
+     * in cases where you want separate instance of a soy plugin for different soy renderers.
+     */
+    @CanIgnoreReturnValue
+    Renderer overridePluginInstances(Map<String, ? extends Supplier<Object>> newPluginInstances);
+
     /** Configures the {@code {css ..}} renaming map. */
     @CanIgnoreReturnValue
     Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap);
