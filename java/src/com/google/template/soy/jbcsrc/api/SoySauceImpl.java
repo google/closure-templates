@@ -86,9 +86,8 @@ public final class SoySauceImpl implements SoySauce {
     ImmutableMap.Builder<String, SoyJavaPrintDirective> soyJavaPrintDirectives =
         ImmutableMap.builder();
     for (SoyPrintDirective printDirective : printDirectives) {
-      if (printDirective instanceof SoyJavaPrintDirective) {
-        soyJavaPrintDirectives.put(
-            printDirective.getName(), (SoyJavaPrintDirective) printDirective);
+      if (printDirective instanceof SoyJavaPrintDirective soyJavaPrintDirective) {
+        soyJavaPrintDirectives.put(printDirective.getName(), soyJavaPrintDirective);
       }
     }
     this.printDirectives = soyJavaPrintDirectives.buildOrThrow();

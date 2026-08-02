@@ -136,14 +136,14 @@ final class SoyMsgIdComputer {
 
     for (SoyMsgPart msgPart : msgParts) {
 
-      if (msgPart instanceof SoyMsgRawTextPart) {
-        msgStrSb.append(((SoyMsgRawTextPart) msgPart).getRawText());
+      if (msgPart instanceof SoyMsgRawTextPart rawTextPart) {
+        msgStrSb.append(rawTextPart.getRawText());
 
-      } else if (msgPart instanceof SoyMsgPlaceholderPart) {
+      } else if (msgPart instanceof SoyMsgPlaceholderPart placeholderPart) {
         if (doUseBracedPhs) {
           msgStrSb.append('{');
         }
-        msgStrSb.append(((SoyMsgPlaceholderPart) msgPart).getPlaceholderName());
+        msgStrSb.append(placeholderPart.getPlaceholderName());
         if (doUseBracedPhs) {
           msgStrSb.append('}');
         }
