@@ -448,12 +448,21 @@ function isTruthy(expr: unknown): boolean {
   return !!expr;
 }
 
+interface SoyIdomSlotPatcher extends IdomFunction {
+  __isIdomSlotPatcher: boolean;
+  __hasContent: boolean;
+}
+
 let inFalsinessRendererDepth = 0;
 function isTruthyNonEmpty(expr: unknown): boolean {
   if (!expr) return false;
 
   // idom callbacks.
   if ((expr as IdomFunction).isInvokableFn) {
+    if ((expr as SoyIdomSlotPatcher).__isIdomSlotPatcher) {
+      return (expr as SoyIdomSlotPatcher).__hasContent;
+    }
+
     const renderer = new FalsinessRenderer();
     try {
       inFalsinessRendererDepth++;
