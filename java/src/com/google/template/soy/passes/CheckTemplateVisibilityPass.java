@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
@@ -26,7 +27,7 @@ import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.Visibility;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 /**
@@ -72,9 +73,15 @@ final class CheckTemplateVisibilityPass implements CompilerFileSetPass {
   }
 
   private static boolean isVisible(SoyFileNode calledFrom, TemplateMetadata callee) {
-    // The only visibility level that this pass currently cares about is PRIVATE.
-    // Templates are visible if they are not private or are defined in the same file.
-    return callee.getVisibility() != Visibility.PRIVATE
-        || callee.getSourceLocation().getFilePath().equals(calledFrom.getFilePath());
+    return switch (callee.getVisibility()) {
+      case PUBLIC -> true;
+      case PRIVATE -> callee.getSourceLocation().getFilePath().equals(calledFrom.getFilePath());
+      case PACKAGE ->
+          isSamePackage(callee.getSourceLocation().getFilePath(), calledFrom.getFilePath());
+    };
+  }
+
+  private static boolean isSamePackage(SourceFilePath p1, SourceFilePath p2) {
+    return Path.of(p1.path()).getParent().equals(Path.of(p2.path()).getParent());
   }
 }
