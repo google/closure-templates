@@ -781,6 +781,21 @@ public class BytecodeCompilerTest {
   }
 
   @Test
+  public void testFunctionPropertyCall() {
+    assertThatFile(
+            "{namespace ns}",
+            "{extern MathAbs: (a: int) => int}",
+            "  {javaimpl class='java.lang.Math' method='abs' params='int' return='int' /}",
+            "{/extern}",
+            "",
+            "{template foo}",
+            "  {let $myRecord: record(fn: MathAbs) /}",
+            "  {$myRecord.fn(-5)}",
+            "{/template}")
+        .rendersAs("5");
+  }
+
+  @Test
   public void testInjectParam() {
     assertThatTemplateBody("{@inject foo : int }", "{$foo + 1}")
         .rendersAs("2", ImmutableMap.of(), ImmutableMap.of("foo", 1))
@@ -931,7 +946,7 @@ public class BytecodeCompilerTest {
 
   @Test
   public void testBasicFunctionality_privateTemplate() {
-    // make sure you can't access factories for priate templates
+    // make sure you can't access factories for private templates
     CompiledTemplates templates =
         TemplateTester.compileFile(
             "{namespace ns}{template foo visibility=\"private\"}hello world{/template}");

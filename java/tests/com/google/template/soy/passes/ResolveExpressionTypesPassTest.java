@@ -252,6 +252,35 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
+  public void testInvokeFunctionProperty() {
+    assertTypes("{@param pa: [f: (p: any) => int]}", "{assertType('int', $pa.f(1))}");
+  }
+
+  @Test
+  public void testInvokeFunctionPropertyWithUnknownAndAny() {
+    assertTypes(
+        "{@param pa: ?}",
+        "{@param pc: [f: ?]}",
+        "{@param pd: [f: any]}",
+        "{assertType('?', $pa.f(1))}",
+        "{assertType('?', $pc.f(1))}",
+        "{assertType('?', $pd.f(1))}");
+  }
+
+  @Test
+  public void testInvokeFunctionPropertyError() {
+    assertResolveExpressionTypesFails(
+        "Method 'f' does not exist on type 'any'.",
+        constructFileSource("{@param pa: any}", "{$pa.f(1)}"));
+    assertResolveExpressionTypesFails(
+        "Method 'f' called with parameter types (string) but expected (int).",
+        constructFileSource("{@param pa: [f: (p: int) => int]}", "{$pa.f('a')}"));
+    assertResolveExpressionTypesFails(
+        "Method 'f' called with 2 parameter(s) but expected 1.",
+        constructFileSource("{@param pa: [f: (p: int) => int]}", "{$pa.f(1, 2)}"));
+  }
+
+  @Test
   public void testDataRefTypesWithUnknown() {
     // Test that data with the 'unknown' type is allowed to function as a map or list.
     assertTypes(

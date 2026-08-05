@@ -2007,7 +2007,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         node.setType(fieldImpl.getReturnType());
         node.setSoyMethod(fieldImpl);
       } else {
-        node.setType(getFieldType(baseType, node.getFieldName(), node.getAccessSourceLocation()));
+        node.setType(
+            getFieldType(
+                baseType,
+                node.getFieldName(),
+                node.getAccessSourceLocation(),
+                /* reportErrors= */ true));
       }
       tryApplySubstitution(node);
     }
@@ -2046,10 +2051,37 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       }
 
       SoyType baseType = node.getBaseType(nullSafe).getEffectiveType();
+
       SoyMethod method = resolveMethodFromBaseType(node, baseType);
 
       if (method == null) {
         node.setType(UnknownType.getInstance());
+        return;
+      }
+
+      // If we resolved this method to a FunctionPropertyMethod, it means the user is invoking
+      // a function stored as a field on a record. We need to enforce type checking on the arguments
+      // passed to the function property, just as we do for regular function calls.
+      if (method instanceof FunctionPropertyMethod functionPropertyMethod) {
+        FunctionType functionType = functionPropertyMethod.functionType;
+        if (functionType != null) {
+          for (int i = 0; i < node.numParams(); i++) {
+            SoyType expectedType =
+                functionType
+                    .getParameters()
+                    .get(Math.min(i, functionType.getParameters().size() - 1))
+                    .getType();
+            if (functionType.isVarArgs() && i >= functionType.getParameters().size() - 1) {
+              if (expectedType instanceof ListType listType) {
+                expectedType = listType.getElementType();
+              }
+            }
+            maybeCoerceType(node.getParam(i), expectedType);
+          }
+        }
+        node.setSoyMethod(BuiltinMethod.INVOKE_FUNCTION_PROPERTY);
+        node.setType(
+            functionType != null ? functionType.getReturnType() : UnknownType.getInstance());
         return;
       }
 
@@ -2210,8 +2242,35 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
       List<SoyType> argTypes = node.getParams().stream().map(ExprNode::getType).collect(toList());
 
       // This contains all methods that match name and base type.
-      ImmutableList<? extends SoyMethod> matchNameAndType =
-          methodRegistry.matchForNameAndBase(methodName, baseType);
+      List<SoyMethod> matchNameAndType =
+          new ArrayList<>(methodRegistry.matchForNameAndBase(methodName, baseType));
+
+      // In Soy, UNKNOWN (`?`) is the dynamic type where type checking is disabled. This means we
+      // must allow any method to be called dynamically, falling back to a FunctionPropertyMethod.
+      //
+      // Note that unlike TypeScript, Soy's ANY (`any`) is the safe top type. Therefore, it will
+      // NOT fall back here, and the compiler will correctly throw a compilation error when a method
+      // invocation is made on it.
+      if (baseType.getKind() == SoyType.Kind.UNKNOWN) {
+        if (matchNameAndType.isEmpty()) {
+          return new FunctionPropertyMethod(UnknownType.getInstance());
+        }
+      }
+
+      // Support invoking function properties directly: e.g. `$myRecord.fn()`
+      // The AST parses this syntax initially as a MethodCallNode (trying to call a built-in method
+      // on the record). If `fn` is actually a field on the record that stores a function (or
+      // ?/any), we intercept it here and resolve it as a FunctionPropertyMethod so it gets compiled
+      // as a dynamic function call instead of throwing a "method not found" error.
+      if (baseType instanceof RecordType) {
+        SoyType fieldType = getFieldType(baseType, methodName, srcLoc, /* reportErrors= */ false);
+        if (fieldType != null
+            && SoyTypes.isKindOrUnionOfKinds(
+                fieldType,
+                ImmutableSet.of(SoyType.Kind.FUNCTION, SoyType.Kind.UNKNOWN, SoyType.Kind.ANY))) {
+          matchNameAndType.add(new FunctionPropertyMethod(fieldType));
+        }
+      }
 
       // Subset of previous that also matches arg count.
       List<SoyMethod> andMatchArgCount =
@@ -2324,6 +2383,16 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           return ImmutableList.of(arg);
         }
         return sourceMethod.getParamTypes();
+      } else if (method instanceof FunctionPropertyMethod functionPropertyMethod) {
+        // For dynamic function properties (e.g., $myRecord.fn()), extract the parameter types
+        // from its FunctionType so they can be used for argument validation.
+        FunctionType functionType = functionPropertyMethod.functionType;
+        if (functionType == null) {
+          return ImmutableList.of();
+        }
+        return functionType.getParameters().stream()
+            .map(FunctionType.Parameter::getType)
+            .collect(toImmutableList());
       }
       return ImmutableList.of();
     }
@@ -2336,6 +2405,42 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           if (!allowedTypes
               .get(min(i, allowedTypes.size() - 1))
               .isAssignableFromStrict(argTypes.get(i))) {
+            return false;
+          }
+        }
+        return true;
+      } else if (method instanceof FunctionPropertyMethod functionPropertyMethod) {
+        // Verify that the provided arguments match the expected parameter types of the
+        // function property, making sure to handle varargs correctly if the function has them.
+        FunctionType functionType = functionPropertyMethod.functionType;
+        if (functionType == null) {
+          // If the function type is not explicitly defined (e.g., it's a dynamic `any` type),
+          // we cannot validate arguments, so we conservatively assume they are valid.
+          return true;
+        }
+
+        ImmutableList<FunctionType.Parameter> params = functionType.getParameters();
+        for (int i = 0; i < argTypes.size(); i++) {
+          // Fetch the expected type for the current argument. If we have more arguments
+          // than parameters, we clamp to the last parameter's type (used for varargs).
+          SoyType expectedType = params.get(Math.min(i, params.size() - 1)).getType();
+
+          // If this is a varargs function and we are evaluating the vararg parameter itself
+          // or any subsequent arguments...
+          if (functionType.isVarArgs() && i >= params.size() - 1) {
+            // The vararg parameter is typically typed as a List (e.g., list<string>),
+            // but the individual arguments passed in will be of the element type (e.g., string).
+            if (expectedType instanceof ListType listType) {
+              expectedType = listType.getElementType();
+            }
+          }
+
+          // Verify if the argument's type can be assigned to the expected parameter type.
+          // We skip validation if the expected type is implicit, or if the argument type
+          // is completely unknown. We use loose assignability for broader compatibility.
+          if (expectedType != ImplicitType.getInstance()
+              && !expectedType.isAssignableFromLoose(argTypes.get(i))
+              && argTypes.get(i) != UnknownType.getInstance()) {
             return false;
           }
         }
@@ -2814,7 +2919,24 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             errorReporter.report(node.getFunctionNameLocation(), INCORRECT_ARG_STYLE);
             node.setSoyFunction(FunctionNode.UNRESOLVED);
           } else {
-            VarDefn defn = ((VarRefNode) node.getNameExpr()).getDefnDecl();
+            // Attempt to resolve the definition of the function being called.
+            // If the function is called via a simple variable reference (e.g., `$myFunc()`),
+            // we can extract its definition declaration.
+            VarDefn defn =
+                node.getNameExpr() instanceof VarRefNode varRefNode
+                    ? varRefNode.getDefnDecl()
+                    : null;
+
+            if (defn == null) {
+              // If there is no explicit variable definition (for example, if the function
+              // is being called from an expression or property like `$myRecord.fn()`), we
+              // treat this as a dynamic function pointer invocation.
+              node.setSoyFunction(FunctionNode.FUNCTION_POINTER);
+              // We can still infer the return type of the call from the function's type signature.
+              node.setType(SoyTypes.getFunctionReturnType(nameExprType));
+              return;
+            }
+
             List<? extends Extern> externTypes;
 
             if (defn.kind() == VarDefn.Kind.SYMBOL && ((SymbolVar) defn).isImported()) {
@@ -3238,25 +3360,31 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
      *
      * @param baseType The base type.
      * @param fieldName The name of the field.
-     * @param sourceLocation The source location of the expression
-     * @return The type of the field.
+     * @param sourceLocation The source location of the expression.
+     * @param reportErrors Whether to report errors for missing or invalid fields.
+     * @return The type of the field, or {@code null} if it doesn't exist and {@code reportErrors}
+     *     is false.
      */
+    @Nullable
     private SoyType getFieldType(
-        SoyType baseType, String fieldName, SourceLocation sourceLocation) {
+        SoyType baseType, String fieldName, SourceLocation sourceLocation, boolean reportErrors) {
       SoyType effectiveType = baseType.getEffectiveType();
-      switch (effectiveType.getKind()) {
-        case UNKNOWN -> {
-          // If we don't know anything about the base type, then make no assumptions
-          // about the field type.
-          return UnknownType.getInstance();
-        }
+      return switch (effectiveType.getKind()) {
+        case UNKNOWN ->
+            // If we don't know anything about the base type, then make no assumptions
+            // about the field type. Any access is permitted, and the result is unknown.
+            UnknownType.getInstance();
 
         case RECORD -> {
+          // Records have strongly-typed fields. We look up the exact member by name.
           RecordType recordType = (RecordType) effectiveType;
           SoyType fieldType = recordType.getMemberType(fieldName);
           if (fieldType != null) {
-            return fieldType;
-          } else {
+            // Found the field directly on the record.
+            yield fieldType;
+          } else if (reportErrors) {
+            // The field was missing. We provide a helpful "Did you mean ...?" error
+            // if there's a similarly named field to guide the user.
             String extraErrorMessage =
                 SoyErrors.getDidYouMeanMessage(recordType.getMemberNames(), fieldName);
             errorReporter.report(
@@ -3265,48 +3393,81 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                 fieldName,
                 baseType,
                 extraErrorMessage);
-            return UnknownType.getInstance();
+            // Return unknown type to prevent cascading type errors.
+            yield UnknownType.getInstance();
           }
+          // If we aren't reporting errors (e.g. probing for existence), just yield null.
+          yield null;
         }
 
         case LEGACY_OBJECT_MAP -> {
-          errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD, baseType);
-          return UnknownType.getInstance();
+          // Dot access (e.g., map.field) is deliberately unsupported on legacy object maps
+          // to encourage migration to records or using bracket access (e.g., map['field']).
+          if (reportErrors) {
+            errorReporter.report(
+                sourceLocation, DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD, baseType);
+            yield UnknownType.getInstance();
+          }
+          yield null;
         }
 
         case UNION -> {
-          // If it's a union, then do the field type calculation for each member of
-          // the union and combine the result.
+          // If the base type is a union (e.g. `RecordA | RecordB`), we must compute the field
+          // type for *every* member of the union. The field must exist on all non-nullish members.
           ErrorReporter.Checkpoint cp = errorReporter.checkpoint();
           UnionType unionType = (UnionType) effectiveType;
           List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
+
           for (SoyType unionMember : unionType.getMembers()) {
+            // Skip nullish types.
             // TODO:(b/246982549): Remove this if-statement, as is this means you can freely
             // dereference nullish types without the compiler complaining.
             if (SoyTypes.isNullOrUndefined(unionMember)) {
               continue;
             }
-            SoyType fieldType = getFieldType(unionMember, fieldName, sourceLocation);
-            // If this member's field type resolved to an error, bail out to avoid spamming
-            // the user with multiple error messages for the same line.
-            if (errorReporter.errorsSince(cp)) {
-              return fieldType;
+
+            // Recursively get the field type for this specific union member.
+            SoyType fieldType = getFieldType(unionMember, fieldName, sourceLocation, reportErrors);
+
+            // If this member's field type couldn't be resolved (and we are failing silently),
+            // bail out entirely.
+            if (fieldType == null) {
+              yield null; // Silent failure
             }
+
+            // If checking this member produced a new error, yield the error type and stop
+            // to avoid spamming the user with multiple errors for the same dot access.
+            if (reportErrors && errorReporter.errorsSince(cp)) {
+              yield fieldType;
+            }
+
+            // Collect the successfully resolved field type for this member.
             fieldTypes.add(fieldType);
           }
-          return computeLowestCommonType(typeRegistry, fieldTypes);
+
+          if (fieldTypes.isEmpty()) {
+            yield null;
+          }
+
+          // The final type is the lowest common denominator of the field types
+          // from all the union members.
+          yield computeLowestCommonType(typeRegistry, fieldTypes);
         }
 
-        case TEMPLATE_TYPE, PROTO_TYPE, PROTO_EXTENSION -> {
-          // May not be erased if other errors are present.
-          return UnknownType.getInstance();
-        }
+        case TEMPLATE_TYPE, PROTO_TYPE, PROTO_EXTENSION ->
+            // These types do not support direct dot access for fields.
+            // (e.g. you can't do myProto.field directly in Soy without a method call).
+            reportErrors ? UnknownType.getInstance() : null;
 
         default -> {
-          emitDefaultFieldNotFoundError(baseType, fieldName, sourceLocation);
-          return UnknownType.getInstance();
+          // For all other types (primitives, lists, etc.), dot access is invalid.
+          if (reportErrors) {
+            emitDefaultFieldNotFoundError(baseType, fieldName, sourceLocation);
+            yield UnknownType.getInstance();
+          }
+          yield null;
         }
-      }
+      };
     }
 
     private void emitDefaultFieldNotFoundError(
