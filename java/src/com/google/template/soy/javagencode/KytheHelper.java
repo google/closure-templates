@@ -27,16 +27,32 @@ import javax.annotation.Nullable;
 /** Helper for constructing GeneratedCodeInfo proto */
 public class KytheHelper {
 
+  // TODO(b/490663645): Remove DEFAULT_COMMENT_PREFIX once all users migrated to
+  // GENERATED_CODE_INFO_COMMENT_PREFIX and inline GENERATED_CODE_INFO_COMMENT_PREFIX back.
+  public static final String DEFAULT_COMMENT_PREFIX = "kythe-inline-metadata";
+  public static final String GENERATED_CODE_INFO_COMMENT_PREFIX =
+      "kythe.proto.metadata.GeneratedCodeInfo";
+
   private final String kytheCorpus;
   private final SourceFilePath sourceFilePath;
+  private final String commentPrefix;
 
   public KytheHelper(SourceFilePath sourceFilePath) {
-    this("", sourceFilePath);
+    this(sourceFilePath, DEFAULT_COMMENT_PREFIX);
+  }
+
+  public KytheHelper(SourceFilePath sourceFilePath, String commentPrefix) {
+    this("", sourceFilePath, commentPrefix);
   }
 
   public KytheHelper(String kytheCorpus, SourceFilePath sourceFilePath) {
+    this(kytheCorpus, sourceFilePath, DEFAULT_COMMENT_PREFIX);
+  }
+
+  public KytheHelper(String kytheCorpus, SourceFilePath sourceFilePath, String commentPrefix) {
     this.kytheCorpus = kytheCorpus;
     this.sourceFilePath = Preconditions.checkNotNull(sourceFilePath);
+    this.commentPrefix = Preconditions.checkNotNull(commentPrefix);
   }
 
   @Nullable
