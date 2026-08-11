@@ -247,6 +247,15 @@ startIndex, it returns the first index greater than or equal to startIndex. This
 method implements JavaScript semantics, comparing elements with `==`. Therefore
 it only works on lists of primitive values.
 
+<span id="list-any_lastIndexOf"></span>
+
+### `list.lastIndexOf(value[, startIndex])` {#listLastIndexOf}
+
+Return the last index of the value in list, or -1. Given a value for
+startIndex, it returns the last index less than or equal to startIndex. This
+method implements JavaScript semantics, comparing elements with `==`. Therefore
+it only works on lists of primitive values.
+
 ### `list.slice([from, to])` {#list-any_slice}
 
 Returns a sublist of a list from index `from` inclusive to index `to` exclusive.
