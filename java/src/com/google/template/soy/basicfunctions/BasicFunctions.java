@@ -56,6 +56,7 @@ public class BasicFunctions {
         new ListFlatMethod(),
         new ListIncludesFunction(),
         new ListIndexOfFunction(),
+        new ListLastIndexOfFunction(),
         new ListReverseMethod(),
         new ListSliceMethod(),
         new ListUniqMethod(),

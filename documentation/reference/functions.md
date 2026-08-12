@@ -83,6 +83,7 @@ Converts a [legacy object map](types.md#legacy_object_map) to an equivalent
 Use this to create lists containing arithmetic progressions. It is most often
 used in [indexed for loops](control-flow.md#for-indexed). If the `step` argument
 is omitted, it defaults to 1. If the `start` argument is omitted, it defaults to
+
 0. The full form returns a list of plain integers `[start, start + step, start +
 2 * step, ...]`.
 
@@ -246,6 +247,15 @@ Return the first index of the value in list, or -1. Given a value for
 startIndex, it returns the first index greater than or equal to startIndex. This
 method implements JavaScript semantics, comparing elements with `==`. Therefore
 it only works on lists of primitive values.
+
+<span id="list-any_lastIndexOf"></span>
+
+### `list.lastIndexOf(value[, startIndex])` {#listLastIndexOf}
+
+Return the last index of the value in list, or -1. Given a value for startIndex,
+it returns the last index less than or equal to startIndex. This method
+implements JavaScript semantics, comparing elements with `==`. Therefore it only
+works on lists of primitive values.
 
 ### `list.slice([from, to])` {#list-any_slice}
 
