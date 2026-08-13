@@ -2068,6 +2068,17 @@ const $$listIndexOf = function(list, val, startIndex = 0) {
 };
 
 /**
+ * Returns the last index of val in list or -1
+ * @param {!ReadonlyArray<?>} list
+ * @param {*} val
+ * @param {number=} startIndex
+ * @return {number}
+ */
+const $$listLastIndexOf = function(list, val, startIndex = list.length - 1) {
+  return list.lastIndexOf(val, startIndex);
+};
+
+/**
  * Reverses a list and returns it. The original list passed is unaffected.
  * @param {!ReadonlyArray<T>} list
  * @return {!Array<T>}
@@ -3104,6 +3115,7 @@ exports = {
   $$truncate,
   $$listContains,
   $$listIndexOf,
+  $$listLastIndexOf,
   $$listReverse,
   $$listUniq,
   $$listFlat,

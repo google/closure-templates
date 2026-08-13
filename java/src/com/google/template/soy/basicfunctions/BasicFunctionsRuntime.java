@@ -167,6 +167,21 @@ public final class BasicFunctionsRuntime {
     return indexInSubList == -1 ? -1 : indexInSubList + clampedStartIndex;
   }
 
+  /** Returns the last index of value in list or -1. */
+  public static int listLastIndexOf(
+      List<? extends SoyValueProvider> list, SoyValue value, NumberData startIndex) {
+    int clampedStartIndex = clampListIndex(list, startIndex);
+    if (clampedStartIndex == list.size()) {
+      clampedStartIndex = list.size() - 1;
+    }
+    for (int i = clampedStartIndex; i >= 0; i--) {
+      if (list.get(i).resolve().equals(value)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   /** Joins the list elements by a separator. */
   @Nonnull
   public static String join(List<? extends SoyValueProvider> list, String separator) {
