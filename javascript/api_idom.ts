@@ -609,30 +609,33 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
       return element!;
     };
 
-    if (isTemplateCloning) {
-      soyElement.syncStateFromData(data);
-      soyElement.renderInternal(this, data);
-      return;
-    }
+    try {
+      if (isTemplateCloning) {
+        soyElement.syncStateFromData(data);
+        soyElement.renderInternal(this, data);
+        return;
+      }
 
-    if (!element) {
-      // Template still needs to execute in order to trigger logging.
-      template.call(soyElement, this, data);
-      return;
-    }
-    const untypedElement = getSoyUntyped(element);
-    if (untypedElement instanceof elementClassCtor) {
-      soyElement = untypedElement;
-    }
-    const maybeSkip = soyElement.handleSoyElementRuntime(element, data);
-    soyElement.template = template.bind(soyElement);
-    if (maybeSkip) {
-      this.skip();
-      this.close();
+      if (!element) {
+        // Template still needs to execute in order to trigger logging.
+        template.call(soyElement, this, data);
+        return;
+      }
+      const untypedElement = getSoyUntyped(element);
+      if (untypedElement instanceof elementClassCtor) {
+        soyElement = untypedElement;
+      }
+      const maybeSkip = soyElement.handleSoyElementRuntime(element, data);
+      soyElement.template = template.bind(soyElement);
+      if (maybeSkip) {
+        this.skip();
+        this.close();
+        return;
+      }
+      soyElement.renderInternal(this, data);
+    } finally {
       this.openInternal = oldOpen;
-      return;
     }
-    soyElement.renderInternal(this, data);
   }
 }
 
