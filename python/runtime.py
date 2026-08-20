@@ -794,7 +794,7 @@ def build_style_value(*values):
 
 def filter_style_part(part):
   """filters each css declaration."""
-  if isinstance(part, str) and part.find(':') != 1:
+  if isinstance(part, str) and part.find(':') != -1:
     name, value = part.split(':', 1)
     if re.search(r'^\s*[\w-]+\s*$', name):
       return (
