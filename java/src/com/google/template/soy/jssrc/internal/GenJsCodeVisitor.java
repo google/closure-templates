@@ -298,7 +298,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   @Override
   protected void visitSoyFileNode(SoyFileNode node) {
-    KytheHelper kytheHelper = new KytheHelper(node.getFilePath());
+    KytheHelper kytheHelper =
+        new KytheHelper(node.getFilePath(), KytheHelper.GENERATED_CODE_INFO_COMMENT_PREFIX);
     sourceMapHelper = new SourceMapHelper(node, jsSrcOptions.sourceMapMode());
     jsCodeBuilder = new JsCodeBuilder(kytheHelper, sourceMapHelper);
 
