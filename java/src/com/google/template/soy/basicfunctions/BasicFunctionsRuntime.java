@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.math.DoubleMath;
@@ -664,6 +665,18 @@ public final class BasicFunctionsRuntime {
       count++;
     }
     return builder.build();
+  }
+
+  @Nonnull
+  public static String strRepeat(String str, NumberData count) {
+    int repeatCount = (int) count.floatValue();
+    if (repeatCount < 0) {
+      throw new IllegalArgumentException("Invalid count value: " + repeatCount);
+    }
+    if (repeatCount == 0 || str.isEmpty()) {
+      return "";
+    }
+    return Strings.repeat(str, repeatCount);
   }
 
   @Nonnull

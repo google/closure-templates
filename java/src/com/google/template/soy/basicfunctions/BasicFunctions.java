@@ -98,6 +98,7 @@ public class BasicFunctions {
         new StrIncludesFunction(),
         new StrIndexOfFunction(),
         new StrLenFunction(),
+        new StrRepeatMethod(),
         new StrReplaceAllMethod(),
         new StrSmsUriToUriFunction(),
         new StrSplitMethod(),

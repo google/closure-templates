@@ -699,6 +699,19 @@ def str_ends_with(s, val, length=None):
   return s.endswith(val, 0, int(length))
 
 
+def str_repeat(s, count):
+  """Repeats string s count times."""
+  try:
+    c = int(count)
+  except (ValueError, TypeError) as e:
+    raise ValueError(f'Invalid count value: {count}') from e
+  if c < 0:
+    raise ValueError(f'Invalid count value: {c}')
+  if c == 0 or not s:
+    return ''
+  return s * c
+
+
 def str_replace_all(s, match, token):
   """Replaces all occurrences in s of match with token."""
   return s.replace(match, token)
