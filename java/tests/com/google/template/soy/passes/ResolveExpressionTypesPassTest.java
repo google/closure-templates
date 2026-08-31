@@ -1479,6 +1479,30 @@ public final class ResolveExpressionTypesPassTest {
   }
 
   @Test
+  public void testImplicitTypeParamCanByNullish() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                """
+                {namespace ns}
+
+                {template t1 kind='text' visibility='private'}
+                  {@param s1: implicit}
+                  {@param s2: implicit}
+                  {assertType('null', $s1)}
+                  {assertType('undefined', $s2)}
+                {/template}
+
+                {template aaa}
+                  {t1(s1: null, s2: undefined)}
+                {/template}
+                """)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
   public void testUndefinedToNullForMigration() {
     assertTypes(
         "{@param s1: string}",
@@ -1644,14 +1668,17 @@ public final class ResolveExpressionTypesPassTest {
 
   /** Traverses the tree and checks all the calls to {@code assertType} */
   private void assertTypes(SoyNode node) {
-    SoyTreeUtils.allFunctionInvocations(node, ASSERT_TYPE_FUNCTION)
-        .forEach(
-            fn -> {
-              StringNode expected = (StringNode) fn.getChild(0);
-              SoyType actualType = fn.getChild(1).getType();
-              assertWithMessage("assertion @ %s", fn.getSourceLocation())
-                  .that(actualType.toString())
-                  .isEqualTo(expected.getValue());
-            });
+    var i = SoyTreeUtils.allFunctionInvocations(node, ASSERT_TYPE_FUNCTION).iterator();
+    if (!i.hasNext()) {
+      throw new AssertionError();
+    }
+    i.forEachRemaining(
+        fn -> {
+          StringNode expected = (StringNode) fn.getChild(0);
+          SoyType actualType = fn.getChild(1).getType();
+          assertWithMessage("assertion @ %s", fn.getSourceLocation())
+              .that(actualType.toString())
+              .isEqualTo(expected.getValue());
+        });
   }
 }

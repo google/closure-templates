@@ -1022,7 +1022,10 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         if (headerVar instanceof TemplateStateVar stateVar) {
           allStateVars.add(stateVar);
         }
-        if (headerVar.getTypeNode() != null && SoyTypes.isNullOrUndefined(headerVar.type())) {
+        TypeNode authoredType = headerVar.getTypeNode();
+        if (authoredType != null
+            && authoredType.isTypeResolved()
+            && SoyTypes.isNullOrUndefined(authoredType.getResolvedType())) {
           errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
         }
         if (!headerVar.hasDefault()) {
