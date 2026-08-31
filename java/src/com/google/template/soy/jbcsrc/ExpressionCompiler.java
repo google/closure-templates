@@ -119,6 +119,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcExternRuntime;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.Names;
@@ -151,11 +152,13 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.MutableListType;
 import com.google.template.soy.types.MutableMapType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.UnknownType;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
@@ -1764,6 +1767,48 @@ final class ExpressionCompiler {
                       baseExpr.checkedCast(BytecodeUtils.TEMPLATE_VALUE_TYPE),
                       recordLiteralAsParamStoreForBind(record)));
             }
+          case INVOKE_FUNCTION_PROPERTY:
+            {
+              // We are compiling a dynamic function property invocation (e.g., `$myRecord.fn()`).
+              // 1. First, we extract the function object from the record at runtime.
+              // 2. We resolve the property to a SoyValue (which will be a JbcSrcFunctionValue).
+              // 3. We invoke the generic .call() interface on that function value.
+              Expression fieldProvider =
+                  MethodRefs.RUNTIME_GET_FIELD_PROVIDER.invoke(
+                      baseExpr.box(), constantRecordProperty(node.getMethodName().identifier()));
+              SoyExpression fieldExpr =
+                  SoyExpression.forSoyValue(
+                      UnknownType.getInstance(), detacher.resolveSoyValueProvider(fieldProvider));
+
+              SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(node.getType());
+
+              FunctionType functionType = null;
+              if (node.getBaseExprChild().getType() instanceof RecordType recordType) {
+                SoyType propertyType = recordType.getMemberType(node.getMethodName().identifier());
+                if (propertyType instanceof FunctionType fType) {
+                  functionType = fType;
+                }
+              }
+
+              Expression obj =
+                  fieldExpr
+                      .checkedCast(FUNCTION_VALUE_TYPE)
+                      .invoke(
+                          MethodRefs.FUNCTION_WITH_RENDER_CONTEXT, parameters.getRenderContext())
+                      .invoke(
+                          MethodRefs.FUNCTION_CALL,
+                          adaptFunctionArgs(functionType, node.getParams()));
+
+              if (BytecodeUtils.isPrimitive(soyReturnType.runtimeType())) {
+                obj = BytecodeUtils.unboxJavaPrimitive(soyReturnType.runtimeType(), obj);
+              } else if (soyReturnType.runtimeType().equals(BytecodeUtils.SOY_VALUE_TYPE)) {
+                obj = JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE.invoke(obj);
+              } else {
+                obj = obj.checkedCast(soyReturnType.runtimeType());
+              }
+
+              return SoyExpression.forRuntimeType(soyReturnType, obj);
+            }
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;
@@ -2043,6 +2088,8 @@ final class ExpressionCompiler {
         //                    relying on MethodHandle.invokeExact.
         if (BytecodeUtils.isPrimitive(soyReturnType.runtimeType())) {
           obj = BytecodeUtils.unboxJavaPrimitive(soyReturnType.runtimeType(), obj);
+        } else if (soyReturnType.runtimeType().equals(BytecodeUtils.SOY_VALUE_TYPE)) {
+          obj = JbcSrcExternRuntime.CONVERT_OBJECT_TO_SOY_VALUE.invoke(obj);
         } else {
           obj = obj.checkedCast(soyReturnType.runtimeType());
         }
@@ -2064,11 +2111,18 @@ final class ExpressionCompiler {
               .checkedSoyCast(node.getType()));
     }
 
-    private Expression adaptFunctionArgs(FunctionType type, List<ExprNode> args) {
+    // The type may be null if the function was stored in an 'any' or '?' type (UNKNOWN).
+    // In that case, we don't know the exact parameter types, so we pass UnknownType
+    // to adaptExternArg, effectively disabling type-specific adaptation.
+    private Expression adaptFunctionArgs(@Nullable FunctionType type, List<ExprNode> args) {
       List<Expression> adaptedArgs = new ArrayList<>(args.size());
       for (int i = 0; i < args.size(); i++) {
         ExprNode param = args.get(i);
-        SoyType paramType = type.getParameters().get(i).getType();
+        SoyType paramType = UnknownType.getInstance();
+        if (type != null) {
+          int index = Math.min(i, type.getParameters().size() - 1);
+          paramType = type.getParameters().get(index).getType();
+        }
         Expression adapted = adaptExternArg(visit(param), paramType);
         if (BytecodeUtils.isPrimitive(adapted.resultType())) {
           adapted = BytecodeUtils.boxJavaPrimitive(adapted);

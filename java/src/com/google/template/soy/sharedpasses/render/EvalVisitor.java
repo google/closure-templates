@@ -746,6 +746,19 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           ParamStore params = ParamStore.fromRecord((SoyRecord) visit(methodNode.getParam(0)));
           return TemplateValue.createWithBoundParameters(
               template.getTemplateName(), ParamStore.merge(template.getBoundParameters(), params));
+        case INVOKE_FUNCTION_PROPERTY:
+          SoyRecord record = (SoyRecord) base;
+          TofuFunctionValue tofuFunction =
+              (TofuFunctionValue)
+                  record.getField(RecordProperty.get(methodNode.getMethodName().identifier()));
+          return visitExtern(
+                  tofuFunction.getImpl(),
+                  tofuFunction.getBoundArgs(),
+                  visitAllTofu(methodNode.getParams()),
+                  methodNode.getType(),
+                  methodNode.getSourceLocation(),
+                  false)
+              .soyValue();
       }
     } else if (method instanceof SoySourceFunctionMethod) {
       SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;

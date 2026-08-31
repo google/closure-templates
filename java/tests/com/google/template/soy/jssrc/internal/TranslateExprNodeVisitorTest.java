@@ -185,4 +185,10 @@ public final class TranslateExprNodeVisitorTest {
     assertThatSoyExpr("unknownJsGlobal('foo.Bar')")
         .generatesCode("/** @suppress {missingRequire} */", "const $tmp = foo.Bar;", "$tmp;");
   }
+
+  @Test
+  public void testInvokeFunctionProperty() {
+    assertThatSoyExpr(expr("$r.fn(1, 2)").withParam("r", "[fn: (a: any, b: any) => any]"))
+        .generatesCode("opt_data.r.fn(1, 2);");
+  }
 }
