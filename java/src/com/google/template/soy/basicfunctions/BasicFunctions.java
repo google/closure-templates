@@ -105,6 +105,8 @@ public class BasicFunctions {
         new StrSubFunction(),
         new StrToAsciiLowerCaseFunction(),
         new StrToAsciiUpperCaseFunction(),
+        new StrToLowerCaseMethod(),
+        new StrToUpperCaseMethod(),
         new StrTrimMethod(),
         new StringListSortMethod(),
         new TanFunction(),

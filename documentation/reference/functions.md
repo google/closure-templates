@@ -83,6 +83,7 @@ Converts a [legacy object map](types.md#legacy_object_map) to an equivalent
 Use this to create lists containing arithmetic progressions. It is most often
 used in [indexed for loops](control-flow.md#for-indexed). If the `step` argument
 is omitted, it defaults to 1. If the `start` argument is omitted, it defaults to
+
 0. The full form returns a list of plain integers `[start, start + step, start +
 2 * step, ...]`.
 
@@ -501,9 +502,9 @@ it will be very easy to break the string (e.g. split an emoji in half).
 
 Returns the lowercase representation of the given string.
 
-NOTE: This function doesn't consider locales when transforming the string and it
-only transforms ASCII characters `A-Z`. Do not use it to lowercase string that
-are localized and/or UNICODE.
+NOTE: This function is deprecated, use [`str.toLowerCase()`](#strToLowerCase).
+`toAsciiLowerCase()` only transforms ASCII characters `A-Z`, so it is incorrect
+on strings that are localized and/or Unicode.
 
 <span id="string_toAsciiUpperCase"></span>
 
@@ -511,9 +512,23 @@ are localized and/or UNICODE.
 
 Returns the uppercase representation of the given string.
 
-NOTE: This function doesn't consider locales when transforming the string and it
-only transforms ASCII characters `a-z`. Do not use it to uppercase string that
-are localized and/or UNICODE.
+NOTE: This function is deprecated, use [`str.toUpperCase()`](#strToUpperCase).
+`toAsciiUpperCase()` only transforms ASCII characters `a-z`, so it is incorrect
+on strings that are localized and/or Unicode.
+
+<span id="string_toLowerCase"></span>
+
+### `str.toLowerCase()` {#strToLowerCase}
+
+Returns the lowercase representation of the given string using Unicode default
+case mappings.
+
+<span id="string_toUpperCase"></span>
+
+### `str.toUpperCase()` {#strToUpperCase}
+
+Returns the uppercase representation of the given string using Unicode default
+case mappings.
 
 ### `strSmsUriToUri(string)` {#strSmsUriToUri}
 

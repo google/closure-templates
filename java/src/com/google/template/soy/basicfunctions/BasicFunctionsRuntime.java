@@ -55,6 +55,8 @@ import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.shared.internal.Sanitizers;
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.util.ULocale;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -672,6 +674,37 @@ public final class BasicFunctionsRuntime {
   @Nonnull
   public static String strTrim(String str) {
     return str.trim();
+  }
+
+  /**
+   * Note that Closure Compiler uses Java String.toLowerCase(Locale.ROOT) on string literals, see
+   * {@code com.google.javascript.jscomp.PeepholeReplaceKnownMethods#tryFoldStringToLowerCase}).
+   *
+   * <p>However there are minor divergences from the Unicode spec (which the current JavaScript
+   * native behavior follows). The ICU4J library does appear to be correct. For example, in this
+   * degenerate case:
+   *
+   * <pre>
+   * | Environment                                    | Result for "ΟΣ’Α".toLowerCase() |
+   * |------------------------------------------------|-------------------------------------|
+   * | Java JDK (Locale.ROOT)                         | "ος’α"                              |
+   * | Closure Compiler (PeepholeReplaceKnownMethods) | "ος’α"                              |
+   * | JavaScript Runtime (V8 / Browser)              | "οσ’α"                              |
+   * | Java with ICU4J (ULocale.ROOT)                 | "οσ’α"                              |
+   * </pre>
+   *
+   * <p>So we can have Java match JavaScript uncompiled/compiled+literal or compiled+variable, but
+   * not both. I assume calling it on a literal must be rare so opt to match
+   * uncompiled/compiled+variable
+   */
+  @Nonnull
+  public static String strToLowerCase(String str) {
+    return UCharacter.toLowerCase(ULocale.ROOT, str);
+  }
+
+  @Nonnull
+  public static String strToUpperCase(String str) {
+    return UCharacter.toUpperCase(ULocale.ROOT, str);
   }
 
   public static int length(List<?> list) {

@@ -677,6 +677,16 @@ def str_to_ascii_upper_case(s):
   return ''.join([c.upper() if 'a' <= c <= 'z' else c for c in s])
 
 
+def str_to_lower_case(s):
+  """Converts the given string to lower case."""
+  return str(s).lower()
+
+
+def str_to_upper_case(s):
+  """Converts the given string to upper case."""
+  return str(s).upper()
+
+
 def str_starts_with(s, val, start=0):
   """Returns whether s starts with val."""
   return s.startswith(val, clamp_str_index(s, start))
