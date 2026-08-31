@@ -323,8 +323,8 @@ public final class SoyValueConverter {
     if (obj == null) {
       return NullData.INSTANCE;
     }
-    if (obj instanceof SoyValueProvider) {
-      return (SoyValueProvider) obj;
+    if (obj instanceof SoyValueProvider soyValueProvider) {
+      return soyValueProvider;
     }
     return cheapConverterMap.convert(obj);
   }

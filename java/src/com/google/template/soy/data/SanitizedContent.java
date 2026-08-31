@@ -249,10 +249,10 @@ public abstract class SanitizedContent extends SoyValue {
       return true;
     }
     // TODO(user): js uses reference equality, this uses content comparison
-    return other instanceof SanitizedContent
-        && this.contentKind == ((SanitizedContent) other).contentKind
-        && this.contentDir == ((SanitizedContent) other).contentDir
-        && this.getContent().equals(((SanitizedContent) other).getContent());
+    return other instanceof SanitizedContent that
+        && this.contentKind == that.contentKind
+        && this.contentDir == that.contentDir
+        && this.getContent().equals(that.getContent());
   }
 
   @Override

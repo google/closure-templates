@@ -78,8 +78,7 @@ import org.objectweb.asm.Type;
 public final class SoyExpression extends Expression {
 
   public static SoyExpression forSoyValue(SoyType type, Expression delegate) {
-    if (delegate instanceof SoyExpression) {
-      SoyExpression soyExpression = (SoyExpression) delegate;
+    if (delegate instanceof SoyExpression soyExpression) {
       SoyRuntimeType runtimeType =
           soyExpression.isBoxed() ? SoyRuntimeType.getBoxedType(type) : getUnboxedType(type);
       return new SoyExpression(runtimeType, soyExpression.delegate);
@@ -750,8 +749,8 @@ public final class SoyExpression extends Expression {
 
   /** Removes a soy cast, useful if/when we are generating a checked unboxing operation. */
   private Expression delegateWithoutCast() {
-    if (delegate instanceof Expression.SoyCastExpression) {
-      return ((Expression.SoyCastExpression) delegate).getOriginal();
+    if (delegate instanceof Expression.SoyCastExpression soyCastExpression) {
+      return soyCastExpression.getOriginal();
     }
     return delegate;
   }
