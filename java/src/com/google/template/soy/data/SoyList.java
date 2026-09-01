@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data;
 
+import static java.util.stream.Collectors.joining;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.NumericCoercions;
@@ -157,6 +159,30 @@ public abstract class SoyList extends SoyIterable {
       throw new AssertionError(e); // impossible
     }
     return listStr.toString();
+  }
+
+  /**
+   * Coerces this list to a string matching ECMAScript's {@code Array.prototype.toString()} / {@code
+   * Array.prototype.join()}.
+   *
+   * <p>Unlike {@link #coerceToString()}, which coerces nullish elements to {@code "null"} or {@code
+   * "undefined"}, ECMAScript converts {@code null} and {@code undefined} elements into empty
+   * strings {@code ""}
+   */
+  public final String listToJsString() {
+    return asJavaList().stream()
+        .map(
+            v -> {
+              SoyValue resolved = v.resolve();
+              if (SoyValue.isNullish(resolved)) {
+                return "";
+              }
+              if (resolved instanceof SoyList soyList) {
+                return soyList.listToJsString();
+              }
+              return resolved.coerceToString();
+            })
+        .collect(joining(","));
   }
 
   @Override

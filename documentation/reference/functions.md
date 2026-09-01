@@ -155,6 +155,12 @@ Like `parseInt()` but matching the ECMAScript spec for `Number.parseInt()`.
 
 Like `parseFloat()` but matching the ECMAScript spec for `Number.parseFloat()`.
 
+### `Number([value])` {#Number}
+
+Converts the argument to a number matching the ECMAScript specification for
+`Number(value)`. Returns `0` when called with no arguments or `null`, `NaN` for
+`undefined` or unparsable strings/objects.
+
 ### `randomInt(rangeArg)` {#randomInt}
 
 A random integer in the range `[0, rangeArg - 1]` (where `rangeArg` must be a

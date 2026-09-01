@@ -616,6 +616,75 @@ def parse_float_ecma(s):
   return math.nan if f is None else f
 
 
+_ECMA_WS_CHARS = (
+    ' \t\n\x0b\x0c\r\xa0\u1680\u2000\u2001\u2002\u2003\u2004\u2005'
+    '\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff'
+)
+_DECIMAL_PATTERN = re.compile(r'^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$')
+_HEX_PATTERN = re.compile(r'^0[xX][0-9a-fA-F]+$')
+_BINARY_PATTERN = re.compile(r'^0[bB][01]+$')
+_OCTAL_PATTERN = re.compile(r'^0[oO][0-7]+$')
+
+
+def string_to_number_ecma(s):
+  """Converts a string to a number matching JS StringToNumber."""
+  if not isinstance(s, six.string_types):
+    s = str(s)
+  trimmed = s.strip(_ECMA_WS_CHARS)
+  if not trimmed:
+    return 0.0
+  if trimmed in ('Infinity', '+Infinity'):
+    return float('inf')
+  if trimmed == '-Infinity':
+    return float('-inf')
+  if _HEX_PATTERN.match(trimmed):
+    return float(int(trimmed[2:], 16))
+  if _BINARY_PATTERN.match(trimmed):
+    return float(int(trimmed[2:], 2))
+  if _OCTAL_PATTERN.match(trimmed):
+    return float(int(trimmed[2:], 8))
+  if _DECIMAL_PATTERN.match(trimmed):
+    try:
+      return float(trimmed)
+    except (ValueError, OverflowError):
+      if trimmed.startswith('-'):
+        return float('-inf')
+      return float('inf')
+  return math.nan
+
+
+def _list_to_js_string(lst):
+  """Coerces a list matching ECMAScript Array.prototype.toString()/join()."""
+  items = []
+  for item in lst:
+    if item is None:
+      items.append('')
+    elif isinstance(item, list):
+      items.append(_list_to_js_string(item))
+    elif isinstance(item, sanitize.SanitizedContent):
+      items.append(str(item.content))
+    else:
+      items.append(str(item))
+  return ','.join(items)
+
+
+def number_ecma(val=None):
+  """Converts a value to a number matching JS Number()."""
+  if val is None:
+    return 0.0
+  if isinstance(val, bool):
+    return 1.0 if val else 0.0
+  if isinstance(val, _NUMBER_TYPES):
+    return float(val)
+  if isinstance(val, list):
+    return string_to_number_ecma(_list_to_js_string(val))
+  if isinstance(val, sanitize.SanitizedContent):
+    return string_to_number_ecma(val.content)
+  if isinstance(val, six.string_types):
+    return string_to_number_ecma(val)
+  return math.nan
+
+
 def sqrt(num):
   """Returns the square root of the given number."""
   try:

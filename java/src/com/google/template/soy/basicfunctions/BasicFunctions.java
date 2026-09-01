@@ -78,6 +78,7 @@ public class BasicFunctions {
         new MutableMapMethods.Clear(),
         new MutableMapMethods.Delete(),
         new MutableMapMethods.Set(),
+        new NumberFunction(),
         new NumberListSortMethod(),
         new NumberToFixedMethod(),
         new ParseFloatFunction(),

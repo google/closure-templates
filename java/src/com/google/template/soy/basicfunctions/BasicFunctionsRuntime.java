@@ -22,6 +22,7 @@ import static java.util.Comparator.comparingDouble;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.Ascii;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -49,9 +50,11 @@ import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
+import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
@@ -429,6 +432,79 @@ public final class BasicFunctionsRuntime {
       return Double.parseDouble(numberStr);
     }
 
+    return Double.NaN;
+  }
+
+  private static final CharMatcher ECMA_WHITESPACE =
+      CharMatcher.anyOf(
+          " \t\n"
+              + "\u000B\f\r"
+              + "\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF");
+  private static final Pattern DECIMAL_PATTERN =
+      Pattern.compile("^[+-]?(\\d+(\\.\\d*)?|\\.\\d+)([eE][+-]?\\d+)?$");
+  private static final Pattern HEX_PATTERN = Pattern.compile("^0[xX][0-9a-fA-F]+$");
+  private static final Pattern BINARY_PATTERN = Pattern.compile("^0[bB][01]+$");
+  private static final Pattern OCTAL_PATTERN = Pattern.compile("^0[oO][0-7]+$");
+
+  public static double numberEcma() {
+    return 0.0;
+  }
+
+  public static double numberEcma(SoyValue value) {
+    if (value == null || value instanceof NullData) {
+      return 0.0;
+    }
+    if (value instanceof UndefinedData) {
+      return Double.NaN;
+    }
+    if (value instanceof BooleanData booleanData) {
+      return booleanData.booleanValue() ? 1.0 : 0.0;
+    }
+    if (value instanceof NumberData numberData) {
+      return numberData.numberValue();
+    }
+    if (value instanceof GbigintData gbigintData) {
+      return gbigintData.getValue().doubleValue();
+    }
+    if (value instanceof SoyList soyList) {
+      return stringToNumberEcma(soyList.listToJsString());
+    }
+    if (value instanceof SanitizedContent sanitizedContent) {
+      return stringToNumberEcma(sanitizedContent.coerceToString());
+    }
+    if (value instanceof StringData stringData) {
+      return stringToNumberEcma(stringData.stringValue());
+    }
+    return Double.NaN;
+  }
+
+  public static double stringToNumberEcma(String str) {
+    String trimmed = ECMA_WHITESPACE.trimFrom(str);
+    if (trimmed.isEmpty()) {
+      return 0.0;
+    }
+    if (trimmed.equals("Infinity") || trimmed.equals("+Infinity")) {
+      return Double.POSITIVE_INFINITY;
+    }
+    if (trimmed.equals("-Infinity")) {
+      return Double.NEGATIVE_INFINITY;
+    }
+    if (HEX_PATTERN.matcher(trimmed).matches()) {
+      return new BigInteger(trimmed.substring(2), 16).doubleValue();
+    }
+    if (BINARY_PATTERN.matcher(trimmed).matches()) {
+      return new BigInteger(trimmed.substring(2), 2).doubleValue();
+    }
+    if (OCTAL_PATTERN.matcher(trimmed).matches()) {
+      return new BigInteger(trimmed.substring(2), 8).doubleValue();
+    }
+    if (DECIMAL_PATTERN.matcher(trimmed).matches()) {
+      try {
+        return Double.parseDouble(trimmed);
+      } catch (NumberFormatException e) {
+        return Double.NaN;
+      }
+    }
     return Double.NaN;
   }
 
