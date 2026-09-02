@@ -94,6 +94,7 @@ public abstract class SoyType implements ErrorArg {
     FLOAT,
     STRING,
     GBIGINT,
+    REGEXP,
     LITERAL,
     // Sanitized types (subtypes of string)
     HTML,

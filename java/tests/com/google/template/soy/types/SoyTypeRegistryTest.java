@@ -46,6 +46,8 @@ public class SoyTypeRegistryTest {
     assertThat(typeRegistry.getType("int").getKind()).isEqualTo(SoyType.Kind.INT);
     assertThat(typeRegistry.getType("float").getKind()).isEqualTo(SoyType.Kind.FLOAT);
     assertThat(typeRegistry.getType("string").getKind()).isEqualTo(SoyType.Kind.STRING);
+    assertThat(typeRegistry.getType("regexp").getKind()).isEqualTo(SoyType.Kind.REGEXP);
+    assertThat(typeRegistry.getType("regexp")).isEqualTo(RegexpType.getInstance());
   }
 
   @Test

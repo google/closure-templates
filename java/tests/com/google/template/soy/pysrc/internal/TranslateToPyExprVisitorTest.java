@@ -52,6 +52,19 @@ public class TranslateToPyExprVisitorTest {
   }
 
   @Test
+  public void testRegexpLiteral() {
+    assertThatSoyExpr("(/hello.*world/g)")
+        .translatesTo("re.compile('hello.*world')", Integer.MAX_VALUE);
+    assertThatSoyExpr("(/foo/i)").translatesTo("re.compile('foo', re.I)", Integer.MAX_VALUE);
+    assertThatSoyExpr("(/foo/m)").translatesTo("re.compile('foo', re.M)", Integer.MAX_VALUE);
+    assertThatSoyExpr("(/foo/s)").translatesTo("re.compile('foo', re.S)", Integer.MAX_VALUE);
+    assertThatSoyExpr("(/foo/im)")
+        .translatesTo("re.compile('foo', re.I | re.M)", Integer.MAX_VALUE);
+    assertThatSoyExpr("(/foo\\/bar/i)")
+        .translatesTo("re.compile('foo\\\\/bar', re.I)", Integer.MAX_VALUE);
+  }
+
+  @Test
   public void testListLiteral() {
     assertThatSoyExpr("[]").translatesTo(new PyExpr("[]", Integer.MAX_VALUE), PyListExpr.class);
     assertThatSoyExpr("['blah', 123, $foo]")

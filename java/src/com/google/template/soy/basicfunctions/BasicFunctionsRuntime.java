@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.comparingDouble;
@@ -56,6 +57,7 @@ import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.shared.internal.Sanitizers;
@@ -757,7 +759,119 @@ public final class BasicFunctionsRuntime {
 
   @Nonnull
   public static String strReplaceAll(String str, String match, String token) {
-    return str.replace(match, token);
+    return replaceString(str, match, token);
+  }
+
+  @Nonnull
+  public static String strReplaceAll(String str, RegexpData match, String token) {
+    checkArgument(
+        match.getFlags().contains("g"),
+        "String.prototype.replaceAll called with a non-global RegExp argument");
+    return replaceRegex(str, match.toJavaPattern(), token);
+  }
+
+  @Nonnull
+  public static String strReplaceAll(String str, SoyValue match, String token) {
+    if (match instanceof RegexpData regexpData) {
+      return strReplaceAll(str, regexpData, token);
+    }
+    return strReplaceAll(str, match.coerceToString(), token);
+  }
+
+  private static String replaceString(String str, String target, String replacement) {
+    if (target.isEmpty()) {
+      StringBuilder sb = new StringBuilder();
+      appendJsReplacement(sb, null, str, 0, 0, replacement);
+      for (int i = 0; i < str.length(); i++) {
+        sb.append(str.charAt(i));
+        appendJsReplacement(sb, null, str, i + 1, i + 1, replacement);
+      }
+      return sb.toString();
+    }
+    int index = str.indexOf(target);
+    if (index == -1) {
+      return str;
+    }
+    StringBuilder sb = new StringBuilder();
+    int lastEnd = 0;
+    while (index != -1) {
+      sb.append(str, /* start= */ lastEnd, /* end= */ index);
+      appendJsReplacement(sb, null, str, index, index + target.length(), replacement);
+      lastEnd = index + target.length();
+      index = str.indexOf(target, lastEnd);
+    }
+    sb.append(str, /* start= */ lastEnd, /* end= */ str.length());
+    return sb.toString();
+  }
+
+  private static String replaceRegex(String str, Pattern pattern, String replacement) {
+    Matcher matcher = pattern.matcher(str);
+    if (!matcher.find()) {
+      return str;
+    }
+    StringBuilder sb = new StringBuilder();
+    int lastEnd = 0;
+    do {
+      sb.append(str, /* start= */ lastEnd, /* end= */ matcher.start());
+      appendJsReplacement(sb, matcher, str, matcher.start(), matcher.end(), replacement);
+      lastEnd = matcher.end();
+    } while (matcher.find());
+    sb.append(str, /* start= */ lastEnd, /* end= */ str.length());
+    return sb.toString();
+  }
+
+  private static void appendJsReplacement(
+      StringBuilder sb,
+      @Nullable Matcher matcher,
+      String fullStr,
+      int matchStart,
+      int matchEnd,
+      String replacement) {
+    for (int i = 0; i < replacement.length(); i++) {
+      char c = replacement.charAt(i);
+      if (c == '$' && i + 1 < replacement.length()) {
+        char next = replacement.charAt(i + 1);
+        if (next == '$') {
+          sb.append('$');
+          i++;
+        } else if (next == '&') {
+          sb.append(fullStr, /* start= */ matchStart, /* end= */ matchEnd);
+          i++;
+        } else if (next == '`') {
+          sb.append(fullStr, /* start= */ 0, /* end= */ matchStart);
+          i++;
+        } else if (next == '\'') {
+          sb.append(fullStr, /* start= */ matchEnd, /* end= */ fullStr.length());
+          i++;
+        } else if (matcher != null && next >= '0' && next <= '9') {
+          int groupNum = next - '0';
+          int nextIdx = i + 2;
+          if (nextIdx < replacement.length()) {
+            char next2 = replacement.charAt(nextIdx);
+            if (next2 >= '0' && next2 <= '9') {
+              int twoDigitGroup = groupNum * 10 + (next2 - '0');
+              if (twoDigitGroup > 0 && twoDigitGroup <= matcher.groupCount()) {
+                groupNum = twoDigitGroup;
+                nextIdx++;
+              }
+            }
+          }
+          if (groupNum > 0 && groupNum <= matcher.groupCount()) {
+            String grp = matcher.group(groupNum);
+            if (grp != null) {
+              sb.append(grp);
+            }
+            i = nextIdx - 1;
+          } else {
+            sb.append('$');
+          }
+        } else {
+          sb.append('$');
+        }
+      } else {
+        sb.append(c);
+      }
+    }
   }
 
   @Nonnull

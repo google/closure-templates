@@ -99,6 +99,7 @@ import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
+import com.google.template.soy.exprtree.RegexpLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
@@ -527,6 +528,13 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitStringNode(StringNode node) {
       return SoyExpression.forString(constant(node.getValue()));
+    }
+
+    @Override
+    protected SoyExpression visitRegexpLiteralNode(RegexpLiteralNode node) {
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          MethodRefs.REGEXP_DATA_OF.invoke(constant(node.getPattern()), constant(node.getFlags())));
     }
 
     @Override

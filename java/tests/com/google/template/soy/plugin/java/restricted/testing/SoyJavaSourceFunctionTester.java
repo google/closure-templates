@@ -39,6 +39,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
@@ -64,6 +65,7 @@ import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.RegexpType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
@@ -251,6 +253,12 @@ public class SoyJavaSourceFunctionTester {
       return SoyExpression.forString(BytecodeUtils.constant(((String) value)));
     } else if (value instanceof StringData) {
       return SoyExpression.forString(BytecodeUtils.constant(((StringData) value).toString())).box();
+    } else if (value instanceof RegexpData regex) {
+      return SoyExpression.forSoyValue(
+          RegexpType.getInstance(),
+          MethodRefs.REGEXP_DATA_OF.invoke(
+              BytecodeUtils.constant(regex.getPattern()),
+              BytecodeUtils.constant(regex.getFlags())));
     } else if (value instanceof Boolean) {
       return SoyExpression.forBool(BytecodeUtils.constant(((Boolean) value)));
     } else if (value instanceof BooleanData) {

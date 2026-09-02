@@ -172,6 +172,7 @@ public final class JavaTypeUtils {
       case TEMPLATE_TYPE:
       case NEVER:
       case IMPLICIT:
+      case REGEXP:
         throw new UnsupportedOperationException();
       case FUNCTION:
       case NULL:

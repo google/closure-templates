@@ -102,6 +102,7 @@ public final class TypeRegistries {
             .put("float", FloatType.getInstance())
             .put("string", StringType.getInstance())
             .put("gbigint", GbigintType.getInstance())
+            .put("regexp", RegexpType.getInstance())
             .put("html", HtmlType.getInstance())
             .put("never", NeverType.getInstance())
             .put("attributes", AttributesType.getInstance())

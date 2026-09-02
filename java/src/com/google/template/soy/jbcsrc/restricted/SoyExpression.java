@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.BOOLEAN_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NUMBER_DATA_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.REGEXP_DATA_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_ITERABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_MAP_TYPE;
@@ -44,6 +45,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -872,6 +874,9 @@ public final class SoyExpression extends Expression {
       case GBIGINT:
         staticValue = alreadyUnboxed(BigInteger.class);
         break;
+      case REGEXP:
+        staticValue = alreadyUnboxed(RegexpData.class);
+        break;
       default:
         break;
     }
@@ -897,6 +902,9 @@ public final class SoyExpression extends Expression {
         break;
       case BOOL:
         type = BOOLEAN_DATA_TYPE;
+        break;
+      case REGEXP:
+        type = REGEXP_DATA_TYPE;
         break;
       case NUMBER:
         type = NUMBER_DATA_TYPE;

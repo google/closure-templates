@@ -66,6 +66,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NullishData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.PrimitiveData;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
@@ -147,6 +148,7 @@ public final class BytecodeUtils {
   public static final Type FLOAT_DATA_TYPE = Type.getType(FloatData.class);
   public static final Type BOOLEAN_DATA_TYPE = Type.getType(BooleanData.class);
   public static final Type STRING_DATA_TYPE = Type.getType(StringData.class);
+  public static final Type REGEXP_DATA_TYPE = Type.getType(RegexpData.class);
   public static final Type FUNCTION_VALUE_TYPE = Type.getType(JbcSrcFunctionValue.class);
   public static final Type SANITIZED_CONTENT_TYPE = Type.getType(SanitizedContent.class);
   public static final Type SOY_LIST_TYPE = Type.getType(SoyList.class);

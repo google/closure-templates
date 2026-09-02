@@ -505,4 +505,11 @@ public class EvalVisitorTest {
     xidRenamingMap = null;
     assertEval("xid('id')", "id_");
   }
+
+  @Test
+  public void testEvalRegexp() throws Exception {
+    assertEval("(/hello.*world/g ? 'yes' : 'no')", "yes");
+    assertEval("'hello world hello'.replaceAll(/hello/g, 'bye')", "bye world bye");
+    assertEval("'foo bar foo'.replaceAll(/foo/g, 'baz')", "baz bar baz");
+  }
 }

@@ -783,6 +783,8 @@ def str_repeat(s, count):
 
 def str_replace_all(s, match, token):
   """Replaces all occurrences in s of match with token."""
+  if hasattr(match, 'sub'):
+    return match.sub(token, s)
   return s.replace(match, token)
 
 

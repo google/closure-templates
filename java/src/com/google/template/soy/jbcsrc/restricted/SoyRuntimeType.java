@@ -123,6 +123,7 @@ public abstract class SoyRuntimeType {
         }
       // fall-through
       case GBIGINT:
+      case REGEXP:
       case NULL:
       case UNDEFINED:
       case NEVER:

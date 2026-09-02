@@ -107,6 +107,9 @@ public final class JsType implements CodeChunk.HasRequires {
   private static final JsType STRING_TYPE =
       builder().addType("string").setPredicate(typeofTypePredicate("string")).build();
 
+  private static final JsType REGEXP_TYPE =
+      builder().addType("!RegExp").setPredicate(instanceofTypePredicate(id("RegExp"))).build();
+
   private static final JsType MESSAGE_TYPE =
       builder()
           .addType("!jspb.Message")
@@ -380,6 +383,9 @@ public final class JsType implements CodeChunk.HasRequires {
 
         case STRING:
           return STRING_TYPE;
+
+        case REGEXP:
+          return REGEXP_TYPE;
 
         case ATTRIBUTES:
           if (kind == JsTypeKind.IDOMSRC) {

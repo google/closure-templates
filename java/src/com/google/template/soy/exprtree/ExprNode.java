@@ -46,6 +46,7 @@ public interface ExprNode extends Node {
     BOOLEAN_NODE,
     NUMBER_NODE,
     STRING_NODE,
+    REGEXP_LITERAL_NODE,
     PROTO_ENUM_VALUE_NODE,
     TYPE_LITERAL_NODE,
 

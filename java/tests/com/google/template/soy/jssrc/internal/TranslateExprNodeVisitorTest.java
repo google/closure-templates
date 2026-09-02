@@ -46,6 +46,18 @@ public final class TranslateExprNodeVisitorTest {
   }
 
   @Test
+  public void testRegexpLiteral() {
+    assertThatSoyExpr("(/hello.*world/g)").generatesCode("/hello.*world/g;");
+    assertThatSoyExpr("(/foo\\/bar/i)").generatesCode("/foo\\/bar/i;");
+  }
+
+  @Test
+  public void testReplaceAll_regexp() {
+    assertThatSoyExpr("'hello world'.replaceAll(/world/g, 'everyone')")
+        .generatesCode("soy.$$strReplaceAll('hello world', /world/g, 'everyone');");
+  }
+
+  @Test
   public void testListLiteral() {
     assertThatSoyExpr("['blah', 123, $foo]")
         .generatesCode("soy.$$makeArray('blah', 123, opt_data.foo);");

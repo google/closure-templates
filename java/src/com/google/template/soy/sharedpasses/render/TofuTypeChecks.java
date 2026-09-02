@@ -32,6 +32,7 @@ import com.google.template.soy.data.TemplateValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -187,6 +188,8 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value instanceof TofuFunctionValue);
       case COMPUTED:
         return doIsInstance(type.getEffectiveType(), value);
+      case REGEXP:
+        return CheckResult.fromBool(value instanceof RegexpData);
       case LITERAL:
       case NAMESPACE:
       case PROTO_TYPE:

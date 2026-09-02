@@ -56,6 +56,7 @@ import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.error.ErrorReporter;
@@ -524,6 +525,28 @@ public class BytecodeCompilerTest {
   public void testStateNodeBoolean() {
     assertThatElementBody("{@state foo:= 1}", "<p>{if $foo}1{else}0{/if}</p>")
         .rendersAs("<p>1</p>");
+  }
+
+  @Test
+  public void testRegexpLiteral() {
+    assertThatTemplateBody("{let $r: /hello.*world/g /}", "{if $r}yes{else}no{/if}")
+        .rendersAs("yes");
+  }
+
+  @Test
+  public void testReplaceAll_regexp() {
+    assertThatTemplateBody("{'hello world hello'.replaceAll(/hello/g, 'bye')}")
+        .rendersAs("bye world bye");
+
+    assertThatTemplateBody("{let $r: /foo/g /}", "{'foo bar foo'.replaceAll($r, 'baz')}")
+        .rendersAs("baz bar baz");
+  }
+
+  @Test
+  public void testRegexpParameterPassing() {
+    assertThatTemplateBody(
+            "{@param reg: regexp}", "{@param text: string}", "{$text.replaceAll($reg, 'matched')}")
+        .rendersAs("matched", ImmutableMap.of("reg", RegexpData.of("ab+c", "gi"), "text", "aBBc"));
   }
 
   @Test

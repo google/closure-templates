@@ -25,6 +25,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.internal.BaseUtils;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -66,6 +68,7 @@ import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
+import com.google.template.soy.exprtree.RegexpLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
@@ -245,6 +248,33 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   @Override
   protected PyExpr visitStringNode(StringNode node) {
     return new PyStringExpr(node.toSourceString());
+  }
+
+  @Override
+  protected PyExpr visitRegexpLiteralNode(RegexpLiteralNode node) {
+    StringBuilder flags = new StringBuilder();
+    for (char c : node.getFlags().toCharArray()) {
+      switch (c) {
+        case 'i':
+          flags.append(flags.length() == 0 ? "re.I" : " | re.I");
+          break;
+        case 'm':
+          flags.append(flags.length() == 0 ? "re.M" : " | re.M");
+          break;
+        case 's':
+          flags.append(flags.length() == 0 ? "re.S" : " | re.S");
+          break;
+        default:
+          break;
+      }
+    }
+    String flagsStr = flags.length() == 0 ? "" : ", " + flags;
+    return new PyExpr(
+        "re.compile("
+            + BaseUtils.escapeToWrappedSoyString(node.getPattern(), false, QuoteStyle.SINGLE)
+            + flagsStr
+            + ")",
+        Integer.MAX_VALUE);
   }
 
   @Override

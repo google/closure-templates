@@ -61,6 +61,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.MethodRef.MethodPureness;
@@ -525,6 +526,8 @@ public final class MethodRefs {
   public static final MethodRef CHECK_FUNCTION =
       createNonPure(SoyValue.class, "checkNullishFunction");
 
+  public static final MethodRef CHECK_REGEXP = createNonPure(SoyValue.class, "checkNullishRegexp");
+
   public static final MethodRef CHECK_BOOLEAN =
       createNonPure(SoyValue.class, "checkNullishBoolean");
 
@@ -613,6 +616,9 @@ public final class MethodRefs {
 
   public static final MethodRef STRING_DATA_FOR_VALUE =
       createPure(StringData.class, "forValue", String.class).asCheap();
+
+  public static final MethodRef REGEXP_DATA_OF =
+      createPure(RegexpData.class, "of", String.class, String.class).asCheap();
 
   public static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
       createNonPure(

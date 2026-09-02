@@ -24,9 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/**
- * Unit tests for subclasses of PrimitiveData.
- */
+/** Unit tests for subclasses of PrimitiveData. */
 @RunWith(JUnit4.class)
 public class PrimitiveDataTest {
 
@@ -145,5 +143,19 @@ public class PrimitiveDataTest {
 
     assertFalse(sd0.equals(sd1));
     assertFalse(sd1.equals(sd0));
+  }
+
+  @Test
+  public void testRegexpData() {
+    RegexpData rd0 = RegexpData.of("foo", "g");
+    assertEquals("foo", rd0.getPattern());
+    assertEquals("g", rd0.getFlags());
+    assertEquals("/foo/g", rd0.coerceToString());
+    assertTrue(rd0.coerceToBoolean());
+    assertTrue(rd0.equals(RegexpData.of("foo", "g")));
+
+    RegexpData rd1 = RegexpData.of("foo", "i");
+    assertFalse(rd0.equals(rd1));
+    assertFalse(rd1.equals(rd0));
   }
 }

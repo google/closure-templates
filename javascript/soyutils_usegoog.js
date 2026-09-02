@@ -2267,12 +2267,12 @@ const $$strToAsciiUpperCase = function(s) {
 /**
  * Replaces all occurrences in s of match with token.
  * @param {string} s
- * @param {string} match
+ * @param {string|!RegExp} match
  * @param {string} token
  * @return {string}
  */
 const $$strReplaceAll = function(s, match, token) {
-  return googString.replaceAll(s, match, token);
+  return s.replaceAll(match, token);
 };
 
 
