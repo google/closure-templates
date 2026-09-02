@@ -101,6 +101,7 @@ public class BasicFunctions {
         new StrLenFunction(),
         new StrRepeatMethod(),
         new StrReplaceAllMethod(),
+        new StrReplaceMethod(),
         new StrSmsUriToUriFunction(),
         new StrSplitMethod(),
         new StrStartsWithMethod(),

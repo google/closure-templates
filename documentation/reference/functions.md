@@ -474,6 +474,11 @@ characters), not Unicode codepoints or more useful concepts like graphemes. It
 is almost never valid to use this to break text meant for users into parts since
 it will be very easy to break the string (e.g. split an emoji in half).
 
+### `str.replace(t, s)` {#string_replace}
+
+Returns a copy of `str` with the first occurrence of string `t` replaced with
+`s`.
+
 ### `str.replaceAll(t, s)` {#string_replaceAll}
 
 Returns a copy of `str` with all occurrences of string `t` replaced with `s`.

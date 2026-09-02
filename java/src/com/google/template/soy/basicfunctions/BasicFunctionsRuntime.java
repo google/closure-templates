@@ -756,6 +756,11 @@ public final class BasicFunctionsRuntime {
   }
 
   @Nonnull
+  public static String strReplace(String str, String match, String token) {
+    return str.replaceFirst(Pattern.quote(match), Matcher.quoteReplacement(token));
+  }
+
+  @Nonnull
   public static String strReplaceAll(String str, String match, String token) {
     return str.replace(match, token);
   }

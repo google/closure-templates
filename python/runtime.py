@@ -781,6 +781,11 @@ def str_repeat(s, count):
   return s * c
 
 
+def str_replace(target: str, old: str, new: str) -> str:
+  """Replaces the first occurrence in target of old with new."""
+  return target.replace(old, new, 1)
+
+
 def str_replace_all(s, match, token):
   """Replaces all occurrences in s of match with token."""
   return s.replace(match, token)
