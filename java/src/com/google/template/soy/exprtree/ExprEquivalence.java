@@ -177,6 +177,11 @@ public final class ExprEquivalence {
         }
 
         @Override
+        protected Integer visitRegexpLiteralNode(RegexpLiteralNode node) {
+          return Objects.hash(node.getPattern(), node.getFlags());
+        }
+
+        @Override
         protected Integer visitProtoEnumValueNode(ProtoEnumValueNode node) {
           return Objects.hash(node.getType(), node.getValue());
         }
@@ -347,6 +352,13 @@ public final class ExprEquivalence {
     @Override
     protected Boolean visitStringNode(StringNode node) {
       return node.getValue().equals(((StringNode) other).getValue());
+    }
+
+    @Override
+    protected Boolean visitRegexpLiteralNode(RegexpLiteralNode node) {
+      RegexpLiteralNode otherNode = (RegexpLiteralNode) other;
+      return node.getPattern().equals(otherNode.getPattern())
+          && node.getFlags().equals(otherNode.getFlags());
     }
 
     @Override

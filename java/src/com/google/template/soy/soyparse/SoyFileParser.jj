@@ -84,6 +84,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.RecordLiteralNode;
+import com.google.template.soy.exprtree.RegexpLiteralNode;
 import com.google.template.soy.exprtree.SoyPrecedence;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -929,6 +930,7 @@ TOKEN_MGR_DECLS: {
         & newState != IN_DQ_ATTRIBUTE_VALUE
         & newState != IN_DQ_STRING
         & newState != IN_SQ_STRING
+        & newState != IN_REGEXP
         & newState != IN_SOYDOC
         & newState != IN_MULTILINE_COMMENT) {
       throw new IllegalArgumentException("not allowed to push " + lexStateNames[newState]);
@@ -1469,6 +1471,49 @@ TOKEN_MGR_DECLS: {
   // We switch to TEMPLATE_DEFAULT rather than remaining in EXPR in order to not clobber the
   // rest of the template in case the dev forgot to close a string, e.g. {print 'foo}
   < UNEXPECTED_NEWLINE: ( "\n" | "\r" ) > { resetState(); SwitchTo(TEMPLATE_DEFAULT); }
+}
+
+// -------------------------------------------------------------------------------------------------
+// Regular expressions.
+//
+// Note that RegexpLiteral() consumes the opening slash.
+
+<IN_REGEXP> TOKEN: {
+  < REGEXP_BODY:
+      (
+        // Regular characters
+        // Matches: anything except newlines (which are not allowed anywhere),
+        // and backslashes, opening brackets, or slashes (which are handled
+        // below)
+        ~["\r", "\n", "/", "[", "\\"]
+
+        // Escaped characters
+        // Matches: backslash followed by any character except newline
+        |
+        "\\" ~["\r", "\n"]
+
+        // Character classes `[...]`. Slashes are allowed inside the brackets
+        // without closing the regex so we need to handle them specially here.
+        // Matches:
+        // Open bracket, followed by zero or more of:
+        //   1) Backslash followed by anything except newlines, or
+        //   2) Any single character except newline, unescaped closing bracket,
+        //      backslash (which goes through case one above)
+        // Finally, close bracket
+        |
+        "[" ( "\\" ~["\r", "\n"] | ~["\r", "\n", "]", "\\"] )* "]"
+      )*
+      // Terminating slash
+      "/"
+      // Optional trailing flags
+      ( ["a"-"z"] )*
+  > { popState(); }
+}
+
+<IN_REGEXP> TOKEN: {
+  // Regex literals cannot span multiple lines. If a newline is encountered while in IN_REGEXP,
+  // report an unexpected newline error and recover.
+  < REGEXP_UNEXPECTED_NEWLINE: ( "\n" | "\r" ) > { resetState(); SwitchTo(TEMPLATE_DEFAULT); }
 }
 
 
@@ -5248,6 +5293,8 @@ private PrimitiveNode Primitive() :
     { primitive = new NumberNode(Double.parseDouble(tok.image), createSrcLoc(tok)); }
   |
     primitive = StringLiteral()
+  |
+    primitive = RegexpLiteral()
   )
 
   { return primitive; }
@@ -5277,6 +5324,33 @@ private StringNode StringLiteral() :
     String rawString = value.image.substring(0, value.image.length() - 1);
     String unescaped = SoyParseUtils.unescapeString(rawString, errorReporter, loc);
     return new StringNode(unescaped, quoteStyle, loc);
+  }
+}
+
+
+/**
+ * Matches a JavaScript-style regular expression literal: /pattern/flags
+ */
+private RegexpLiteralNode RegexpLiteral() :
+{
+  Token slash, body;
+}
+{
+  // A leading slash (DIV token) in prefix expression position
+  slash = <DIV>
+
+  // Switch lexer state so the next token scans the regex body rather than
+  // binary division
+  { token_source.pushState(IN_REGEXP); }
+
+  // body is everything afer the initial opening slash
+  body = <REGEXP_BODY>
+  {
+    SourceLocation loc = createSrcLoc(slash, body);
+    int lastSlash = body.image.lastIndexOf('/');
+    String pattern = body.image.substring(0, lastSlash);
+    String flags = body.image.substring(lastSlash + 1);
+    return new RegexpLiteralNode(pattern, flags, loc);
   }
 }
 

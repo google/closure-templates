@@ -1656,6 +1656,17 @@ public final class ResolveExpressionTypesPassTest {
     assertThat(errorReporter.getErrors().get(0).message()).isEqualTo(expectedError);
   }
 
+  @Test
+  public void testRegexpLiteral() {
+    assertTypes(
+        "{@param rParam: regexp}",
+        "{let $r: /hello.*world/g /}",
+        "{assertType('regexp', $r)}",
+        "{assertType('regexp', $rParam)}",
+        "{assertType('regexp', /foo\\/bar/i)}",
+        "{assertType('regexp', /[a-z]/)}");
+  }
+
   private void assertTypes(String... lines) {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(constructFileSource(lines))

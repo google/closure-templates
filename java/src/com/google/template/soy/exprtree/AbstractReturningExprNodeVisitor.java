@@ -95,6 +95,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitNumberNode((NumberNode) node);
       case STRING_NODE:
         return visitStringNode((StringNode) node);
+      case REGEXP_LITERAL_NODE:
+        return visitRegexpLiteralNode((RegexpLiteralNode) node);
       case PROTO_ENUM_VALUE_NODE:
         return visitProtoEnumValueNode((ProtoEnumValueNode) node);
       case TYPE_LITERAL_NODE:
@@ -234,6 +236,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitStringNode(StringNode node) {
+    return visitPrimitiveNode(node);
+  }
+
+  protected R visitRegexpLiteralNode(RegexpLiteralNode node) {
     return visitPrimitiveNode(node);
   }
 

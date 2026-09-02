@@ -49,6 +49,7 @@ public final class ExprNodes {
       // Actual literals
       case NUMBER_NODE:
       case STRING_NODE:
+      case REGEXP_LITERAL_NODE:
       case BOOLEAN_NODE:
       case MAP_LITERAL_NODE:
       case LIST_LITERAL_NODE:
