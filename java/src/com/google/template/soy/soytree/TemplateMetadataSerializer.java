@@ -59,6 +59,7 @@ import com.google.template.soy.types.NumberType;
 import com.google.template.soy.types.OmitType;
 import com.google.template.soy.types.PickType;
 import com.google.template.soy.types.RecordType;
+import com.google.template.soy.types.RegexpType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.ElementType;
@@ -411,6 +412,8 @@ public final class TemplateMetadataSerializer {
             return StringType.getInstance();
           case GBIGINT:
             return GbigintType.getInstance();
+          case REGEXP:
+            return RegexpType.getInstance();
           case ATTRIBUTES:
             return AttributesType.getInstance();
           case JS:

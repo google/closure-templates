@@ -841,6 +841,9 @@ public abstract class Expression extends BytecodeProducer {
         case GBIGINT:
           expectedClass = GbigintData.class;
           break;
+        case REGEXP:
+          // TODO(b/555857479): Add the runtime SoyValue here.
+          return Optional.empty();
         case JS:
           return Optional.of(MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.JS)));
         case ITERABLE:

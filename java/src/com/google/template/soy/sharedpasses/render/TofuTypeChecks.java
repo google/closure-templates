@@ -187,6 +187,8 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value instanceof TofuFunctionValue);
       case COMPUTED:
         return doIsInstance(type.getEffectiveType(), value);
+      case REGEXP:
+      // TODO(b/555857479): Add the runtime SoyValue here.
       case LITERAL:
       case NAMESPACE:
       case PROTO_TYPE:

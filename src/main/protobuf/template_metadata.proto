@@ -65,6 +65,7 @@ message SoyTypeP {
     TRUSTED_RESOURCE_URI = 13;
     VE_DATA = 14;
     GBIGINT = 16;
+    REGEXP = 18;
   }
 
   message LiteralTypeP {
