@@ -165,7 +165,7 @@ public class SimpleJavaType extends JavaType {
 
   @Override
   String asGenericsTypeArgumentString() {
-    return genericsTypeArgumentString;
+    return maybeAddNullableToTypeArg(isNullable(), genericsTypeArgumentString);
   }
 
   @Override

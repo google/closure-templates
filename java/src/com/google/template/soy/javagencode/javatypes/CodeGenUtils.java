@@ -97,6 +97,9 @@ public final class CodeGenUtils {
   }
 
   public static String maybeAddNullableToTypeArg(boolean nullable, String typeArg) {
+    if (typeArg.equals("?")) {
+      return typeArg;
+    }
     return nullable ? addAnnotationToGenericTypeArg(typeArg, NULLABLE, true) : typeArg;
   }
 
