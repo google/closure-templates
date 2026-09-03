@@ -33,6 +33,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Expressions.not;
 import static com.google.template.soy.jssrc.dsl.Expressions.number;
 import static com.google.template.soy.jssrc.dsl.Expressions.operation;
+import static com.google.template.soy.jssrc.dsl.Expressions.regexLiteral;
 import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_FUNCTION_PARAMS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS;
@@ -116,6 +117,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
+import com.google.template.soy.exprtree.RegexpLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.TypeLiteralNode;
@@ -339,6 +341,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitStringNode(StringNode node) {
     return stringLiteral(node.getValue());
+  }
+
+  @Override
+  protected Expression visitRegexpLiteralNode(RegexpLiteralNode node) {
+    return regexLiteral(node.getPattern(), node.getFlags());
   }
 
   @Override

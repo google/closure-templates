@@ -26,6 +26,7 @@ import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.RegexpLiteralNode;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
@@ -270,6 +271,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       addCodeToFixUnicodeStrings();
       if (SoyTreeUtils.hasNodesOfType(node, DebuggerNode.class)) {
         pyCodeBuilder.appendLine("import pdb");
+      }
+      if (SoyTreeUtils.hasNodesOfType(node, RegexpLiteralNode.class)) {
+        pyCodeBuilder.appendLine("import re");
       }
 
       genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
