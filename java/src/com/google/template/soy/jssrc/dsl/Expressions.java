@@ -275,6 +275,16 @@ public final class Expressions {
     return Leaf.createNonNull(contents, /* isCheap= */ false);
   }
 
+  /**
+   * Creates a code chunk representing a JavaScript regular expression literal.
+   *
+   * @param pattern The regex pattern string (without surrounding slashes).
+   * @param flags The regex flags string (e.g., "g", "i").
+   */
+  public static Expression regexLiteral(String pattern, String flags) {
+    return Leaf.createNonNull("/" + pattern + "/" + flags, /* isCheap= */ false);
+  }
+
   /** Creates a code chunk representing a JavaScript number literal. */
   public static Expression number(long value) {
     Preconditions.checkArgument(
