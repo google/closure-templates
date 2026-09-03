@@ -72,6 +72,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -125,6 +126,7 @@ import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
+import com.google.template.soy.exprtree.RegexpLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
@@ -352,6 +354,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   @Override
   protected SoyValue visitStringNode(StringNode node) {
     return convertResult(node.getValue());
+  }
+
+  @Override
+  protected SoyValue visitRegexpLiteralNode(RegexpLiteralNode node) {
+    return RegexpData.of(node.getPattern(), node.getFlags());
   }
 
   @Override

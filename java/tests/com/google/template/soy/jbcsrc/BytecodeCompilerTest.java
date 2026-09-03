@@ -527,6 +527,12 @@ public class BytecodeCompilerTest {
   }
 
   @Test
+  public void testRegexpLiteral() {
+    assertThatTemplateBody("{let $r: /hello.*world/g /}", "{if $r}yes{else}no{/if}")
+        .rendersAs("yes");
+  }
+
+  @Test
   public void testSwitchNode() {
     assertThatTemplateBody(
             "{switch 1}",

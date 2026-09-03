@@ -47,6 +47,7 @@ import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -138,6 +139,9 @@ final class ValidatorFactory extends JavaValueFactory {
 
   private static final ImmutableSet<Class<?>> MESSAGE_TYPES =
       ImmutableSet.of(SoyValue.class, SoyProtoValue.class, Message.class);
+
+  private static final ImmutableSet<Class<?>> REGEXP_TYPES =
+      ImmutableSet.of(SoyValue.class, RegexpData.class);
 
   private final ValidatorErrorReporter reporter;
 
@@ -458,6 +462,9 @@ final class ValidatorFactory extends JavaValueFactory {
         break;
       case VE_DATA:
         expectedClasses = VE_DATA_TYPES;
+        break;
+      case REGEXP:
+        expectedClasses = REGEXP_TYPES;
         break;
       default:
         throw new IllegalStateException(

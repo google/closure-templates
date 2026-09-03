@@ -314,6 +314,10 @@ public abstract class SoyValue extends SoyValueProvider {
     throw new ClassCastException(classCastErrorMessage(this, "function"));
   }
 
+  public SoyValue checkNullishRegexp() {
+    throw new ClassCastException(classCastErrorMessage(this, "regexp"));
+  }
+
   /**
    * A runtime type check for this boxed Soy value.
    *
