@@ -56,6 +56,7 @@ import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.shared.internal.Sanitizers;
@@ -768,6 +769,10 @@ public final class BasicFunctionsRuntime {
   @Nonnull
   public static String strTrim(String str) {
     return str.trim();
+  }
+
+  public static boolean regexpTest(RegexpData regexp, String str) {
+    return regexp.toJavaPattern().matcher(str).find();
   }
 
   /**

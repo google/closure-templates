@@ -88,6 +88,7 @@ public class BasicFunctions {
         new ProtoIsDefaultMethod(),
         new RandomIntFunction(),
         new RangeFunction(),
+        new RegexpTestMethod(),
         new RoundFunction(),
         new SetHasFunction(),
         new SetSizeField(),

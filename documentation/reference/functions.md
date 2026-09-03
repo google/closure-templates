@@ -585,6 +585,21 @@ Constructs an attribute by first joining the values and emitting an attributes
 object with the specified attribute name. If the value is empty the attribute is
 omitted entirely.
 
+## RegExp Methods
+
+### `regexp.test(str)` {#regexp_test}
+
+Returns `true` if the regular expression matches anywhere in string `str`, or
+`false` otherwise.
+
+Example:
+
+```soy
+{if /abc/.test($value)}
+  ...
+{/if}
+```
+
 ## Proto methods
 
 ### `proto.isDefault()` {#Message_isDefault}

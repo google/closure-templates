@@ -791,6 +791,11 @@ def str_replace_all(s, match, token):
   return s.replace(match, token)
 
 
+def regexp_test(regexp, s: str) -> bool:
+  """Returns True if the regular expression matches the string, False otherwise."""
+  return bool(regexp.search(s))
+
+
 def str_trim(s):
   """Trims leading and trailing whitespace from s."""
   return s.strip()
