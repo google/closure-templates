@@ -94,6 +94,24 @@ def
 {/let}
 ```
 
+### regexp {#regexp-literal}
+
+Regular expression literals are delimited by forward slashes and match
+JavaScript-style regular expression literal syntax: `/pattern/flags`.
+
+Examples:
+
+*   `/abc/`
+*   `/foo.*bar/i`
+*   `/\d+/g`
+
+Regex literals cannot span multiple lines. Slashes within the pattern can be
+escaped with a backslash (`\/`). Slashes inside character classes (such as
+`[/]`) do not need to be escaped.
+
+Regular expressions can also be created using the `RegExp()`
+[function](http://go/soy-functions#RegExp).
+
 ### list
 
 list literals are delimited by square brackets and contain a comma separated
