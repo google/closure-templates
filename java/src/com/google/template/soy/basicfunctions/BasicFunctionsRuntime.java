@@ -27,9 +27,7 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.escape.Escaper;
 import com.google.common.math.DoubleMath;
-import com.google.common.net.PercentEscaper;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -1104,16 +1102,5 @@ public final class BasicFunctionsRuntime {
     var mutableMap = (Map<SoyValue, SoyValue>) map.asJavaMap();
     mutableMap.put(key, value);
     return map;
-  }
-
-  private static final Escaper ENCODE_URI_COMPONENT_ESCAPER =
-      new PercentEscaper("-_.!~*'()", false);
-
-  /** Escapes a string to match JS encodeURIComponent semantics. */
-  public static String encodeUriComponent(String str) {
-    if (str == null) {
-      return "null";
-    }
-    return ENCODE_URI_COMPONENT_ESCAPER.escape(str);
   }
 }

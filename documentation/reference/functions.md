@@ -187,11 +187,6 @@ The tangent of a number in radians.
 Returns the value of the first argument raised to the power of the second
 argument.
 
-### `encodeURIComponent(str)` {#encodeURIComponent}
-
-Escapes the given string according to JavaScript's `encodeURIComponent`
-semantics, making it safe to embed within a URL query parameter or path segment.
-
 ### `isFinite(number)` {#isFinite}
 
 Returns whether the number is finite (i.e., not `NaN` or `Infinity`).
