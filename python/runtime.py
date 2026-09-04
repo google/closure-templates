@@ -685,6 +685,34 @@ def number_ecma(val=None):
   return math.nan
 
 
+def regexp_ecma(pattern=None, flags=None):
+  """Creates a regular expression object matching JS RegExp()."""
+  if pattern is None:
+    pat = '(?:)'
+    pat_flags = 0
+  elif hasattr(pattern, 'pattern'):
+    pat = pattern.pattern
+    pat_flags = pattern.flags
+  else:
+    pat = str(pattern) or '(?:)'
+    pat_flags = 0
+
+  if flags is None:
+    if hasattr(pattern, 'pattern'):
+      return pattern
+    return re.compile(pat, pat_flags)
+
+  flags_str = str(flags)
+  py_flags = 0
+  if 'i' in flags_str:
+    py_flags |= re.I
+  if 'm' in flags_str:
+    py_flags |= re.M
+  if 's' in flags_str:
+    py_flags |= re.S
+  return re.compile(pat, py_flags)
+
+
 def sqrt(num):
   """Returns the square root of the given number."""
   try:

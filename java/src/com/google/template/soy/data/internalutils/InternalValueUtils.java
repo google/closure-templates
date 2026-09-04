@@ -28,12 +28,14 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.PrimitiveData;
+import com.google.template.soy.data.restricted.RegexpData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NumberNode;
+import com.google.template.soy.exprtree.RegexpLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import java.util.Map;
@@ -71,6 +73,8 @@ public class InternalValueUtils {
       return new NullNode(location);
     } else if (primitiveData instanceof UndefinedData) {
       return new UndefinedNode(location);
+    } else if (primitiveData instanceof RegexpData regexpData) {
+      return new RegexpLiteralNode(regexpData.getPattern(), regexpData.getFlags(), location);
     } else {
       // Annoyingly UndefinedData.toString() throws, so workaround.
       throw new IllegalArgumentException("can't convert: " + primitiveData + " to an ExprNode");
@@ -85,12 +89,11 @@ public class InternalValueUtils {
    */
   public static PrimitiveData convertPrimitiveExprToData(PrimitiveNode primitiveNode) {
 
-    if (primitiveNode instanceof StringNode) {
-      return StringData.forValue(((StringNode) primitiveNode).getValue());
-    } else if (primitiveNode instanceof BooleanNode) {
-      return BooleanData.forValue(((BooleanNode) primitiveNode).getValue());
-    } else if (primitiveNode instanceof NumberNode) {
-      NumberNode numberNode = (NumberNode) primitiveNode;
+    if (primitiveNode instanceof StringNode stringNode) {
+      return StringData.forValue(stringNode.getValue());
+    } else if (primitiveNode instanceof BooleanNode booleanNode) {
+      return BooleanData.forValue(booleanNode.getValue());
+    } else if (primitiveNode instanceof NumberNode numberNode) {
       if (numberNode.isInteger()) {
         return IntegerData.forValue(numberNode.longValue());
       } else {
@@ -100,6 +103,8 @@ public class InternalValueUtils {
       return NullData.INSTANCE;
     } else if (primitiveNode instanceof UndefinedNode) {
       return UndefinedData.INSTANCE;
+    } else if (primitiveNode instanceof RegexpLiteralNode regexpNode) {
+      return RegexpData.of(regexpNode.getPattern(), regexpNode.getFlags());
     } else {
       throw new IllegalArgumentException();
     }

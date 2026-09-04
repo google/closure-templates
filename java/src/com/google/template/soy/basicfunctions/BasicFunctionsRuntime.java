@@ -509,6 +509,34 @@ public final class BasicFunctionsRuntime {
     return Double.NaN;
   }
 
+  public static RegexpData regexpEcma() {
+    return RegexpData.of("(?:)", "");
+  }
+
+  public static RegexpData regexpEcma(SoyValue pattern) {
+    return regexpEcma(pattern, null);
+  }
+
+  public static RegexpData regexpEcma(SoyValue pattern, SoyValue flags) {
+    String pat;
+    String patFlags = "";
+    if (pattern == null || pattern instanceof UndefinedData) {
+      pat = "(?:)";
+    } else if (pattern instanceof RegexpData regexpData) {
+      pat = regexpData.getPattern();
+      patFlags = regexpData.getFlags();
+    } else {
+      pat = pattern.coerceToString();
+      if (pat.isEmpty()) {
+        pat = "(?:)";
+      }
+    }
+
+    String finalFlags =
+        (flags == null || flags instanceof UndefinedData) ? patFlags : flags.coerceToString();
+    return RegexpData.of(pat, finalFlags);
+  }
+
   @Nullable
   public static IntegerData parseInt(String str, SoyValue radixVal) {
     int radix = SoyValue.isNullish(radixVal) ? 10 : (int) radixVal.floatValue();
