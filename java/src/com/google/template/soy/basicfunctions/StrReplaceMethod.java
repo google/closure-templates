@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -34,13 +35,13 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/** Implements {@code str.replace(str, str)} which replaces the first occurrence. */
+/** Implements {@code str.replace(str|regexp, str)}. */
 @SoyMethodSignature(
     name = "replace",
     baseType = "string",
     value =
         @Signature(
-            parameterTypes = {"string", "string"},
+            parameterTypes = {"string|regexp", "string"},
             returnType = "string"))
 @SoyPureFunction
 public final class StrReplaceMethod
@@ -63,7 +64,7 @@ public final class StrReplaceMethod
   private static final class Methods {
     static final Method STR_REPLACE =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strReplace", String.class, String.class, String.class);
+            BasicFunctionsRuntime.class, "strReplace", String.class, SoyValue.class, String.class);
   }
 
   @Override

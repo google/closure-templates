@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.comparingDouble;
@@ -785,13 +786,164 @@ public final class BasicFunctionsRuntime {
   }
 
   @Nonnull
-  public static String strReplace(String str, String match, String token) {
-    return str.replaceFirst(Pattern.quote(match), Matcher.quoteReplacement(token));
+  public static String strReplace(String str, SoyValue match, String token) {
+    boolean isGlobal =
+        match instanceof RegexpData regexpData && regexpData.getFlags().contains("g");
+    return replaceWithJsPattern(str, toPattern(match), token, /* replaceAll= */ isGlobal);
   }
 
   @Nonnull
-  public static String strReplaceAll(String str, String match, String token) {
-    return str.replace(match, token);
+  public static String strReplaceAll(String str, SoyValue match, String token) {
+    if (match instanceof RegexpData regexpData) {
+      checkArgument(
+          regexpData.getFlags().contains("g"),
+          "String.prototype.replaceAll called with a non-global RegExp argument");
+    }
+    return replaceWithJsPattern(str, toPattern(match), token, /* replaceAll= */ true);
+  }
+
+  private static Pattern toPattern(SoyValue match) {
+    return match instanceof RegexpData regexpData
+        ? regexpData.toJavaPattern()
+        : Pattern.compile(Pattern.quote(match.coerceToString()));
+  }
+
+  private static String replaceWithJsPattern(
+      String str, Pattern pattern, String replacement, boolean replaceAll) {
+    Matcher matcher = pattern.matcher(str);
+    if (!matcher.find()) {
+      return str;
+    }
+    StringBuilder sb = new StringBuilder();
+    int previousEnd = 0;
+    do {
+      sb.append(str, /* start= */ previousEnd, /* end= */ matcher.start());
+      appendJsReplacement(sb, matcher, str, matcher.start(), matcher.end(), replacement);
+      previousEnd = matcher.end();
+    } while (replaceAll && matcher.find());
+    sb.append(str, /* start= */ previousEnd, /* end= */ str.length());
+    return sb.toString();
+  }
+
+  /**
+   * Appends the replacement string to {@code sb}, interpreting JavaScript replacement patterns as
+   * documented on <a
+   * href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace#specifying_a_string_as_the_replacement">MDN</a>.
+   *
+   * @param sb the builder to append to
+   * @param matcher the regex matcher containing match offsets and capture groups
+   * @param fullStr the original target string being searched
+   * @param matchStart starting index of the current match in {@code fullStr}
+   * @param matchEnd ending index of the current match in {@code fullStr}
+   * @param replacement the replacement template string containing potential '$' patterns
+   */
+  private static void appendJsReplacement(
+      StringBuilder sb,
+      Matcher matcher,
+      String fullStr,
+      int matchStart,
+      int matchEnd,
+      String replacement) {
+    for (int replacementIndex = 0; replacementIndex < replacement.length(); replacementIndex++) {
+      char replacementChar = replacement.charAt(replacementIndex);
+      if (replacementChar != '$' || replacementIndex + 1 >= replacement.length()) {
+        sb.append(replacementChar);
+        continue;
+      }
+
+      char replacementSubTypeChar = replacement.charAt(replacementIndex + 1);
+      switch (replacementSubTypeChar) {
+        case '$' -> {
+          // $$: Inserts a '$'.
+          sb.append('$');
+          replacementIndex++;
+        }
+        case '&' -> {
+          // $&: Inserts the matched substring.
+          sb.append(fullStr, /* start= */ matchStart, /* end= */ matchEnd);
+          replacementIndex++;
+        }
+        case '`' -> {
+          // $`: Inserts the portion of the string that precedes the matched substring.
+          sb.append(fullStr, /* start= */ 0, /* end= */ matchStart);
+          replacementIndex++;
+        }
+        case '\'' -> {
+          // $': Inserts the portion of the string that follows the matched substring.
+          sb.append(fullStr, /* start= */ matchEnd, /* end= */ fullStr.length());
+          replacementIndex++;
+        }
+        default -> {
+          if (Character.isDigit(replacementSubTypeChar)) {
+            // $n / $nn: Inserts the nth capture group.
+            // Note: Named capturing groups ($<name>) are not supported because Soy compiles
+            // JavaScript to ES5, which does not support RegExp named groups.
+            int digitsConsumed = appendCaptureGroup(sb, matcher, replacement, replacementIndex + 1);
+            if (digitsConsumed > 0) {
+              replacementIndex += digitsConsumed;
+              break;
+            }
+          }
+          sb.append('$');
+        }
+      }
+    }
+  }
+
+  /**
+   * Appends the capture group corresponding to {@code $n} or {@code $nn} to {@code sb}.
+   *
+   * @param sb the builder to append to
+   * @param matcher the regex matcher containing capture groups
+   * @param replacement the replacement template string
+   * @param digitIndex index in {@code replacement} of the first digit following {@code '$'}
+   * @return the number of digits consumed (1 or 2), or 0 if no valid capture group was matched
+   */
+  private static int appendCaptureGroup(
+      StringBuilder sb, Matcher matcher, String replacement, int digitIndex) {
+    int groupNumber = getGroupNumber(replacement, digitIndex, matcher.groupCount());
+    if (groupNumber == 0) {
+      return 0;
+    }
+    String group = matcher.group(groupNumber);
+    if (group != null) {
+      sb.append(group);
+    }
+    return (groupNumber >= 10 || replacement.charAt(digitIndex) == '0') ? 2 : 1;
+  }
+
+  /**
+   * Calculates the 1- or 2-digit capture group number from {@code replacement} at {@code
+   * digitIndex}.
+   *
+   * <p>Follows JavaScript semantics: checks for a valid 2-digit group ({@code $01}-{@code $99})
+   * within {@code groupCount} first; if not found, checks for a 1-digit group ({@code $1}-{@code
+   * $9}).
+   *
+   * @param replacement the replacement template string
+   * @param digitIndex index in {@code replacement} of the first digit following {@code '$'}
+   * @param groupCount total number of capture groups in the pattern
+   * @return the 1-based capture group number, or 0 if no valid group matches
+   */
+  private static int getGroupNumber(String replacement, int digitIndex, int groupCount) {
+    int digit1 = Character.digit(replacement.charAt(digitIndex), 10);
+    if (digit1 < 0) {
+      return 0;
+    }
+    if (digitIndex + 1 < replacement.length()) {
+      int digit2 = Character.digit(replacement.charAt(digitIndex + 1), 10);
+      if (digit2 >= 0) {
+        // There is a second digit after the "$", use it if it forms a valid group.
+        int twoDigit = digit1 * 10 + digit2;
+        if (twoDigit <= groupCount) {
+          return twoDigit;
+        }
+      }
+    }
+    if (digit1 <= groupCount) {
+      return digit1;
+    }
+    return 0;
   }
 
   @Nonnull

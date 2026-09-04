@@ -809,13 +809,17 @@ def str_repeat(s, count):
   return s * c
 
 
-def str_replace(target: str, old: str, new: str) -> str:
+def str_replace(target: str, old, new: str) -> str:
   """Replaces the first occurrence in target of old with new."""
+  if hasattr(old, 'sub'):
+    return old.sub(new, target, count=1)
   return target.replace(old, new, 1)
 
 
 def str_replace_all(s, match, token):
   """Replaces all occurrences in s of match with token."""
+  if hasattr(match, 'sub'):
+    return match.sub(token, s)
   return s.replace(match, token)
 
 

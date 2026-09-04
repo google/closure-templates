@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicfunctions;
 
+import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -34,13 +35,13 @@ import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/** Implements {@code str.replaceAll(str, str)}. */
+/** Implements {@code str.replaceAll(str|regexp, str)}. */
 @SoyMethodSignature(
     name = "replaceAll",
     baseType = "string",
     value =
         @Signature(
-            parameterTypes = {"string", "string"},
+            parameterTypes = {"string|regexp", "string"},
             returnType = "string"))
 @SoyPureFunction
 public final class StrReplaceAllMethod
@@ -63,7 +64,11 @@ public final class StrReplaceAllMethod
   private static final class Methods {
     static final Method STR_REPLACE_ALL =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class, "strReplaceAll", String.class, String.class, String.class);
+            BasicFunctionsRuntime.class,
+            "strReplaceAll",
+            String.class,
+            SoyValue.class,
+            String.class);
   }
 
   @Override

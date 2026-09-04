@@ -482,14 +482,26 @@ characters), not Unicode codepoints or more useful concepts like graphemes. It
 is almost never valid to use this to break text meant for users into parts since
 it will be very easy to break the string (e.g. split an emoji in half).
 
-### `str.replace(t, s)` {#string_replace}
+### `str.replace(pattern, replacement)` {#string_replace}
 
-Returns a copy of `str` with the first occurrence of string `t` replaced with
-`s`.
+Returns a copy of `str` with the first occurrence or match of string or `regexp`
+`pattern` replaced with `replacement`.
 
-### `str.replaceAll(t, s)` {#string_replaceAll}
+The `replacement` string supports standard JavaScript replacement patterns:
 
-Returns a copy of `str` with all occurrences of string `t` replaced with `s`.
+*   `$$`: Inserts a `$`.
+*   `$&`: Inserts the matched substring.
+*   ``$` ``: Inserts the portion of the string that precedes the matched
+    substring.
+*   `$'`: Inserts the portion of the string that follows the matched substring.
+*   `$n` or `$nn`: Inserts the *n*th 1-based capturing group (e.g. `$1`, `$01`).
+
+### `str.replaceAll(pattern, replacement)` {#string_replaceAll}
+
+Returns a copy of `str` with all occurrences or matches of string or `regexp`
+`pattern` replaced with `replacement`.
+
+Supports the same replacement string patterns as [`replace`](#string_replace).
 
 ### `str.repeat(count)` {#string_repeat}
 
