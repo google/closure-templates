@@ -156,6 +156,19 @@ subtypes)</td>
 </tbody>
 </table>
 
+### `regexp` {#regexp}
+
+A regular expression object. Regular expressions can be constructed using
+[regexp literals](expressions.md#regexp-literal) (e.g. `/pattern/flags`) or the
+[`RegExp()` function](functions.md#RegExp).
+
+Backend    | type in host language
+---------- | ----------------------------------------------------
+JavaScript | `RegExp`
+SoySauce   | `com.google.template.soy.data.restricted.RegexpData`
+Tofu       | `com.google.template.soy.data.restricted.RegexpData`
+Python     | `re.Pattern`
+
 ### `Message` {#message}
 
 The `Message` type is the generic base class of all protos. This is mostly
