@@ -20,18 +20,20 @@ match JS behavior in module and function loading, along with type behavior.
 
 from __future__ import unicode_literals
 
-__author__ = 'dcphillips@google.com (David Phillips)'
-
 import importlib
 import math
 import os
 import re
 import sys
+import urllib.parse
+
+import six
 
 from . import environment
 from . import sanitize
 
-import six
+
+__author__ = 'dcphillips@google.com (David Phillips)'
 
 try:
   import scandir
@@ -1104,3 +1106,11 @@ def empty_to_null(val):
 def throw_exception(message):
   # pylint: disable=broad-exception-raised
   raise Exception(message)
+
+
+def encode_uri_component(val) -> str:
+  """Escapes a string according to JS encodeURIComponent semantics."""
+  if val is None:
+    return 'null'
+  # safe='~()*!\'' matches JS encodeURIComponent behavior
+  return urllib.parse.quote(str(val), safe="~()*!'")
