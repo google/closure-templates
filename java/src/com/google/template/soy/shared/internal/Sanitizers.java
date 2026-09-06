@@ -108,10 +108,9 @@ public final class Sanitizers {
       SoyValue value, Collection<? extends OptionalSafeTag> optionalSafeTags) {
     value = normalizeNull(value);
     Dir valueDir = null;
-    if (value instanceof SanitizedContent) {
-      SanitizedContent sanitizedContent = (SanitizedContent) value;
+    if (value instanceof SanitizedContent sanitizedContent) {
       if (sanitizedContent.getContentKind() == SanitizedContent.ContentKind.HTML) {
-        return (SanitizedContent) value;
+        return sanitizedContent;
       }
       valueDir = sanitizedContent.getContentDirection();
     }
@@ -488,27 +487,25 @@ public final class Sanitizers {
   public static String escapeJsValue(SoyValue value) {
     // We surround values with spaces so that they can't be interpolated into identifiers
     // by accident.  We could use parentheses but those might be interpreted as a function call.
-    if (value == null || value.isNullish()) {
+    return switch (value) {
       // The JS counterpart of this code in soyutils.js emits " null " for both null and the special
       // JS value undefined.
-      return " null ";
-    } else if (value instanceof NumberData) {
+      case null -> " null ";
+      case SoyValue v when v.isNullish() -> " null ";
       // This will emit references to NaN and Infinity.  Client code should not redefine those
       // to store sensitive data.
-      return " " + value.floatValue() + " ";
-    } else if (value instanceof BooleanData) {
-      return " " + value.booleanValue() + " ";
-    } else if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.JS)) {
+      case NumberData numberData -> " " + numberData.floatValue() + " ";
+      case BooleanData booleanData -> " " + booleanData.booleanValue() + " ";
       // This value may not be embeddable if it contains the substring "</script".
       // TODO(msamuel): Fixup.  We need to be careful because mucking with '<' can
       // break code like
       //    while (i</foo/.exec(str).length)
       // and mucking with / can break
       //    return untrustedHTML.replace(/</g, '&lt;');
-      return value.coerceToString();
-    } else {
-      return escapeJsValue(value.coerceToString());
-    }
+      case SoyValue v when isSanitizedContentOfKind(v, SanitizedContent.ContentKind.JS) ->
+          v.coerceToString();
+      default -> escapeJsValue(value.coerceToString());
+    };
   }
 
   /** Converts plain text to a quoted javaScript string value. */
@@ -1172,7 +1169,7 @@ public final class Sanitizers {
   /** True iff the given value is sanitized content of the given kind. */
   private static boolean isSanitizedContentOfKind(
       SoyValue value, SanitizedContent.ContentKind kind) {
-    return value instanceof SanitizedContent && kind == ((SanitizedContent) value).getContentKind();
+    return value instanceof SanitizedContent sc && kind == sc.getContentKind();
   }
 
   /**

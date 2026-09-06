@@ -361,7 +361,7 @@ public interface SoyNode extends Node {
 
       @Override
       public boolean equals(Object other) {
-        return other instanceof IdentitySamenessKey && ((IdentitySamenessKey) other).node == node;
+        return other instanceof IdentitySamenessKey that && that.node == node;
       }
 
       @Override
