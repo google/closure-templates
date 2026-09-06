@@ -1004,7 +1004,7 @@ public final class SoyFileSet {
           try {
             BytecodeCompiler.compileToJar(
                 primitives.soyTree, errorReporter, typeRegistry, jarTarget, primitives.registry);
-            if (srcJarTarget.isPresent()) {
+            if (!srcJarTarget.isEmpty()) {
               BytecodeCompiler.writeSrcJar(
                   primitives.soyTree, soyFileSuppliers, srcJarTarget.get());
             }
