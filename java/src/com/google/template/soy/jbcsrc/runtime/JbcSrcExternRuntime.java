@@ -495,4 +495,43 @@ public final class JbcSrcExternRuntime {
       throw new RuntimeException(e);
     }
   }
+
+  @Keep
+  @Nullable
+  public static Object getProtoUnionField(SoyValue base, String fieldName) {
+    if (base == null || base.isNullish()) {
+      return null;
+    }
+    com.google.protobuf.Message proto = base.getProto();
+    com.google.protobuf.Descriptors.Descriptor descriptor = proto.getDescriptorForType();
+    com.google.protobuf.Descriptors.FieldDescriptor field = descriptor.findFieldByName(fieldName);
+
+    if (field == null) {
+      for (com.google.protobuf.Descriptors.FieldDescriptor f : descriptor.getFields()) {
+        if (f.getJsonName().equals(fieldName)) {
+          field = f;
+          break;
+        }
+      }
+    }
+
+    if (field == null && fieldName.endsWith("List")) {
+      String baseName = fieldName.substring(0, fieldName.length() - 4);
+      field = descriptor.findFieldByName(baseName);
+      if (field == null) {
+        for (com.google.protobuf.Descriptors.FieldDescriptor f : descriptor.getFields()) {
+          if (f.getJsonName().equals(baseName)) {
+            field = f;
+            break;
+          }
+        }
+      }
+    }
+
+    if (field == null) {
+      throw new IllegalArgumentException(
+          "Field " + fieldName + " not found in " + descriptor.getFullName());
+    }
+    return proto.getField(field);
+  }
 }
