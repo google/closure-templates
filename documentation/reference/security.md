@@ -467,7 +467,7 @@ Autoescaping works by automatically adding [print directives](print-directives)
 to templates, so you can remove the print directives that you explicitly added,
 including `|escapeUri`.
 
-In case you have defined custom [print directives](../dev/plugins) and your
+In case you have defined custom [print directives](../dev/plugins.md) and your
 custom directive expects already-escaped input instead of plain text, you can
 implement `SanitizedContentOperator` to get the autoescaper to insert escaping
 directives *before* your directive so they produce the already-escaped input and
