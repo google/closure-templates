@@ -32,8 +32,14 @@ public abstract class Call extends Operation {
 
   public abstract ImmutableList<Expression> args();
 
+  public abstract boolean isNullSafe();
+
   public static Call create(Expression receiver, ImmutableList<Expression> args) {
-    return new AutoValue_Call(receiver, args);
+    return new AutoValue_Call(receiver, args, false);
+  }
+
+  public static Call createNullSafe(Expression receiver, ImmutableList<Expression> args) {
+    return new AutoValue_Call(receiver, args, true);
   }
 
   @Override
@@ -54,7 +60,7 @@ public abstract class Call extends Operation {
   @Override
   void doFormatOutputExpr(FormattingContext ctx) {
     formatOperand(receiver(), OperandPosition.LEFT, ctx);
-    ctx.noBreak().append('(');
+    ctx.noBreak().append(isNullSafe() ? "?.(" : "(");
     boolean first = true;
     for (Expression arg : args()) {
       first = ctx.commaAfterFirst(first);
