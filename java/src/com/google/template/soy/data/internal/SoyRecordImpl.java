@@ -29,7 +29,7 @@ import java.util.Comparator;
 import java.util.function.BiConsumer;
 
 /** A record implementation. */
-public final class SoyRecordImpl extends SoyRecord {
+public class SoyRecordImpl extends SoyRecord {
 
   public static final SoyRecordImpl EMPTY = new SoyRecordImpl(new ParamStore());
 
