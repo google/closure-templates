@@ -1873,7 +1873,20 @@ const $$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
  * @return {string} The joined string.
  */
 const $$buildAttrValue = function(...values) {
-  return values.flat().filter((s) => $$isTruthyNonEmpty(s)).join(';');
+  const result = [];
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (Array.isArray(v)) {
+      for (let j = 0; j < v.length; j++) {
+        if ($$isTruthyNonEmpty(v[j])) {
+          result.push(v[j]);
+        }
+      }
+    } else if ($$isTruthyNonEmpty(v)) {
+      result.push(v);
+    }
+  }
+  return result.join(';');
 };
 
 
@@ -1884,7 +1897,20 @@ const $$buildAttrValue = function(...values) {
  * @return {string} The joined string.
  */
 const $$buildClassValue = function(...values) {
-  return values.flat().filter((s) => s).join(' ');
+  const result = [];
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (Array.isArray(v)) {
+      for (let j = 0; j < v.length; j++) {
+        if (v[j]) {
+          result.push(v[j]);
+        }
+      }
+    } else if (v) {
+      result.push(v);
+    }
+  }
+  return result.join(' ');
 };
 
 
