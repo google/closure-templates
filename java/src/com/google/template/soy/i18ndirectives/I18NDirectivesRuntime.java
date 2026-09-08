@@ -43,7 +43,7 @@ public final class I18NDirectivesRuntime {
   public static String formatNum(
       @Nullable SoyValue number,
       String formatType,
-      String numbersKeyword,
+      @SuppressWarnings("unused") String numbersKeyword,
       @Nullable NumberData minFractionDigits,
       @Nullable NumberData maxFractionDigits,
       ULocale uLocale) {
@@ -54,7 +54,6 @@ public final class I18NDirectivesRuntime {
           uLocale,
           ((NumberData) number).floatValue(),
           formatType,
-          numbersKeyword,
           minFractionDigits != null ? (int) minFractionDigits.floatValue() : null,
           maxFractionDigits != null ? (int) maxFractionDigits.floatValue() : null);
     } else {
@@ -92,7 +91,7 @@ public final class I18NDirectivesRuntime {
   public static String format(
       Object number,
       String formatType,
-      String numbersKeyword,
+      @SuppressWarnings("unused") String numbersKeyword,
       Double minFractionDigits,
       Double maxFractionDigits,
       ULocale uLocale) {
@@ -114,7 +113,6 @@ public final class I18NDirectivesRuntime {
           uLocale,
           val,
           formatType,
-          numbersKeyword,
           minFractionDigits == null ? null : minFractionDigits.intValue(),
           maxFractionDigits == null ? null : maxFractionDigits.intValue());
     }
@@ -129,10 +127,8 @@ public final class I18NDirectivesRuntime {
       ULocale uLocale,
       double number,
       String formatType,
-      String numbersKeyword,
       @Nullable Integer minFractionDigits,
       @Nullable Integer maxFractionDigits) {
-    uLocale = uLocale.setKeywordValue("numbers", numbersKeyword);
     NumberFormat numberFormat;
     switch (formatType) {
       case "decimal":
