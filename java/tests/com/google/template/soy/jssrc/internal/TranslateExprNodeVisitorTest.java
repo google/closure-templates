@@ -88,6 +88,8 @@ public final class TranslateExprNodeVisitorTest {
             "opt_data.boo[/** @type {?} */ (opt_data.foo)][/** @type {?} */ (gooData8 + 1)];");
     assertThatSoyExpr("$class").generatesCode("opt_data.class;");
     assertThatSoyExpr("$boo.yield").generatesCode("opt_data.boo.yield;");
+    assertThatSoyExpr(expr("$str[0]").withParam("str", "string"))
+        .generatesCode("opt_data.str[/** @type {?} */ (0)];");
   }
 
   @Test

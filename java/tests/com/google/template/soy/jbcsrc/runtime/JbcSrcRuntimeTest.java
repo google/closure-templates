@@ -26,6 +26,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime.MsgRenderer;
 import com.google.template.soy.msgs.restricted.PlaceholderName;
@@ -230,5 +231,23 @@ public final class JbcSrcRuntimeTest {
   private void assertRendersAs(MsgRenderer renderer, String expected) {
     assertThat(renderer.status().isDone()).isTrue();
     assertThat(renderer.resolve().coerceToString()).isEqualTo(expected);
+  }
+
+  @Test
+  public void testGetSoyStringItem() {
+    assertThat(JbcSrcRuntime.getSoyStringItem("hello", 1).stringValue()).isEqualTo("e");
+    assertThat(JbcSrcRuntime.getSoyStringItem("hello", 0).stringValue()).isEqualTo("h");
+    assertThat(JbcSrcRuntime.getSoyStringItem("hello", -1).resolve())
+        .isEqualTo(UndefinedData.INSTANCE);
+    assertThat(JbcSrcRuntime.getSoyStringItem("hello", 5).resolve())
+        .isEqualTo(UndefinedData.INSTANCE);
+
+    assertThrows(NullPointerException.class, () -> JbcSrcRuntime.getSoyStringItem(null, 0));
+  }
+
+  @Test
+  public void testGetSoyStringItemProvider() {
+    assertThat(JbcSrcRuntime.getSoyStringItemProvider("hello", 1).resolve().stringValue())
+        .isEqualTo("e");
   }
 }

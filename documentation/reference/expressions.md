@@ -237,7 +237,7 @@ throws a NullPointerException in Java.
 
 ### Indexed access operators `[]` `?[]` {#indexing-operators}
 
-Indexed access operators, used for accessing elements of `list` and
+Indexed access operators, used for accessing elements of `list`, `string` and
 `legacy_object_map`.
 
 The question-bracket operator is for nullish safe access. If the value of the
@@ -247,11 +247,13 @@ preceding operand is `null` or `undefined` then the access will return
 For example,
 
 *   `$foo[$bar]` accesses the `$bar` index of the `legacy_object_map` `$foo`
+*   `$myStr[4]` accesses the 4th character of the string `$myStr` (which must be
+    a non-negative integer index)
 *   `$foo?[$bar]` accesses the `$bar` field of `$foo` only if `$foo` is
     non-nullish
 
 NOTE: if the index being accessed doesn't exist, `undefined` will be returned.
-There is no 'index out of bounds' error for lists.
+There is no 'index out of bounds' error for lists or strings.
 
 Warning: The "short-circuiting" caveat described above (for `?.`) applies here
 as well. For example, the expression `$foo?[$bar] > 0` is *not* safe.
