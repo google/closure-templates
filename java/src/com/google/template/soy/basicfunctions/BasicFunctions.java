@@ -43,6 +43,7 @@ public class BasicFunctions {
         new CosFunction(),
         new EcmaParseFloatFunction(),
         new EcmaParseIntFunction(),
+        new EncodeUriComponentFunction(),
         new FloorFunction(),
         new GbigintListSortMethod(),
         new HtmlToTextFunction(),
