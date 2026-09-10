@@ -25,6 +25,7 @@ import math
 import os
 import re
 import sys
+from typing import Any
 import urllib.parse
 
 import six
@@ -828,6 +829,32 @@ def str_replace_all(s, match, token):
 def regexp_test(regexp, s: str) -> bool:
   """Returns True if the regular expression matches the string, False otherwise."""
   return bool(regexp.search(s))
+
+
+def str_search(s: str, pattern: Any) -> int:
+  """Returns index of first match of pattern in s, or -1 if not found."""
+  m = pattern.search(s) if hasattr(pattern, 'search') else re.search(pattern, s)
+  return m.start() if m else -1
+
+
+# TODO(b/544801922): Support global regex (/g flag) in str_match to return all
+# matches rather than match + groups.
+def str_match(s: str, pattern: Any) -> list[str | None] | None:
+  """Matches pattern in s, returning list of match/groups or None."""
+  m = pattern.search(s) if hasattr(pattern, 'search') else re.search(pattern, s)
+  if not m:
+    return None
+  return [m.group(0)] + list(m.groups())
+
+
+def str_match_all(s: str, pattern: Any) -> list[list[str | None]]:
+  """Finds all matches of pattern in s, returning list of match lists."""
+  matches = (
+      pattern.finditer(s)
+      if hasattr(pattern, 'finditer')
+      else re.finditer(pattern, s)
+  )
+  return [[m.group(0)] + list(m.groups()) for m in matches]
 
 
 def str_trim(s):

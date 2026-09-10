@@ -487,6 +487,16 @@ characters), not Unicode codepoints or more useful concepts like graphemes. It
 is almost never valid to use this to break text meant for users into parts since
 it will be very easy to break the string (e.g. split an emoji in half).
 
+### `str.match(pattern)` {#string_match}
+
+Retrieves the result of matching `str` against a string or `regexp` `pattern`.
+Returns a list of match strings, or `null` if no match was found.
+
+### `str.matchAll(pattern)` {#string_matchAll}
+
+Returns a list of all matches of `str` against a string or `regexp` `pattern`.
+If `pattern` is a `regexp`, it must have the global (`g`) flag set.
+
 ### `str.replace(pattern, replacement)` {#string_replace}
 
 Returns a copy of `str` with the first occurrence or match of string or `regexp`
@@ -512,6 +522,11 @@ Supports the same replacement string patterns as [`replace`](#string_replace).
 
 Returns a new string containing the specified number of copies of `str`
 concatenated together. `count` must be a non-negative number.
+
+### `str.search(pattern)` {#string_search}
+
+Executes a search for a match between `str` and a string or `regexp` `pattern`.
+Returns the index of the first match, or `-1` if not found.
 
 ### `str.split(sep[, limit])` {#string_split}
 

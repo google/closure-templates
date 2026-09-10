@@ -49,6 +49,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
+import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
@@ -955,6 +956,77 @@ public final class BasicFunctionsRuntime {
 
   public static boolean regexpTest(RegexpData regexp, String str) {
     return regexp.toJavaPattern().matcher(str).find();
+  }
+
+  public static int strSearch(String str, SoyValue pattern) {
+    Pattern javaPattern =
+        pattern instanceof RegexpData regexpData
+            ? regexpData.toJavaPattern()
+            : Pattern.compile(pattern.coerceToString());
+    Matcher matcher = javaPattern.matcher(str);
+    return matcher.find() ? matcher.start() : -1;
+  }
+
+  @Nullable
+  public static SoyValue strMatch(String str, SoyValue pattern) {
+    Pattern javaPattern;
+    boolean isGlobal = false;
+    if (pattern instanceof RegexpData regexpData) {
+      javaPattern = regexpData.toJavaPattern();
+      isGlobal = regexpData.getFlags().contains("g");
+    } else {
+      javaPattern = Pattern.compile(pattern.coerceToString());
+    }
+
+    Matcher matcher = javaPattern.matcher(str);
+    if (!matcher.find()) {
+      return null;
+    }
+
+    if (isGlobal) {
+      ImmutableList.Builder<StringData> matches = ImmutableList.builder();
+      do {
+        matches.add(StringData.forValue(matcher.group()));
+      } while (matcher.find());
+      return ListImpl.forProviderList(matches.build());
+    } else {
+      int groupCount = matcher.groupCount();
+      ImmutableList.Builder<SoyValueProvider> groups =
+          ImmutableList.builderWithExpectedSize(groupCount + 1);
+      groups.add(StringData.forValue(matcher.group(0)));
+      for (int i = 1; i <= groupCount; i++) {
+        String group = matcher.group(i);
+        groups.add(group != null ? StringData.forValue(group) : UndefinedData.INSTANCE);
+      }
+      return ListImpl.forProviderList(groups.build());
+    }
+  }
+
+  public static SoyValue strMatchAll(String str, SoyValue pattern) {
+    Pattern javaPattern;
+    if (pattern instanceof RegexpData regexpData) {
+      checkArgument(
+          regexpData.getFlags().contains("g"),
+          "String.prototype.matchAll called with a non-global RegExp argument");
+      javaPattern = regexpData.toJavaPattern();
+    } else {
+      javaPattern = Pattern.compile(pattern.coerceToString());
+    }
+
+    Matcher matcher = javaPattern.matcher(str);
+    ImmutableList.Builder<SoyValueProvider> allMatches = ImmutableList.builder();
+    while (matcher.find()) {
+      int groupCount = matcher.groupCount();
+      ImmutableList.Builder<SoyValueProvider> groups =
+          ImmutableList.builderWithExpectedSize(groupCount + 1);
+      groups.add(StringData.forValue(matcher.group(0)));
+      for (int i = 1; i <= groupCount; i++) {
+        String group = matcher.group(i);
+        groups.add(group != null ? StringData.forValue(group) : UndefinedData.INSTANCE);
+      }
+      allMatches.add(ListImpl.forProviderList(groups.build()));
+    }
+    return ListImpl.forProviderList(allMatches.build());
   }
 
   /**
