@@ -3347,6 +3347,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           }
           yield listType.getElementType();
         }
+        case StringType stringType -> {
+          if (!IntType.getInstance().isAssignableFromLoose(keyType)) {
+            errorReporter.report(keyLocation, BAD_INDEX_TYPE, keyType, baseType);
+          }
+          yield StringType.getInstance();
+        }
         case LegacyObjectMapType mapType -> {
           if (mapType.isEmpty()) {
             errorReporter.report(baseLocation, EMPTY_MAP_ACCESS);

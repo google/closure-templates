@@ -1664,6 +1664,16 @@ final class ExpressionCompiler {
               detacher.resolveSoyValueProvider(
                   MethodRefs.RUNTIME_GET_LIST_ITEM_PROVIDER.invoke(list, index));
         }
+      } else if (baseExpr.soyRuntimeType().isKnownString()) {
+        Expression stringStr = baseExpr.unboxAsStringUnchecked();
+        SoyExpression index = keyExpr.coerceToIndex();
+        if (analysis.isResolved(node)) {
+          soyValueProvider = MethodRefs.RUNTIME_GET_STRING_ITEM.invoke(stringStr, index);
+        } else {
+          soyValueProvider =
+              detacher.resolveSoyValueProvider(
+                  MethodRefs.RUNTIME_GET_STRING_ITEM_PROVIDER.invoke(stringStr, index));
+        }
       } else {
         Expression map = baseExpr.box();
         SoyExpression index = keyExpr.box();

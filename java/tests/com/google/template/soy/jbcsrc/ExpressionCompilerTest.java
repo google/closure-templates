@@ -439,6 +439,25 @@ public class ExpressionCompilerTest {
   }
 
   @Test
+  public void testItemAccess_strings() {
+    variables.put("str", compileExpression("'abc'").box());
+    // By default all values are boxed
+    assertExpression("$str[0]").evaluatesTo(StringData.forValue("a"));
+    assertExpression("$str[1]").evaluatesTo(StringData.forValue("b"));
+    assertExpression("$str[2]").evaluatesTo(StringData.forValue("c"));
+
+    // null/UndefinedData, not StringIndexOutOfBoundsException
+    assertExpression("$str[3]").evaluatesTo(UndefinedData.INSTANCE);
+    assertExpression("$str[-1]").evaluatesTo(UndefinedData.INSTANCE);
+
+    // even if the index type is not known, it still works
+    variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(1L))));
+    assertExpression("$str[$anInt]").evaluatesTo(StringData.forValue("b"));
+    variables.put("anInt", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
+    assertExpression("$str[$anInt]").evaluatesTo(UndefinedData.INSTANCE);
+  }
+
+  @Test
   public void testItemAccess_maps() {
     variables.put(
         "map", compileExpression("mapToLegacyObjectMap(map('a': 0, 'b': 1, 'c': 2))").box());

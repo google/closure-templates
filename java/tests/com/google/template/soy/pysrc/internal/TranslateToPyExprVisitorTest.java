@@ -94,6 +94,16 @@ public class TranslateToPyExprVisitorTest {
   }
 
   @Test
+  public void testDataRef_itemAccess() {
+    assertThatSoyExpr("'abc'[0]")
+        .translatesTo("runtime.key_safe_data_access('abc', 0)", Integer.MAX_VALUE);
+    assertThatSoyExpr("'abc'[2]")
+        .translatesTo("runtime.key_safe_data_access('abc', 2)", Integer.MAX_VALUE);
+    assertThatSoyExpr("[1, 2, 3][0]")
+        .translatesTo("runtime.key_safe_data_access([1, 2, 3], 0)", Integer.MAX_VALUE);
+  }
+
+  @Test
   public void testDataRef_localVars() {
     Map<String, PyExpr> frame = new HashMap<>();
     frame.put("zoo", new PyExpr("zooData8", Integer.MAX_VALUE));

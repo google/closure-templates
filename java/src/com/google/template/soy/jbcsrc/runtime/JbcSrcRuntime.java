@@ -187,6 +187,23 @@ public final class JbcSrcRuntime {
     return UndefinedData.INSTANCE;
   }
 
+  @Keep
+  public static SoyValueProvider getSoyStringItemProvider(String str, long index) {
+    return getSoyStringItem(str, index);
+  }
+
+  @Keep
+  public static SoyValue getSoyStringItem(String str, long index) {
+    if (str == null) {
+      throw new NullPointerException("Attempted to access string item '" + index + "' of null");
+    }
+    int size = str.length();
+    if (index < size & index >= 0) {
+      return StringData.forValue(String.valueOf(str.charAt((int) index)));
+    }
+    return UndefinedData.INSTANCE;
+  }
+
   public static RenderResult getListStatus(List<? extends SoyValueProvider> soyValueProviders) {
     // avoid allocating an iterator
     for (SoyValueProvider soyValueProvider : soyValueProviders) {
