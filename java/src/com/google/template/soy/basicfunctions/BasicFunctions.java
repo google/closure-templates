@@ -104,6 +104,8 @@ public class BasicFunctions {
         new StrLenFunction(),
         new StrMatchAllMethod(),
         new StrMatchMethod(),
+        new StrPadEndMethod(),
+        new StrPadStartMethod(),
         new StrRepeatMethod(),
         new StrReplaceAllMethod(),
         new StrReplaceMethod(),

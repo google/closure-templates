@@ -776,6 +776,47 @@ public final class BasicFunctionsRuntime {
     return builder.build();
   }
 
+  private static String padString(
+      String str, NumberData targetLength, @Nullable String padString, boolean atStart) {
+    int targetLen = (int) targetLength.floatValue();
+    if (targetLen <= str.length()) {
+      return str;
+    }
+    String pad = padString != null ? padString : " ";
+    if (pad.isEmpty()) {
+      return str;
+    }
+    int fillLen = targetLen - str.length();
+    StringBuilder sb = new StringBuilder(targetLen);
+    if (!atStart) {
+      sb.append(str);
+    }
+    int padLen = pad.length();
+    int fullRepeats = fillLen / padLen;
+    int remainder = fillLen % padLen;
+    for (int i = 0; i < fullRepeats; i++) {
+      sb.append(pad);
+    }
+    if (remainder > 0) {
+      sb.append(pad, 0, remainder);
+    }
+    if (atStart) {
+      sb.append(str);
+    }
+    return sb.toString();
+  }
+
+  @Nonnull
+  public static String strPadStart(
+      String str, NumberData targetLength, @Nullable String padString) {
+    return padString(str, targetLength, padString, /* atStart= */ true);
+  }
+
+  @Nonnull
+  public static String strPadEnd(String str, NumberData targetLength, @Nullable String padString) {
+    return padString(str, targetLength, padString, /* atStart= */ false);
+  }
+
   @Nonnull
   public static String strRepeat(String str, NumberData count) {
     int repeatCount = (int) count.floatValue();

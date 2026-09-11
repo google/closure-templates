@@ -799,6 +799,35 @@ def str_ends_with(s, val, length=None):
   return s.endswith(val, 0, int(length))
 
 
+def _str_pad(s, target_length, pad_string=None, at_start=True):
+  """Pads string s to target_length with pad_string at start or end."""
+  try:
+    target_len = int(target_length)
+  except (ValueError, TypeError) as e:
+    raise ValueError(f'Invalid target_length: {target_length}') from e
+  if target_len <= len(s):
+    return s
+  if pad_string is None:
+    pad_string = ' '
+  pad = str(pad_string)
+  if not pad:
+    return s
+  fill_len = target_len - len(s)
+  times = (fill_len // len(pad)) + 1
+  padding = (pad * times)[:fill_len]
+  return padding + s if at_start else s + padding
+
+
+def str_pad_start(s, target_length, pad_string=None):
+  """Pads the start of string s to target_length with pad_string."""
+  return _str_pad(s, target_length, pad_string, at_start=True)
+
+
+def str_pad_end(s, target_length, pad_string=None):
+  """Pads the end of string s to target_length with pad_string."""
+  return _str_pad(s, target_length, pad_string, at_start=False)
+
+
 def str_repeat(s, count):
   """Repeats string s count times."""
   try:

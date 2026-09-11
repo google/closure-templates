@@ -497,6 +497,20 @@ Returns a list of match strings, or `null` if no match was found.
 Returns a list of all matches of `str` against a string or `regexp` `pattern`.
 If `pattern` is a `regexp`, it must have the global (`g`) flag set.
 
+### `str.padEnd(targetLength[, padString])` {#string_padEnd}
+
+Pads the current string with a given string (repeated, if needed) so that the
+resulting string reaches a given target length. The padding is applied from the
+end of the current string. Defaults to a space (`' '`) if `padString` is not
+provided.
+
+### `str.padStart(targetLength[, padString])` {#string_padStart}
+
+Pads the current string with another string (repeated, if needed) so that the
+resulting string reaches a given target length. The padding is applied from the
+start of the current string. Defaults to a space (`' '`) if `padString` is not
+provided.
+
 ### `str.replace(pattern, replacement)` {#string_replace}
 
 Returns a copy of `str` with the first occurrence or match of string or `regexp`
