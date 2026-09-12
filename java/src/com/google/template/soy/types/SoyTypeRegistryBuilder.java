@@ -41,6 +41,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyInternalCompilerException;
 import com.google.template.soy.internal.proto.ProtoUtils;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -153,7 +154,35 @@ public final class SoyTypeRegistryBuilder {
           registry,
           ImmutableMap.copyOf(msgAndEnumFqnToDesc),
           ImmutableSetMultimap.copyOf(msgFqnToExts),
-          importPathToDepKind);
+          propagateDepKindsThroughPublicImports(files.values(), importPathToDepKind));
+    }
+
+    /**
+     * Returns {@code importPathToDepKind} extended so that every file reachable via {@code import
+     * public} is at least as direct a dependency as the file that publicly imports it.
+     *
+     * <p>A file that publicly imports another re-exports its symbols, so depending on the importing
+     * file is enough to legitimately use them. Without this the symbols would be reported as coming
+     * from an indirect (or entirely unknown) dependency.
+     */
+    private static ImmutableMap<String, SoyFileKind> propagateDepKindsThroughPublicImports(
+        Collection<FileDescriptor> files, ImmutableMap<String, SoyFileKind> importPathToDepKind) {
+      Map<String, SoyFileKind> depKinds = new HashMap<>(importPathToDepKind);
+      for (FileDescriptor fd : files) {
+        SoyFileKind kind = importPathToDepKind.get(fd.getName());
+        if (kind != null) {
+          propagateDepKind(fd, kind, depKinds);
+        }
+      }
+      return ImmutableMap.copyOf(depKinds);
+    }
+
+    private static void propagateDepKind(
+        FileDescriptor fd, SoyFileKind kind, Map<String, SoyFileKind> depKinds) {
+      for (FileDescriptor publicDep : fd.getPublicDependencies()) {
+        depKinds.merge(publicDep.getName(), kind, SoyFileKind::mostDirect);
+        propagateDepKind(publicDep, kind, depKinds);
+      }
     }
 
     private void visitGeneric(GenericDescriptor descriptor) {
