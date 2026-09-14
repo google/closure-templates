@@ -43,7 +43,7 @@ public final class I18NDirectivesRuntime {
   public static String formatNum(
       @Nullable SoyValue number,
       String formatType,
-      String numbersKeyword,
+      @Nullable String numbersKeyword,
       @Nullable NumberData minFractionDigits,
       @Nullable NumberData maxFractionDigits,
       ULocale uLocale) {
@@ -92,7 +92,7 @@ public final class I18NDirectivesRuntime {
   public static String format(
       Object number,
       String formatType,
-      String numbersKeyword,
+      @Nullable String numbersKeyword,
       Double minFractionDigits,
       Double maxFractionDigits,
       ULocale uLocale) {
@@ -129,10 +129,16 @@ public final class I18NDirectivesRuntime {
       ULocale uLocale,
       double number,
       String formatType,
-      String numbersKeyword,
+      @Nullable String numbersKeyword,
       @Nullable Integer minFractionDigits,
       @Nullable Integer maxFractionDigits) {
-    uLocale = uLocale.setKeywordValue("numbers", numbersKeyword);
+    // Specifically ignore the "native" anti-pattern keyword to use the locale's
+    // default numbering system, while allowing explicit keywords (e.g. "latn")
+    // to pass through to ICU.
+    // TODO(b/553007603): Improve handling of "native" in ICU number formatting.
+    if (numbersKeyword != null && !numbersKeyword.equals("native")) {
+      uLocale = uLocale.setKeywordValue("numbers", numbersKeyword);
+    }
     NumberFormat numberFormat;
     switch (formatType) {
       case "decimal":
