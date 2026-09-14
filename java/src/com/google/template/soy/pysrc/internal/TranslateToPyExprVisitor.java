@@ -465,8 +465,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       ItemAccessNode itemAccess = (ItemAccessNode) dataAccess;
       SoyType baseType = SoyTypes.excludeNullish(itemAccess.getBaseExprChild().getType());
       PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
-      if (ListType.ANY_LIST.isAssignableFromStrict(baseType)
-          || SoyTypes.isKindOrUnionOfKinds(baseType, ImmutableSet.of(Kind.STRING))) {
+      if (ListType.ANY_LIST.isAssignableFromStrict(baseType)) {
         return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.returnNone());
       } else if (SoyTypes.isKindOrUnionOfKinds(
           baseType, ImmutableSet.of(Kind.LEGACY_OBJECT_MAP, Kind.RECORD))) {

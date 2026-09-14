@@ -322,14 +322,11 @@ def key_safe_data_access(data, key):
   Returns:
     data[key] if key is present or None otherwise.
   """
-  if isinstance(data, (list, str)):
-    if isinstance(key, float):
-      int_val = int(key)
-      if key != int_val:
-        return None
-      key = int_val
-    if isinstance(key, int) and key < 0:
+  if isinstance(data, list) and isinstance(key, float):
+    int_val = int(key)
+    if key != int_val:
       return None
+    key = int_val
   try:
     return data[key]
   except (KeyError, IndexError):
