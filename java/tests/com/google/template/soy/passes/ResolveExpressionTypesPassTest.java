@@ -23,6 +23,7 @@ import static com.google.template.soy.passes.TypeNarrowingConditionVisitor.insta
 import static com.google.template.soy.testing.SharedTestUtils.buildAstStringWithPreview;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -66,7 +67,6 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
-import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -128,12 +128,12 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(soyTree);
     TemplateElementNode node = (TemplateElementNode) soyTree.getChild(0).getChild(0);
 
-    List<TemplateStateVar> stateVars = node.getStateVars();
+    ImmutableList<TemplateStateVar> stateVars = node.getStateVars();
     assertThat(stateVars.get(0).defaultValue().getType()).isEqualTo(BoolType.getInstance());
     assertThat(stateVars.get(1).defaultValue().getType())
         .isEqualTo(ListType.of(IntType.getInstance()));
 
-    List<TemplateParam> params = node.getParams();
+    ImmutableList<TemplateParam> params = node.getParams();
     assertThat(params.get(0).defaultValue().getType()).isEqualTo(NullType.getInstance());
     assertThat(params.get(1).defaultValue().getType()).isEqualTo(NullType.getInstance());
   }
@@ -176,7 +176,7 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(soyTree);
 
     TemplateBasicNode node = (TemplateBasicNode) soyTree.getChild(0).getChild(0);
-    List<TemplateParam> params = node.getParams();
+    ImmutableList<TemplateParam> params = node.getParams();
     assertThat(params.get(0).defaultValue().getType())
         .isEqualTo(MapType.of(StringType.getInstance(), BoolType.getInstance()));
     assertThat(params.get(1).defaultValue().getType()).isEqualTo(NullType.getInstance());
@@ -204,7 +204,7 @@ public final class ResolveExpressionTypesPassTest {
     assertTypes(soyTree);
     TemplateElementNode node =
         SoyTreeUtils.getAllNodesOfType(soyTree, TemplateElementNode.class).get(0);
-    List<TemplateStateVar> stateVars = node.getStateVars();
+    ImmutableList<TemplateStateVar> stateVars = node.getStateVars();
 
     assertThat(stateVars.get(0).name()).isEqualTo("pa");
     assertThat(stateVars.get(0).type()).isEqualTo(BoolType.getInstance());
@@ -235,12 +235,14 @@ public final class ResolveExpressionTypesPassTest {
         "{@param pa: bool}",
         "{@param pb: list<int>}",
         "{@param pe: map<int, map<int, string>>}",
+        "{@param pf: string}",
         "{assertType('bool', $pa)}",
         "{assertType('list<int>', $pb)}",
         "{assertType('int', $pb[0])}",
         "{assertType('map<int,map<int,string>>', $pe)}",
         "{assertType('map<int,string>', $pe.get(0)!)}",
-        "{assertType('string', $pe.get(1 + 1)!.get(2)!)}");
+        "{assertType('string', $pe.get(1 + 1)!.get(2)!)}",
+        "{assertType('string', $pf[0])}");
   }
 
   @Test

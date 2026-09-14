@@ -364,6 +364,12 @@ public final class MethodRefs {
   public static final MethodRef RUNTIME_GET_LIST_ITEM =
       createPure(JbcSrcRuntime.class, "getSoyListItem", List.class, long.class);
 
+  public static final MethodRef RUNTIME_GET_STRING_ITEM =
+      createPure(JbcSrcRuntime.class, "getSoyStringItem", String.class, long.class);
+
+  public static final MethodRef RUNTIME_GET_STRING_ITEM_PROVIDER =
+      createPure(JbcSrcRuntime.class, "getSoyStringItemProvider", String.class, long.class);
+
   public static final MethodRef RUNTIME_GET_LIST_ITEM_PROVIDER =
       createPure(JbcSrcRuntime.class, "getSoyListItemProvider", List.class, long.class);
 
