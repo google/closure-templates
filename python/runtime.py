@@ -33,7 +33,6 @@ import six
 from . import environment
 from . import sanitize
 
-
 __author__ = 'dcphillips@google.com (David Phillips)'
 
 try:
@@ -172,7 +171,7 @@ def get_delegate_fn(template_id, variant, allow_empty_default):
   elif allow_empty_default:
     return _empty_template_function
   else:
-    msg = ('Found no active impl for delegate call to "%s%s".')
+    msg = 'Found no active impl for delegate call to "%s%s".'
     raise RuntimeError(msg % (template_id, ':' + variant if variant else ''))
 
 
@@ -207,7 +206,9 @@ def concat_css_values(l, r):
   return sanitize.SanitizedCss(
       concat_attribute_values(str(l), str(r), ';'),
       sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
-          """Internal framework code."""))
+          """Internal framework code."""
+      ),
+  )
 
 
 def merge_into_dict(original, secondary):
@@ -277,7 +278,8 @@ def namespaced_import(name, namespace=None, environment_path=None):
 
         # Strip the root path and the file extension.
         module_path = six.ensure_str(os.path.relpath(f_path, sys_path)).replace(
-            '/', '.')
+            '/', '.'
+        )
         module_name = os.path.splitext(f_name)[0]
 
         # Python 2 performs relative or absolute imports. Beginning with
@@ -287,7 +289,8 @@ def namespaced_import(name, namespace=None, environment_path=None):
         # https://docs.python.org/3/library/functions.html#__import__
         module = getattr(
             __import__(module_path, globals(), locals(), [module_name]),
-            module_name)
+            module_name,
+        )
         break
       if module:
         # Add this to the global modules list for faster loading in the future.
@@ -349,7 +352,8 @@ def register_delegate_fn(template_id, variant, priority, fn, fn_name):
   """
   map_key = _gen_delegate_id(template_id, variant)
   curr_priority, _, curr_fn_name = _DELEGATE_REGISTRY.get(
-      map_key, (None, None, None))
+      map_key, (None, None, None)
+  )
 
   # Ignore unless at a equal or higher priority.
   if curr_priority is None or priority > curr_priority:
@@ -358,8 +362,9 @@ def register_delegate_fn(template_id, variant, priority, fn, fn_name):
   elif priority == curr_priority and fn_name != curr_fn_name:
     # Registering same-priority function: error.
     raise RuntimeError(
-        'Encountered two active delegates with the same priority (%s:%s:%s).' %
-        (template_id, variant, priority))
+        'Encountered two active delegates with the same priority (%s:%s:%s).'
+        % (template_id, variant, priority)
+    )
 
 
 def type_safe_add(*args):
@@ -456,11 +461,43 @@ def map_entries(m):
   return [{'key': k, 'value': m[k]} for k in m]
 
 
+def list_at(l: list[Any] | None, index: int | float | None) -> Any | None:
+  """Equivalent of JavaScript Array.prototype.at."""
+  if l is None:
+    return None
+  if index is None:
+    int_index = 0
+  elif isinstance(index, float):
+    if math.isinf(index):
+      return None
+    if math.isnan(index):
+      int_index = 0
+    else:
+      int_index = int(index)
+  else:
+    try:
+      int_index = int(index)
+    except (ValueError, TypeError, OverflowError):
+      int_index = 0
+  length = len(l)
+  if int_index >= 0:
+    if int_index < length:
+      return l[int_index]
+    return None
+  else:
+    if int_index < -length:
+      return None
+    return l[length + int_index]
+
+
 def list_slice(l, start, stop):
   """Equivalent of JavaScript Array.prototype.slice."""
-  return l[slice(
-      int(start) if start is not None else 0,
-      int(stop) if stop is not None else len(l))]
+  return l[
+      slice(
+          int(start) if start is not None else 0,
+          int(stop) if stop is not None else len(l),
+      )
+  ]
 
 
 def list_reverse(l):
@@ -792,6 +829,35 @@ def str_starts_with(s, val, start=0):
   return s.startswith(val, clamp_str_index(s, start))
 
 
+def str_at(s: str | None, index: int | float | None) -> str | None:
+  """Equivalent of JavaScript String.prototype.at."""
+  if s is None:
+    return None
+  if index is None:
+    int_index = 0
+  elif isinstance(index, float):
+    if math.isinf(index):
+      return None
+    if math.isnan(index):
+      int_index = 0
+    else:
+      int_index = int(index)
+  else:
+    try:
+      int_index = int(index)
+    except (ValueError, TypeError, OverflowError):
+      int_index = 0
+  length = len(s)
+  if int_index >= 0:
+    if int_index < length:
+      return s[int_index]
+    return None
+  else:
+    if int_index < -length:
+      return None
+    return s[length + int_index]
+
+
 def str_ends_with(s, val, length=None):
   """Returns whether s ends with val."""
   if length is None:
@@ -898,7 +964,7 @@ def str_split(s, sep, limit=None):
   split_str = s.split(sep) if sep else list(s)
   if limit is None or limit == -1:
     return split_str
-  return split_str[:int(limit)]
+  return split_str[: int(limit)]
 
 
 def str_substring(s, start, end):
@@ -908,8 +974,8 @@ def str_substring(s, start, end):
     if start > end:
       # pylint: disable=arguments-out-of-order
       return str_substring(s, end, start)
-    return s[clamped_start:clamp_str_index(s, end)]
-  return s[clamp_str_index(s, start):]
+    return s[clamped_start : clamp_str_index(s, end)]
+  return s[clamp_str_index(s, start) :]
 
 
 def str_indexof(s, search_str, start=0):
@@ -932,8 +998,9 @@ def soy_round(num, precision=0):
     a rounded number
   """
   float_breakdown = math.frexp(num)
-  tweaked_number = ((float_breakdown[0] + sys.float_info.epsilon) *
-                    2**float_breakdown[1])
+  tweaked_number = (
+      float_breakdown[0] + sys.float_info.epsilon
+  ) * 2 ** float_breakdown[1]
   rounded_number = round(tweaked_number, precision)
   if not precision or precision < 0:
     return int(rounded_number)
@@ -949,8 +1016,11 @@ def build_attr_value(*values):
   Returns:
     The joined string.
   """
-  return ';'.join([build_attr_value(*x) if isinstance(x, list)
-                   else str(x) for x in values if x])
+  return ';'.join([
+      build_attr_value(*x) if isinstance(x, list) else str(x)
+      for x in values
+      if x
+  ])
 
 
 def build_class_value(*values):
@@ -963,8 +1033,11 @@ def build_class_value(*values):
     The joined string.
   """
 
-  return ' '.join([build_class_value(*x) if isinstance(x, list)
-                   else str(x) for x in values if x])
+  return ' '.join([
+      build_class_value(*x) if isinstance(x, list) else str(x)
+      for x in values
+      if x
+  ])
 
 
 def build_style_value(*values):
