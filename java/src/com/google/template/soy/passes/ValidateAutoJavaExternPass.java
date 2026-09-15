@@ -112,7 +112,7 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
     @Override
     protected void visitReturnNode(ReturnNode node) {
       SoyType type = node.getExpr().getType();
-      if (!returnType.isAssignableFromStrict(type)) {
+      if (type != null && returnType != null && !returnType.isAssignableFromStrict(type)) {
         errorReporter.report(node.getExpr().getSourceLocation(), BAD_RETURN_TYPE, type, returnType);
       }
     }

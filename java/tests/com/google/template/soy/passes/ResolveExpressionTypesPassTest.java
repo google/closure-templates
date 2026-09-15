@@ -32,6 +32,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.passes.ResolveExpressionTypesPass.AccumulatingTypeRegistry;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -1401,6 +1402,49 @@ public final class ResolveExpressionTypesPassTest {
             .parse()
             .fileSet();
     assertTypes(soyTree);
+  }
+
+  @Test
+  public void testImplicitReturnTypeInExternWithoutImplicitParams() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                """
+                {namespace ns}
+
+                {extern noParams: () => implicit}
+                  {autoimpl}
+                    {return 'hello' /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern withParams: (n: int, s: string) => implicit}
+                  {autoimpl}
+                    {return $n > 0 ? $s : 'default' /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern uncalled: () => implicit}
+                  {autoimpl}
+                    {return 42 /}
+                  {/autoimpl}
+                {/extern}
+
+                {template aaa}
+                  {assertType('string', noParams())}
+                  {assertType('string', noParams())}
+                  {assertType('string', withParams(1, 'abc'))}
+                  {assertType('string', withParams(0, 'xyz'))}
+                {/template}
+                """)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+
+    List<ExternNode> externs = SoyTreeUtils.allNodesOfType(soyTree, ExternNode.class).toList();
+    assertThat(externs.get(0).getType().getReturnType()).isEqualTo(StringType.getInstance());
+    assertThat(externs.get(1).getType().getReturnType()).isEqualTo(StringType.getInstance());
+    assertThat(externs.get(2).getType().getReturnType()).isEqualTo(IntType.getInstance());
   }
 
   @Test
