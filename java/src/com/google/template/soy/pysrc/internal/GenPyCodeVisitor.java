@@ -306,7 +306,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               String fullNamespace = fileSetMetadata.getNamespaceForPath(node.getSourceFilePath());
               NamespaceAndName namespaceAndName = NamespaceAndName.fromModule(fullNamespace);
               localVarExprs.addVariable(
-                  var.name(),
+                  var,
                   new PyExpr(
                       namespaceAndName.name() + "." + var.getSymbol() + "()", Integer.MAX_VALUE));
             }
@@ -325,8 +325,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       PyExpr value = translator.exec(node.getExpr());
       pyCodeBuilder.appendLine("return ", value.getText());
 
-      localVarExprs.addVariable(
-          node.getVar().name(), new PyExpr(functionName + "()", Integer.MAX_VALUE));
+      localVarExprs.addVariable(node.getVar(), new PyExpr(functionName + "()", Integer.MAX_VALUE));
 
       // Dedent to end the function.
       pyCodeBuilder.decreaseIndent();
@@ -618,11 +617,10 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // Add a new localVarExprs frame and populate it with the translations from this loop.
       localVarExprs.pushFrame();
-      localVarExprs.addVariable(baseVarName, new PyExpr(dataVarName, Integer.MAX_VALUE));
+      localVarExprs.addVariable(node.getVar(), new PyExpr(dataVarName, Integer.MAX_VALUE));
 
       if (node.getIndexVar() != null) {
-        localVarExprs.addVariable(
-            node.getIndexVarName(), new PyExpr(indexVarName, Integer.MAX_VALUE));
+        localVarExprs.addVariable(node.getIndexVar(), new PyExpr(indexVarName, Integer.MAX_VALUE));
       }
       // Generate the code for the loop body.
       visitChildren(node);
@@ -661,7 +659,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       pyCodeBuilder.appendLine(generatedVarName, " = ", valuePyExpr.getText());
 
       // Add a mapping for generating future references to this local var.
-      localVarExprs.addVariable(node.getVarName(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
+      localVarExprs.addVariable(node.getVar(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
     }
 
     /**
@@ -707,7 +705,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               .getText());
 
       // Add a mapping for generating future references to this local var.
-      localVarExprs.addVariable(node.getVarName(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
+      localVarExprs.addVariable(node.getVar(), new PyExpr(generatedVarName, Integer.MAX_VALUE));
     }
 
     @Override
