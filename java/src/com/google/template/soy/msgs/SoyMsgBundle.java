@@ -57,18 +57,7 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
     return getLocaleString() == null ? null : new ULocale(getLocaleString());
   }
 
-  /**
-   * Returns the message parts, or an empty array if there is no such message.
-   *
-   * @deprecated Use {@link #getMsgPartsForRendering} instead.
-   */
-  @Nullable
-  @Deprecated
-  public String getBasicTranslation(long msgId) {
-    return getBasicTranslation(msgId, GrammaticalGender.UNSPECIFIED);
-  }
-
-  /** Returns the plain translated text of a message with no placeholders. */
+  /** /** Returns the plain translated text of a message with no placeholders. */
   @Nullable
   public String getBasicTranslation(long msgId, GrammaticalGender viewerGrammaticalGender) {
     SoyMsg msg = getMsg(msgId);
@@ -77,17 +66,6 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
     }
     return ((SoyMsgRawTextPart) findPartsForGender(msg.getParts(), viewerGrammaticalGender).get(0))
         .getRawText();
-  }
-
-  /**
-   * Returns the message parts, or an empty array if there is no such message.
-   *
-   * @deprecated Use {@link #getMsgPartsForRendering} with the GrammaticalGender parameter instead.
-   */
-  @Nullable
-  @Deprecated
-  public SoyMsgRawParts getMsgPartsForRendering(long msgId) {
-    return getMsgPartsForRendering(msgId, GrammaticalGender.UNSPECIFIED);
   }
 
   /**
