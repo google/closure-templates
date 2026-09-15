@@ -477,7 +477,7 @@ public class GenCallCodeUtils {
         // unset. The additional JS to figure out of a parameter is the default or not isn't worth
         // it.
         defaultParams.put(
-            param.name(), state.translationContext.soyToJsVariableMappings().get(param.refName()));
+            param.name(), state.translationContext.soyToJsVariableMappings().get(param));
       }
     }
     return defaultParams;
