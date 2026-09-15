@@ -245,11 +245,11 @@ public final class JbcSrcExternRuntime {
   public static final MethodRef MARK_AS_SOY_MAP =
       MethodRef.createNonPure(SoyValueConverter.class, "markAsSoyMap", Map.class);
 
-  public static final MethodRef NO_EXTERN_JAVA_IMPL = create("noExternJavaImpl");
+  public static final MethodRef NO_EXTERN_JAVA_IMPL = create("noExternJavaImpl", String.class);
 
   @Nonnull
-  public static NoSuchMethodException noExternJavaImpl() {
-    return new NoSuchMethodException("No Java implementation for extern.");
+  public static NoSuchMethodException noExternJavaImpl(String extern) {
+    return new NoSuchMethodException("No Java implementation for extern: " + extern);
   }
 
   public static final MethodRef SOY_VALUE_TO_BOXED_BOOLEAN =

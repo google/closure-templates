@@ -122,7 +122,10 @@ public final class ExternCompiler {
     Optional<JavaImplNode> javaOpt = extern.getJavaImpl();
     Optional<AutoImplNode> autoOpt = extern.getAutoImpl();
     if (javaOpt.isEmpty() && autoOpt.isEmpty()) {
-      Statement.throwExpression(JbcSrcExternRuntime.NO_EXTERN_JAVA_IMPL.invoke())
+      var var = extern.getVar();
+      Statement.throwExpression(
+              JbcSrcExternRuntime.NO_EXTERN_JAVA_IMPL.invoke(
+                  constant(var.name() + "@" + var.getSourceFilePath())))
           .writeMethod(
               methodAccess(),
               buildMemberMethod(
