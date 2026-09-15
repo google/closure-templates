@@ -36,20 +36,23 @@ public final class SoyToJsVariableMappings {
   /** TODO(user): change the key type to {@link com.google.template.soy.exprtree.VarDefn}. */
   private final Map<String, Expression> mappings;
 
+  private final IdentityHashMap<VarDefn, Expression> varDefnMappings;
+
   /**
    * The MsgFallbackGroupNode to an expression that evaluates to whether or not the primary message
    * is in use.
    */
   private final IdentityHashMap<MsgFallbackGroupNode, Expression> isPrimaryMsgInUseForFallbackGroup;
-  ;
 
   private SoyToJsVariableMappings(Map<String, ? extends Expression> initialMappings) {
     mappings = new HashMap<>(initialMappings);
+    varDefnMappings = new IdentityHashMap<>();
     isPrimaryMsgInUseForFallbackGroup = new IdentityHashMap<>();
   }
 
   private SoyToJsVariableMappings(SoyToJsVariableMappings parent) {
     mappings = new HashMap<>(parent.mappings);
+    varDefnMappings = new IdentityHashMap<>(parent.varDefnMappings);
     // Confusingly this map doesn't reflect block scoping. however because the keys are nodes there
     // is no namespace issue we need to manage.
     isPrimaryMsgInUseForFallbackGroup = parent.isPrimaryMsgInUseForFallbackGroup;
@@ -71,7 +74,9 @@ public final class SoyToJsVariableMappings {
     return new SoyToJsVariableMappings(initialMappings);
   }
 
+  @CanIgnoreReturnValue
   public SoyToJsVariableMappings put(VarDefn var, Expression translation) {
+    varDefnMappings.put(var, translation);
     return put(var.refName(), translation);
   }
 
@@ -94,6 +99,15 @@ public final class SoyToJsVariableMappings {
     return this;
   }
 
+  /** Returns the JavaScript translation for the given Soy variable. */
+  public Expression get(VarDefn var) {
+    Expression expr = varDefnMappings.get(var);
+    if (expr != null) {
+      return expr;
+    }
+    return get(var.refName());
+  }
+
   /** Returns the JavaScript translation for the Soy variable with the given name, */
   public Expression get(String name) {
     return Preconditions.checkNotNull(
@@ -105,6 +119,19 @@ public final class SoyToJsVariableMappings {
 
   public Expression isPrimaryMsgInUse(MsgFallbackGroupNode msg) {
     return isPrimaryMsgInUseForFallbackGroup.get(msg);
+  }
+
+  /**
+   * Returns the JavaScript translation for the given Soy variable, or null if no mapping exists for
+   * that variable.
+   */
+  @Nullable
+  public Expression maybeGet(VarDefn var) {
+    Expression expr = varDefnMappings.get(var);
+    if (expr != null) {
+      return expr;
+    }
+    return maybeGet(var.refName());
   }
 
   /**
