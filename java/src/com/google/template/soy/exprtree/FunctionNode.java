@@ -70,15 +70,12 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     }
 
     public static FunctionRef of(Object soyFunction) {
-      if (soyFunction instanceof SoyFunction) {
-        return of((SoyFunction) soyFunction);
-      } else if (soyFunction instanceof SoySourceFunction) {
-        return of((SoySourceFunction) soyFunction);
-      } else if (soyFunction instanceof Extern) {
-        return of((Extern) soyFunction);
-      } else {
-        throw new ClassCastException(String.valueOf(soyFunction));
-      }
+      return switch (soyFunction) {
+        case SoyFunction f -> of(f);
+        case SoySourceFunction f -> of(f);
+        case Extern f -> of(f);
+        default -> throw new ClassCastException(String.valueOf(soyFunction));
+      };
     }
 
     public static FunctionRef of(SoyFunction soyFunction) {

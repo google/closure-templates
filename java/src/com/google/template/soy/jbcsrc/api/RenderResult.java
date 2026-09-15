@@ -169,8 +169,7 @@ public final class RenderResult {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof RenderResult) {
-      RenderResult other = (RenderResult) obj;
+    if (obj instanceof RenderResult other) {
       // Use identity matching for the future.
       return other.type.equals(type) && other.future == future;
     }

@@ -391,14 +391,14 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
 
     private static void replayCommandOn(Object o, LoggingAdvisingAppendable appendable)
         throws IOException {
-      if (o instanceof String) {
-        appendable.append((String) o);
+      if (o instanceof String s) {
+        appendable.append(s);
       } else if (o instanceof LoggingFunctionCommand) {
         ((LoggingFunctionCommand) o).replayOn(appendable);
       } else if (o == EXIT_LOG_STATEMENT_MARKER) {
         appendable.exitLoggableElement();
-      } else if (o instanceof LogStatement) {
-        appendable.enterLoggableElement((LogStatement) o);
+      } else if (o instanceof LogStatement logStatement) {
+        appendable.enterLoggableElement(logStatement);
       } else if (o instanceof NodeBuilder) {
         // TODO(b/421209829): Guarantee non-blocking by allowing a detach here.
         ((NodeBuilder) o).renderBlocking(appendable);
