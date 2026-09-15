@@ -1623,7 +1623,7 @@ final class ExpressionCompiler {
       if (sourceMethod != null) {
         Optional<Extern> externApi = ExternAdaptors.asExtern(sourceMethod, args);
         if (externApi.isPresent()) {
-          return callExtern(externApi.get(), args);
+          return callExtern(externApi.get(), args, node);
         }
         return sourceFunctionCompiler.compile(node, sourceMethod, args, parameters, detacher);
       }
@@ -1779,7 +1779,7 @@ final class ExpressionCompiler {
             visitAllParams(node, ImmutableList.<SoyExpression>builder().add(baseExpr));
         Optional<Extern> externApi = ExternAdaptors.asExtern(sourceMethod, args);
         if (externApi.isPresent()) {
-          return callExtern(externApi.get(), args);
+          return callExtern(externApi.get(), args, node);
         }
         return sourceFunctionCompiler.compile(node, sourceMethod, args, parameters, detacher);
       }
@@ -2031,13 +2031,14 @@ final class ExpressionCompiler {
         return callExtern(
             ExternAdaptors.asExtern(
                 (SoyJavaExternFunction) fn, args, node.getType(), node.getAllowedParamTypes()),
-            args);
+            args,
+            node);
       } else if (fn instanceof SoyJavaSourceFunction) {
         ImmutableList<SoyExpression> args = visitAllParams(node);
         return sourceFunctionCompiler.compile(
             node, (SoyJavaSourceFunction) fn, args, parameters, detacher);
       } else if (fn instanceof Extern) {
-        return callExtern((Extern) fn, visitAllParams(node));
+        return callExtern((Extern) fn, visitAllParams(node), node);
       } else if (fn == FunctionNode.FUNCTION_POINTER) {
         FunctionType functionType = node.getNameExpr().getType().asType(FunctionType.class);
         SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
@@ -2115,7 +2116,7 @@ final class ExpressionCompiler {
       return builder.build();
     }
 
-    private SoyExpression callExtern(Extern extern, List<SoyExpression> params) {
+    private SoyExpression callExtern(Extern extern, List<SoyExpression> params, ExprNode node) {
       SourceLogicalPath path = extern.getPath();
       JavaImpl javaImpl = extern.getJavaImpl();
       boolean hasJavaImpl = javaImpl != null || extern.hasAutoImpl();
@@ -2238,6 +2239,8 @@ final class ExpressionCompiler {
               }
             };
       }
+
+      SoyRuntimeType resolvedReturnType = ExternCompiler.getRuntimeType(node.getType());
 
       if (extern.isJavaAsync()) {
         externCall =
