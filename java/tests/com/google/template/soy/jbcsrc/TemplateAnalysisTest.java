@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.testing.testsize.MediumTestAttribute.SLOW;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
@@ -41,11 +42,13 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.testing.testsize.MediumTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /** Tests for {@link TemplateAnalysisImpl}. */
+@MediumTest(SLOW)
 @RunWith(JUnit4.class)
 public final class TemplateAnalysisTest {
 
