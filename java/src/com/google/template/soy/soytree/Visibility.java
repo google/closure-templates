@@ -30,6 +30,8 @@ import java.util.Set;
 public enum Visibility {
   // {template foo visibility="private"}
   PRIVATE("private"),
+  // {template foo visibility="package"}
+  PACKAGE("package"),
   // {template foo}
   PUBLIC("public");
 
