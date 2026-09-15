@@ -20,6 +20,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.jssrc.dsl.FormattingContext.LexicalState;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -42,7 +43,11 @@ public abstract class HtmlAttribute extends Expression {
   }
 
   public static HtmlAttribute create(String name, @Nullable String value) {
-    return create(name, value != null ? stringLiteral(value) : null);
+    return create(
+        name,
+        value != null
+            ? stringLiteral(value, value.contains("'") ? QuoteStyle.DOUBLE : QuoteStyle.SINGLE)
+            : null);
   }
 
   @Override
