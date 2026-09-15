@@ -200,6 +200,7 @@ public final class ExternCompiler {
       TemplateVariables variables =
           new TemplateVariables(
               paramSet,
+              /* templateScope= */ null,
               /* stackFrame= */ null,
               /* paramsRecord= */ Optional.empty(),
               renderContext.orElse(null));

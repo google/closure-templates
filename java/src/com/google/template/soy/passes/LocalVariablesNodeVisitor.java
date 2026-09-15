@@ -148,7 +148,7 @@ final class LocalVariablesNodeVisitor {
       String refName = defn.refName();
       // Search for the name to see if it is being redefined.
       VarDefn preexisting = lookup(refName);
-      if (preexisting != null) {
+      if (preexisting != null && !canMask(defn, preexisting)) {
         if (errorReporter != null && !shouldSkipError(defn, preexisting)) {
           SourceLocation defnSourceLocation =
               defn.nameLocation() == null ? definingNode.getSourceLocation() : defn.nameLocation();
@@ -162,6 +162,11 @@ final class LocalVariablesNodeVisitor {
         return false;
       }
       return true;
+    }
+
+    private static boolean canMask(VarDefn defn, VarDefn preexisting) {
+      return preexisting.kind() == Kind.PARAM
+          && (defn.kind() == Kind.LOCAL_VAR || defn.kind() == Kind.COMPREHENSION_VAR);
     }
 
     /** Defines a variable. */
