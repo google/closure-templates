@@ -328,14 +328,14 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         String.format("%sListComprehensions%d", baseListIterVarName, node.getNodeId());
     localVarExprs.pushFrame();
     localVarExprs.addVariable(
-        baseListIterVarName, new PyExpr(uniqueListIterVarName, Integer.MAX_VALUE));
+        node.getListIterVar(), new PyExpr(uniqueListIterVarName, Integer.MAX_VALUE));
     String uniqueIndexVarName = null;
     if (node.getIndexVar() != null) {
       String baseIndexVarName = node.getIndexVar().name();
       uniqueIndexVarName =
           String.format("%sListComprehensions%d", baseIndexVarName, node.getNodeId());
       localVarExprs.addVariable(
-          baseIndexVarName, new PyExpr(uniqueIndexVarName, Integer.MAX_VALUE));
+          node.getIndexVar(), new PyExpr(uniqueIndexVarName, Integer.MAX_VALUE));
     }
 
     // Now we can visit the transformExpr and filterExpr (if present).
@@ -411,7 +411,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
           genCodeForLiteralKeyAccess(IJ_DATA, node.getNameWithoutLeadingDollar()),
           Integer.MAX_VALUE);
     } else {
-      PyExpr translation = localVarExprs.getVariableExpression(node.getNameWithoutLeadingDollar());
+      PyExpr translation = localVarExprs.getVariableExpression(node);
       if (translation != null) {
         // Case 2: In-scope local var.
         return new PyExpr(translation.getText(), Integer.MAX_VALUE);

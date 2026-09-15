@@ -459,9 +459,11 @@ final class TemplateCompiler {
 
     var renderContext =
         new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT));
+    TemplateVariableManager.Scope templateScope = variableSet.enterScope();
     TemplateVariables variables =
         new TemplateVariables(
             variableSet,
+            templateScope,
             variableSet.getMethodParameter(StandardNames.STACK_FRAME),
             paramsVar,
             renderContext);
@@ -487,7 +489,6 @@ final class TemplateCompiler {
     // that all variables will be re-initialized ever time we re-enter the template.
     // TODO(lukes): move into SoyNodeCompiler.compile?  The fact that we construct SoyNodeCompiler
     // and then pull stuff out of it to initialize params is awkward
-    TemplateVariableManager.Scope templateScope = variableSet.enterScope();
     List<Statement> paramInitStatements = new ArrayList<>();
     var referencedParams = getReferencedParams(templateNode);
     for (TemplateParam param : templateNode.getAllParams()) {
@@ -679,17 +680,20 @@ final class TemplateCompiler {
 
   static final class TemplateVariables implements TemplateParameterLookup {
     private final TemplateVariableManager variableSet;
+    @Nullable private final TemplateVariableManager.Scope templateScope;
     private final Optional<Expression> paramsRecord;
     private final RenderContextExpression renderContext;
     private final LocalVariable stackFrame;
 
     TemplateVariables(
         TemplateVariableManager variableSet,
+        @Nullable TemplateVariableManager.Scope templateScope,
         LocalVariable stackFrame,
         Optional<Expression> paramsRecord,
         RenderContextExpression renderContext) {
       this.stackFrame = stackFrame;
       this.variableSet = variableSet;
+      this.templateScope = templateScope;
       this.paramsRecord = paramsRecord;
       this.renderContext = renderContext;
     }
@@ -701,6 +705,9 @@ final class TemplateCompiler {
 
     @Override
     public Expression getParam(TemplateParam param) {
+      if (templateScope != null) {
+        return templateScope.get(param.name()).accessor();
+      }
       return variableSet.getVariable(param.name());
     }
 
