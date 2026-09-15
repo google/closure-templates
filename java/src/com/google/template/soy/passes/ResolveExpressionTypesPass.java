@@ -72,6 +72,7 @@ import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.ListFlatMethod;
 import com.google.template.soy.basicfunctions.ListIncludesFunction;
 import com.google.template.soy.basicfunctions.ListIndexOfFunction;
+import com.google.template.soy.basicfunctions.ListLastIndexOfFunction;
 import com.google.template.soy.basicfunctions.ListReverseMethod;
 import com.google.template.soy.basicfunctions.ListSliceMethod;
 import com.google.template.soy.basicfunctions.ListUniqMethod;
@@ -2168,7 +2169,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             node.setType(returnType);
           }
         } else if (sourceFunction instanceof ListIncludesFunction
-            || sourceFunction instanceof ListIndexOfFunction) {
+            || sourceFunction instanceof ListIndexOfFunction
+            || sourceFunction instanceof ListLastIndexOfFunction) {
           node.setType(sourceMethod.getReturnType());
           if (node.getParam(0) instanceof RecordLiteralNode) {
             errorReporter.report(node.getParam(0).getSourceLocation(), RECORD_LITERAL_NOT_ALLOWED);
