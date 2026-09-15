@@ -75,7 +75,6 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.ReturnNode;
-import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
@@ -629,7 +628,6 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       Expression limit,
       Function<Expression, Expression> getDataItemFunction) {
     // Build some local variable names.
-    String refPrefix = node.getVarRefName();
     String jsLetPrefix = node.getVarName() + node.getForNodeId();
 
     // TODO(b/32224284): A more consistent pattern for local variable management.
@@ -648,7 +646,7 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
     try (var scope = templateTranslationContext.enterSoyAndJsScope()) {
 
       // Populate the local var translations with the translations from this node.
-      templateTranslationContext.soyToJsVariableMappings().put(refPrefix, id(dataName));
+      templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), id(dataName));
 
       Id loopIndexId = Id.create(loopIndexName);
       if (node.getIndexVar() != null) {
