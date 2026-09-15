@@ -18,10 +18,13 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -33,6 +36,7 @@ import javax.annotation.Nullable;
 final class LocalVariableStack {
 
   private final Deque<Map<String, PyExpr>> localVarExprs = new ArrayDeque<>();
+  private final Deque<Map<VarDefn, PyExpr>> localVarDefnExprs = new ArrayDeque<>();
 
   /**
    * Adds a new reference frame to the stack. This should be used when entering a new scope, such as
@@ -40,11 +44,27 @@ final class LocalVariableStack {
    */
   void pushFrame() {
     localVarExprs.push(new HashMap<>());
+    localVarDefnExprs.push(new IdentityHashMap<>());
   }
 
   /** Removes a reference frame from the stack, typically used when leaving some scope. */
   void popFrame() {
     localVarExprs.pop();
+    localVarDefnExprs.pop();
+  }
+
+  /**
+   * Adds a variable to the current reference frame by {@link VarDefn}.
+   *
+   * @param var The variable definition.
+   * @param varExpression The underlying expression used to access the variable.
+   * @return A reference to this object.
+   */
+  @CanIgnoreReturnValue
+  LocalVariableStack addVariable(VarDefn var, PyExpr varExpression) {
+    Preconditions.checkState(!localVarDefnExprs.isEmpty());
+    localVarDefnExprs.peek().put(var, varExpression);
+    return this;
   }
 
   /**
@@ -59,6 +79,25 @@ final class LocalVariableStack {
     Preconditions.checkState(!localVarExprs.isEmpty());
     localVarExprs.peek().put(name, varExpression);
     return this;
+  }
+
+  /**
+   * Retrieves the Python expression for a given variable reference.
+   *
+   * @param varRef The variable reference node.
+   * @return The translated expression, or null if not found.
+   */
+  @Nullable
+  PyExpr getVariableExpression(VarRefNode varRef) {
+    if (varRef.getDefnDecl() != null) {
+      for (Map<VarDefn, PyExpr> frame : localVarDefnExprs) {
+        PyExpr translation = frame.get(varRef.getDefnDecl());
+        if (translation != null) {
+          return translation;
+        }
+      }
+    }
+    return getVariableExpression(varRef.getNameWithoutLeadingDollar());
   }
 
   /**

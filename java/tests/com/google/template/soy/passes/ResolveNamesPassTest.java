@@ -144,16 +144,22 @@ public final class ResolveNamesPassTest {
         "Local variable '$la' conflicts with symbol defined at 4:8-4:10.",
         constructTemplateSource("{let $la: 1 /}", "{let $la: $la /}"));
     assertResolveNamesFails(
-        "Local variable '$pa' conflicts with symbol defined at 4:11-4:12.",
-        constructTemplateSource("{@param pa: bool}", "{let $pa: !$pa /}"));
+        "Local variable '$pa' conflicts with symbol defined at 5:9-5:11.",
+        constructTemplateSource("{@param pa: bool}", "{let $pa: !$pa /}", "{let $pa: !$pa /}"));
     assertResolveNamesFails(
         "Local variable '$la' conflicts with symbol defined at 4:8-4:10.",
         constructTemplateSource(
             "{let $la: 1 /}", "{for $item in ['a', 'b']}", "  {let $la: $la /}", "{/for}"));
-    assertResolveNamesFails(
-        "Local variable '$group' conflicts with symbol defined at 4:11-4:15.",
-        constructTemplateSource(
-            "{@param group: string}", "{for $group in ['a', 'b']}", "  {$group}", "{/for}"));
+    // valid, local variables can mask parameters
+    SoyFileSetParserBuilder.forFileContents(
+            constructTemplateSource(
+                "{@param pa: bool}",
+                "{@param group: string}",
+                "{let $pa: !$pa /}",
+                "{for $group in ['a', 'b']}",
+                "  {$group}",
+                "{/for}"))
+        .parse();
     // valid, $item and $la are defined in non-overlapping scopes
     SoyFileSetParserBuilder.forFileContents(
             constructTemplateSource(
