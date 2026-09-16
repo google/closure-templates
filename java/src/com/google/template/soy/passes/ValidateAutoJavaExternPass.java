@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -106,13 +107,14 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
     private final SoyType returnType;
 
     public ReturnTypeChecker(SoyType returnType) {
-      this.returnType = returnType;
+      this.returnType = Preconditions.checkNotNull(returnType);
     }
 
     @Override
     protected void visitReturnNode(ReturnNode node) {
       SoyType type = node.getExpr().getType();
-      if (!returnType.isAssignableFromStrict(type)) {
+      // If type is null then an error was already thrown in ResolveExpressionTypesPass.
+      if (type != null && !returnType.isAssignableFromStrict(type)) {
         errorReporter.report(node.getExpr().getSourceLocation(), BAD_RETURN_TYPE, type, returnType);
       }
     }
