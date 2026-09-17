@@ -216,6 +216,30 @@ public final class BasicFunctionsRuntime {
   }
 
   /**
+   * Implements JavaScript-like Array at. Negative and out-of-bounds indexes emulate JS behavior.
+   */
+  public static SoyValue listAt(List<? extends SoyValueProvider> list, NumberData index) {
+    if (list == null) {
+      return UndefinedData.INSTANCE;
+    }
+    int len = list.size();
+    long relativeIndex = index == null ? 0 : (long) index.floatValue();
+    if (relativeIndex >= 0) {
+      if (relativeIndex < len) {
+        SoyValueProvider provider = list.get((int) relativeIndex);
+        return provider != null ? provider.resolve() : UndefinedData.INSTANCE;
+      }
+      return UndefinedData.INSTANCE;
+    } else {
+      if (relativeIndex < -len) {
+        return UndefinedData.INSTANCE;
+      }
+      SoyValueProvider provider = list.get(len + (int) relativeIndex);
+      return provider != null ? provider.resolve() : UndefinedData.INSTANCE;
+    }
+  }
+
+  /**
    * Implements JavaScript-like Array slice. Negative and out-of-bounds indexes emulate the JS
    * behavior.
    */
@@ -742,6 +766,30 @@ public final class BasicFunctionsRuntime {
       return false;
     }
     return str.substring(clampedStart).startsWith(arg);
+  }
+
+  /**
+   * Implements JavaScript-like String at. Negative and out-of-bounds indexes emulate JS behavior.
+   */
+  public static SoyValue strAt(String str, NumberData index) {
+    if (str == null) {
+      return UndefinedData.INSTANCE;
+    }
+    int len = str.length();
+    long relativeIndex = index == null ? 0 : (long) index.floatValue();
+    if (relativeIndex >= 0) {
+      if (relativeIndex < len) {
+        int k = (int) relativeIndex;
+        return StringData.forValue(str.substring(k, k + 1));
+      }
+      return UndefinedData.INSTANCE;
+    } else {
+      if (relativeIndex < -len) {
+        return UndefinedData.INSTANCE;
+      }
+      int k = len + (int) relativeIndex;
+      return StringData.forValue(str.substring(k, k + 1));
+    }
   }
 
   public static boolean strEndsWith(String str, String arg, NumberData length) {

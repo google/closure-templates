@@ -84,8 +84,8 @@ Use this to create lists containing arithmetic progressions. It is most often
 used in [indexed for loops](control-flow.md#for-indexed). If the `step` argument
 is omitted, it defaults to 1. If the `start` argument is omitted, it defaults to
 
-0. The full form returns a list of plain integers `[start, start + step, start +
-2 * step, ...]`.
+0.  The full form returns a list of plain integers `[start, start + step,
+    start + 2 * step, ...]`.
 
 This function behaves identically to the Python `range` builtin function, or the
 Closure `goog.array.range` function.
@@ -266,6 +266,15 @@ Return the first index of the value in list, or -1. Given a value for
 startIndex, it returns the first index greater than or equal to startIndex. This
 method implements JavaScript semantics, comparing elements with `==`. Therefore
 it only works on lists of primitive values.
+
+<span id="list-any_at"></span>
+
+### `list.at(index)` {#list-any_at}
+
+Returns the element at the given index. Negative integers count back from the
+last item in the list. Returns `undefined` if the index is out of bounds.
+Matches the
+[JavaScript spec](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/at).
 
 ### `list.slice([from, to])` {#list-any_slice}
 
@@ -462,6 +471,15 @@ that should be displayed to a human. These functions are not generally unicode
 aware and may do bad things if used naively. For example, consider calling
 `.substring()` on text containing emoji, without being extremely careful you are
 likely to break the emoji and subvert user intention.
+
+<span id="string_at"></span>
+
+### `str.at(index)` {#string_at}
+
+Returns the single-character string at the given index. Negative integers count
+back from the last character. Returns `undefined` if the index is out of bounds.
+Matches the
+[JavaScript spec](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/at).
 
 <span id="string_includes"></span>
 
@@ -863,7 +881,8 @@ and `{velog}`. This can only be used within a `{const}` definition.
 
 `dataProtoType` should be a reference to an imported proto type, or `null`.
 
-`staticMetadata` should be a `soy.LoggableElementMetadata` proto instance.
+`staticMetadata` should be a `soy.LoggableElementMetadata` proto
+instance.
 
 ```soy
 {export const VeWithMetadata = ve_def(
@@ -1004,7 +1023,7 @@ value:
 > {/let}
 > // Or
 > {let $myAttributes: uniqueAttribute('data-foo-bar') /}
->
+> 
 > <a {$myAttributes}>Hi!</a>
 > <b {$myAttributes}>Hi!</b>
 > ```

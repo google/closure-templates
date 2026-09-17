@@ -69,6 +69,7 @@ import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.ConcatMapsMethod;
 import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
+import com.google.template.soy.basicfunctions.ListAtMethod;
 import com.google.template.soy.basicfunctions.ListFlatMethod;
 import com.google.template.soy.basicfunctions.ListIncludesFunction;
 import com.google.template.soy.basicfunctions.ListIndexOfFunction;
@@ -2111,6 +2112,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             || sourceFunction instanceof SortMethod) {
           // list<T>.slice(...), list<T>.uniq(), and list<T>.reverse() return list<T>
           node.setType(baseType);
+        } else if (sourceFunction instanceof ListAtMethod) {
+          SoyType elementType = SoyTypes.getIterableElementType(typeRegistry, baseType);
+          node.setType(
+              elementType != null
+                  ? SoyTypes.unionWithUndefined(elementType)
+                  : UnknownType.getInstance());
         } else if (sourceFunction instanceof Push || sourceFunction instanceof Unshift) {
           SoyType elementType =
               SoyTypes.getIterableElementType(typeRegistry, node.getBaseType(false));
