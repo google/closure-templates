@@ -18,6 +18,7 @@ package com.google.template.soy.pysrc.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -32,7 +33,7 @@ import javax.annotation.Nullable;
  */
 final class LocalVariableStack {
 
-  private final Deque<Map<String, PyExpr>> localVarExprs = new ArrayDeque<>();
+  private final Deque<Map<VarDefn, PyExpr>> localVarExprs = new ArrayDeque<>();
 
   /**
    * Adds a new reference frame to the stack. This should be used when entering a new scope, such as
@@ -50,28 +51,28 @@ final class LocalVariableStack {
   /**
    * Adds a variable to the current reference frame.
    *
-   * @param name The name of the variable as used by calling expressions.
+   * @param var The variable as used by calling expressions.
    * @param varExpression The underlying expression used to access the variable.
    * @return A reference to this object.
    */
   @CanIgnoreReturnValue
-  LocalVariableStack addVariable(String name, PyExpr varExpression) {
+  LocalVariableStack addVariable(VarDefn var, PyExpr varExpression) {
     Preconditions.checkState(!localVarExprs.isEmpty());
-    localVarExprs.peek().put(name, varExpression);
+    localVarExprs.peek().put(var, varExpression);
     return this;
   }
 
   /**
-   * Retrieves the Python expression for a given variable name. The stack is traversed from top to
+   * Retrieves the Python expression for a given variable. The stack is traversed from top to
    * bottom, giving the tightest scope the highest priority.
    *
-   * @param variableName The name of the variable.
+   * @param var The variable.
    * @return The translated expression, or null if not found.
    */
   @Nullable
-  PyExpr getVariableExpression(String variableName) {
-    for (Map<String, PyExpr> frame : localVarExprs) {
-      PyExpr translation = frame.get(variableName);
+  PyExpr getVariableExpression(VarDefn var) {
+    for (Map<VarDefn, PyExpr> frame : localVarExprs) {
+      PyExpr translation = frame.get(var);
       if (translation != null) {
         return translation;
       }

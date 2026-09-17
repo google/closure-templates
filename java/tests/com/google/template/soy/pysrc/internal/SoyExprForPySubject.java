@@ -28,6 +28,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -69,9 +70,9 @@ public final class SoyExprForPySubject extends Subject {
    * @return the current subject for chaining
    */
   @CanIgnoreReturnValue
-  public SoyExprForPySubject with(Map<String, PyExpr> localVarFrame) {
+  public SoyExprForPySubject with(Map<VarDefn, PyExpr> localVarFrame) {
     localVarExprs.pushFrame();
-    for (Map.Entry<String, PyExpr> entry : localVarFrame.entrySet()) {
+    for (Map.Entry<VarDefn, PyExpr> entry : localVarFrame.entrySet()) {
       localVarExprs.addVariable(entry.getKey(), entry.getValue());
     }
     return this;

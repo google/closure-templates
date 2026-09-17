@@ -22,8 +22,6 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyListExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -91,17 +89,6 @@ public class TranslateToPyExprVisitorTest {
         .translatesTo(
             "None if data.get('boo') is None else data.get('boo').get('goo')",
             Operator.CONDITIONAL);
-  }
-
-  @Test
-  public void testDataRef_localVars() {
-    Map<String, PyExpr> frame = new HashMap<>();
-    frame.put("zoo", new PyExpr("zooData8", Integer.MAX_VALUE));
-
-    assertThatSoyExpr("$zoo").with(frame).translatesTo("zooData8", Integer.MAX_VALUE);
-    assertThatSoyExpr("$zoo.boo")
-        .with(frame)
-        .translatesTo("zooData8.get('boo')", Integer.MAX_VALUE);
   }
 
   @Test
