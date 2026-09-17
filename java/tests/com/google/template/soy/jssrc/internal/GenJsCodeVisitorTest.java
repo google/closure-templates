@@ -18,10 +18,8 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.error.ErrorReporter.exploding;
-import static com.google.template.soy.jssrc.dsl.Expressions.id;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
@@ -29,7 +27,6 @@ import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
-import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.JsCodeBuilder;
 import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
@@ -48,10 +45,6 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class GenJsCodeVisitorTest {
   private static final Joiner JOINER = Joiner.on('\n');
-
-  // Let 'goo' simulate a local variable from a 'foreach' loop.
-  private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.of("$goo", id("gooData8"));
 
   private static final TemplateAliases TEMPLATE_ALIASES = AliasUtils.IDENTITY_ALIASES;
 
@@ -378,7 +371,7 @@ public final class GenJsCodeVisitorTest {
             "let $tmp;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
-            "} else if (!gooData8.includes('goo')) {",
+            "} else if (!opt_data.goo.includes('goo')) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = 'Bluh';",
@@ -408,7 +401,7 @@ public final class GenJsCodeVisitorTest {
             + "    const i5Data = 0 + i5Index * 1;\n"
             + "    output += i5Data + 1 + '<br>';\n"
             + "  }\n"
-            + "} else if (!gooData8.includes('goo')) {\n"
+            + "} else if (!opt_data.goo.includes('goo')) {\n"
             + "  output += 'Bleh';\n"
             + "} else {\n"
             + "  output += 'Bluh';\n"
@@ -1043,8 +1036,7 @@ public final class GenJsCodeVisitorTest {
     genJsCodeVisitor.outputVars.setOutputVarInited();
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
     TranslationContext translationContext =
-        TranslationContext.of(
-            SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS), nameGenerator);
+        TranslationContext.of(SoyToJsVariableMappings.newEmpty(), nameGenerator);
     genJsCodeVisitor.templateTranslationContext = translationContext;
 
     visitorsState.enterFile(

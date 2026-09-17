@@ -576,10 +576,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitVarRefNode(VarRefNode node) {
-    Expression translation = translationContext.soyToJsVariableMappings().maybeGet(node.getName());
-    if (translation != null) {
-      // Case 1: In-scope local var.
-      return translation;
+    if (node.getDefnDecl() != null) {
+      var translation = translationContext.soyToJsVariableMappings().maybeGet(node.getDefnDecl());
+      if (translation != null) {
+        // Case 1: In-scope local var.
+        return translation;
+      }
     }
 
     // Case 2: Data reference.

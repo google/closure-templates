@@ -19,12 +19,9 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.template.soy.exprtree.Operator.BAR_BAR;
 import static com.google.template.soy.exprtree.Operator.CONDITIONAL;
 import static com.google.template.soy.exprtree.Operator.PLUS;
-import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.expr;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.jssrc.dsl.Expression;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -32,10 +29,6 @@ import org.junit.runners.JUnit4;
 /** Unit tests for {@link TranslateExprNodeVisitor}. */
 @RunWith(JUnit4.class)
 public final class TranslateExprNodeVisitorTest {
-
-  // Let 'goo' simulate a local variable from a 'foreach' loop.
-  private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.of("$goo", id("gooData8"));
 
   @Test
   public void testStringLiteral() {
@@ -71,21 +64,14 @@ public final class TranslateExprNodeVisitorTest {
   public void testDataRef() {
     assertThatSoyExpr("$boo").generatesCode("opt_data.boo;");
     assertThatSoyExpr("$boo.goo").generatesCode("opt_data.boo.goo;");
-    assertThatSoyExpr("$goo")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooData8;");
-    assertThatSoyExpr("$goo.boo")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("gooData8.boo;");
     assertThatSoyExpr("$boo[0][1].foo[2]")
         .generatesCode(
             "opt_data.boo[/** @type {?} */ (0)][/** @type {?} */ (1)].foo[/** @type {?} */ (2)];");
     assertThatSoyExpr("$boo[0][1]")
         .generatesCode("opt_data.boo[/** @type {?} */ (0)][/** @type {?} */ (1)];");
     assertThatSoyExpr("$boo[/** @type {?} */ ($foo)][/** @type {?} */ ($goo+1)]")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
         .generatesCode(
-            "opt_data.boo[/** @type {?} */ (opt_data.foo)][/** @type {?} */ (gooData8 + 1)];");
+            "opt_data.boo[/** @type {?} */ (opt_data.foo)][/** @type {?} */ (opt_data.goo + 1)];");
     assertThatSoyExpr("$class").generatesCode("opt_data.class;");
     assertThatSoyExpr("$boo.yield").generatesCode("opt_data.boo.yield;");
   }
@@ -145,8 +131,7 @@ public final class TranslateExprNodeVisitorTest {
   @Test
   public void testOperators() {
     assertThatSoyExpr("!$boo || true && $goo")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("!opt_data.boo || true && gooData8;")
+        .generatesCode("!opt_data.boo || true && opt_data.goo;")
         .withPrecedence(BAR_BAR);
 
     assertThatSoyExpr("( (8-4) + (2-1) )").generatesCode("8 - 4 + (2 - 1);").withPrecedence(PLUS);
@@ -167,8 +152,7 @@ public final class TranslateExprNodeVisitorTest {
   @Test
   public void testCheckNotNull() {
     assertThatSoyExpr("checkNotNull($goo) ? 1 : 0")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("soy.$$checkNotNull(gooData8) ? 1 : 0;")
+        .generatesCode("soy.$$checkNotNull(opt_data.goo) ? 1 : 0;")
         .withPrecedence(CONDITIONAL);
   }
 
@@ -176,9 +160,6 @@ public final class TranslateExprNodeVisitorTest {
   public void testCss() {
     assertThatSoyExpr("css('foo')").generatesCode("goog.getCssName('foo');");
     assertThatSoyExpr("css($base, 'bar')").generatesCode("goog.getCssName(opt_data.base, 'bar');");
-    assertThatSoyExpr("css($goo, 'bar')")
-        .withInitialLocalVarTranslations(LOCAL_VAR_TRANSLATIONS)
-        .generatesCode("goog.getCssName(gooData8, 'bar');");
   }
 
   @Test

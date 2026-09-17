@@ -17,11 +17,9 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.jssrc.dsl.Expressions.id;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -48,10 +46,6 @@ import org.junit.runners.JUnit4;
 public final class GenJsExprsVisitorTest {
 
   private static final Joiner JOINER = Joiner.on('\n');
-
-  // Let 'goo' simulate a local variable from a 'foreach' loop.
-  private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.of("$goo", id("gooData8"));
 
   @Test
   public void testRawText() {
@@ -89,10 +83,10 @@ public final class GenJsExprsVisitorTest {
 
     assertGeneratedChunks(JOINER.join("{@param boo : ?}", "{$boo.foo}"), "opt_data.boo.foo;");
 
-    assertGeneratedChunks(JOINER.join("{@param goo : ?}", "{$goo.moo}"), "gooData8.moo;");
+    assertGeneratedChunks(JOINER.join("{@param goo : ?}", "{$goo.moo}"), "opt_data.goo.moo;");
 
     assertGeneratedChunks(
-        JOINER.join("{@param goo : ?}", "{length($goo)+1}"), "gooData8.length + 1;");
+        JOINER.join("{@param goo : ?}", "{length($goo)+1}"), "opt_data.goo.length + 1;");
   }
 
   @Test
@@ -141,7 +135,7 @@ public final class GenJsExprsVisitorTest {
             "let $tmp;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
-            "} else if (!(gooData8 != null)) {",
+            "} else if (!(opt_data.goo != null)) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = 'Bluh';",
@@ -167,7 +161,7 @@ public final class GenJsExprsVisitorTest {
             "let $tmp;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
-            "} else if (!(gooData8 != null)) {",
+            "} else if (!(opt_data.goo != null)) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = '';",
@@ -240,8 +234,7 @@ public final class GenJsExprsVisitorTest {
     visitorsState.enterFileSet(Metadata.EMPTY_FILESET, boom);
     visitorsState.enterFile(
         TranslationContext.of(
-            SoyToJsVariableMappings.startingWith(LOCAL_VAR_TRANSLATIONS),
-            JsSrcNameGenerators.forLocalVariables()),
+            SoyToJsVariableMappings.newEmpty(), JsSrcNameGenerators.forLocalVariables()),
         ScopedJsTypeRegistry.PASSTHROUGH,
         AliasUtils.IDENTITY_ALIASES,
         SourceMapHelper.NO_OP);

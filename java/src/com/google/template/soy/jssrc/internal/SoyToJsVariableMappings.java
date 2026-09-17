@@ -23,33 +23,32 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
- * Manages the mappings between Soy variables and their JavaScript equivalents
- * inside a single template.
+ * Manages the mappings between Soy variables and their JavaScript equivalents inside a single
+ * template.
  */
 public final class SoyToJsVariableMappings {
-  /** TODO(user): change the key type to {@link com.google.template.soy.exprtree.VarDefn}. */
-  private final Map<String, Expression> mappings;
+
+  private final IdentityHashMap<VarDefn, Expression> varDefnMappings;
 
   /**
    * The MsgFallbackGroupNode to an expression that evaluates to whether or not the primary message
    * is in use.
    */
   private final IdentityHashMap<MsgFallbackGroupNode, Expression> isPrimaryMsgInUseForFallbackGroup;
-  ;
 
-  private SoyToJsVariableMappings(Map<String, ? extends Expression> initialMappings) {
-    mappings = new HashMap<>(initialMappings);
+  private SoyToJsVariableMappings(Map<VarDefn, ? extends Expression> initialMappings) {
+    varDefnMappings = new IdentityHashMap<>(initialMappings);
     isPrimaryMsgInUseForFallbackGroup = new IdentityHashMap<>();
   }
 
   private SoyToJsVariableMappings(SoyToJsVariableMappings parent) {
-    mappings = new HashMap<>(parent.mappings);
+    varDefnMappings = new IdentityHashMap<>(parent.varDefnMappings);
     // Confusingly this map doesn't reflect block scoping. however because the keys are nodes there
     // is no namespace issue we need to manage.
     isPrimaryMsgInUseForFallbackGroup = parent.isPrimaryMsgInUseForFallbackGroup;
@@ -67,24 +66,13 @@ public final class SoyToJsVariableMappings {
   /** Returns a {@link SoyToJsVariableMappings} seeded with the given mappings. For testing only. */
   @VisibleForTesting
   static SoyToJsVariableMappings startingWith(
-      ImmutableMap<String, ? extends Expression> initialMappings) {
+      ImmutableMap<VarDefn, ? extends Expression> initialMappings) {
     return new SoyToJsVariableMappings(initialMappings);
   }
 
-  public SoyToJsVariableMappings put(VarDefn var, Expression translation) {
-    return put(var.refName(), translation);
-  }
-
-  /**
-   * Maps the Soy variable named {@code name} to the given translation. Any previous mapping for the
-   * variable is lost.
-   *
-   * <p>TODO(user): this API requires callers to mangle the names they pass in to ensure
-   * uniqueness. Do the mangling internally.
-   */
   @CanIgnoreReturnValue
-  public SoyToJsVariableMappings put(String var, Expression translation) {
-    mappings.put(var, translation);
+  public SoyToJsVariableMappings put(VarDefn var, Expression translation) {
+    varDefnMappings.put(var, translation);
     return this;
   }
 
@@ -94,13 +82,13 @@ public final class SoyToJsVariableMappings {
     return this;
   }
 
-  /** Returns the JavaScript translation for the Soy variable with the given name, */
-  public Expression get(String name) {
+  /** Returns the JavaScript translation for the given Soy variable. */
+  public Expression get(VarDefn var) {
     return Preconditions.checkNotNull(
-        mappings.get(name),
+        varDefnMappings.get(var),
         "No value for key %s. Available keys: %s",
-        name,
-        String.join(",", mappings.keySet()));
+        var.refName(),
+        varDefnMappings.keySet().stream().map(VarDefn::name).collect(Collectors.joining(",")));
   }
 
   public Expression isPrimaryMsgInUse(MsgFallbackGroupNode msg) {
@@ -108,19 +96,20 @@ public final class SoyToJsVariableMappings {
   }
 
   /**
-   * Returns the JavaScript translation for the Soy variable with the given name, or null if no
-   * mapping exists for that variable.
-   *
-   * <p>TODO(user): the null case is only for handling template params. Eliminate the @Nullable by
-   * seeding {@link #newEmpty()} with the params.
+   * Returns the JavaScript translation for the given Soy variable, or null if no mapping exists for
+   * that variable.
    */
   @Nullable
-  public Expression maybeGet(String name) {
-    return mappings.get(name);
+  public Expression maybeGet(VarDefn var) {
+    return varDefnMappings.get(var);
   }
 
-  /** Returns true if there is an existing variable mapping for the given name. */
-  public boolean has(String name) {
-    return mappings.get(name) != null;
+  @Nullable
+  public Expression getValueOfSameName(VarDefn var) {
+    return varDefnMappings.entrySet().stream()
+        .filter(e -> e.getKey().refName().equals(var.refName()))
+        .map(Map.Entry::getValue)
+        .findFirst()
+        .orElse(null);
   }
 }

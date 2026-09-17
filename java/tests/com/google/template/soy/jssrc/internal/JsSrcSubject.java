@@ -35,6 +35,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -231,7 +232,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
   /** For asserting on the contents of a single soy expression. */
   static final class ForExprs extends JsSrcSubject<ForExprs> {
     private Expression chunk;
-    private ImmutableMap<String, Expression> initialLocalVarTranslations = ImmutableMap.of();
+    private ImmutableMap<VarDefn, Expression> initialLocalVarTranslations = ImmutableMap.of();
 
     private ForExprs(FailureMetadata failureMetadata, String templateThatContainsOneExpression) {
       super(failureMetadata, templateThatContainsOneExpression);
@@ -261,7 +262,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
 
     @CanIgnoreReturnValue
     JsSrcSubject.ForExprs withInitialLocalVarTranslations(
-        ImmutableMap<String, Expression> initialLocalVarTranslations) {
+        ImmutableMap<VarDefn, Expression> initialLocalVarTranslations) {
       this.initialLocalVarTranslations = initialLocalVarTranslations;
       return this;
     }

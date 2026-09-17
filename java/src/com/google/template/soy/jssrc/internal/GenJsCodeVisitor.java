@@ -664,12 +664,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           }
           if (var.getSymbolKind() == SymbolKind.EXTERN) {
             Expression translation = dottedIdNoRequire(namespace + "." + var.getSymbol());
-            templateTranslationContext.soyToJsVariableMappings().put(var.name(), translation);
+            templateTranslationContext.soyToJsVariableMappings().put(var, translation);
           } else if (var.getSymbolKind() == SymbolKind.CONST) {
             templateTranslationContext
                 .soyToJsVariableMappings()
                 .put(
-                    var.name(),
+                    var,
                     JsRuntime.SOY_GET_CONST.call(
                         dottedIdNoRequire(namespace + "." + var.getSymbol()),
                         JsRuntime.SOY_INTERNAL_CALL_MARKER));
@@ -893,7 +893,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     templateTranslationContext
         .soyToJsVariableMappings()
         .put(
-            node.getVar().name(),
+            node.getVar(),
             JsRuntime.SOY_GET_CONST.call(
                 getLocalConstantExpr(node), JsRuntime.SOY_INTERNAL_CALL_MARKER));
   }
@@ -1657,9 +1657,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   private boolean registerLocalExtern(ExternNode node) {
-    String externName = node.getIdentifier().originalName();
+    var externVar = node.getVar();
+    SoyToJsVariableMappings mappings = templateTranslationContext.soyToJsVariableMappings();
+    Expression existing = mappings.getValueOfSameName(externVar);
     // Skip if we handled this impl already, e.g. a prev extern overload.
-    if (templateTranslationContext.soyToJsVariableMappings().has(externName)) {
+    if (existing != null) {
+      mappings.put(externVar, existing);
       return false;
     }
     if (node.getJsImpl().isPresent()) {
@@ -1672,12 +1675,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       } else {
         externReference = GOOG_MODULE_GET.call(stringLiteral(js.module())).dotAccess(js.function());
       }
-      templateTranslationContext.soyToJsVariableMappings().put(externName, externReference);
+      mappings.put(externVar, externReference);
     } else {
       String partialName = node.getVar().name();
-      templateTranslationContext
-          .soyToJsVariableMappings()
-          .put(externName, topLevelLhs(node, node.isExported(), partialName, null));
+      mappings.put(externVar, topLevelLhs(node, node.isExported(), partialName, null));
     }
     return true;
   }

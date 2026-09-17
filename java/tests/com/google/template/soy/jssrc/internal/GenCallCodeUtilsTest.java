@@ -17,6 +17,7 @@
 package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -61,7 +62,7 @@ public final class GenCallCodeUtilsTest {
     assertThat(
             getCallExprTextHelper(
                 "{@param moo : ?}", "{call someFunc}", "  {param goo: $moo /}", "{/call}"))
-        .isEqualTo("ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData, opt_data.moo);");
+        .isEqualTo("ns.someFunc$(soy.$$internalCallMarkerDoNotUse, $ijData, moo);");
 
     assertThat(
             getCallExprTextHelper(
@@ -153,8 +154,8 @@ public final class GenCallCodeUtilsTest {
             .parse()
             .fileSet();
 
-    CallNode callNode =
-        (CallNode) SoyTreeUtils.getAllNodesOfType(soyTree, TemplateNode.class).get(0).getChild(0);
+    TemplateNode templateNode = SoyTreeUtils.getAllNodesOfType(soyTree, TemplateNode.class).get(0);
+    CallNode callNode = (CallNode) templateNode.getChild(0);
     // Manually setting the escaping directives.
     callNode.setEscapingDirectives(
         InternalPlugins.internalDirectives(NoOpScopedData.INSTANCE).stream()
@@ -172,9 +173,9 @@ public final class GenCallCodeUtilsTest {
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
     TranslationContext translationContext =
         TranslationContext.of(
-            SoyToJsVariableMappings.newEmpty()
-                .put("$boo", Expressions.id("boo"))
-                .put("$goo", Expressions.id("goo")),
+            SoyToJsVariableMappings.startingWith(
+                templateNode.getHeaderParams().stream()
+                    .collect(toImmutableMap(p -> p, p -> Expressions.id(p.name())))),
             nameGenerator);
     visitorsState.enterFile(
         translationContext,
