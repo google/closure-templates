@@ -58,6 +58,7 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -764,9 +765,20 @@ public final class SimplifyVisitor {
       }
     }
 
-    private boolean containsLoggingFunction(RenderUnitNode node) {
+    private boolean containsLoggingOrDeferredFunction(RenderUnitNode node) {
       return SoyTreeUtils.allNodesOfType(node, FunctionNode.class)
-          .anyMatch(n -> n.getSoyFunction() instanceof LoggingFunction);
+          .anyMatch(
+              n -> {
+                Object fn = n.getSoyFunction();
+                if (fn instanceof LoggingFunction) {
+                  return true;
+                }
+                if (fn instanceof Extern extern) {
+                  Extern.JavaImpl javaImpl = extern.getJavaImpl();
+                  return javaImpl != null && javaImpl.fallbackMethod() != null;
+                }
+                return false;
+              });
     }
 
     @Nullable
@@ -774,9 +786,10 @@ public final class SimplifyVisitor {
       if (renderUnitNode.getContentKind() != SanitizedContentKind.TEXT) {
         return null;
       }
-      // Logging functions don't work properly unless they are a direct child of a PrintNode. So,
-      // any content node containing a logging function cannot be rewritten to an expression.
-      if (containsLoggingFunction(renderUnitNode)) {
+      // Logging functions and deferred output functions don't work properly unless they are
+      // preserved in a buffer for streaming. So, any content node containing them cannot be
+      // rewritten to an expression.
+      if (containsLoggingOrDeferredFunction(renderUnitNode)) {
         return null;
       }
       // collect as list and then concat at the end.  Adding a node as a child of the PlusOpNode

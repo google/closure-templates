@@ -23,6 +23,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.shared.internal.EscapingConventions.CrossLanguageStringXform;
 import java.io.IOException;
@@ -97,6 +98,21 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
       transform.escapeOnto(escapePlaceholder(funCall.placeholderValue(), escapers), delegate);
     } else {
       delegate.appendLoggingFunctionInvocation(funCall, escapers);
+    }
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  @Override
+  public final LoggingAdvisingAppendable appendOutputFunctionInvocation(
+      OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+      throws IOException {
+    var transform = this.transform;
+    if (transform != null) {
+      String value = funCall.evalPrimary();
+      transform.escapeOnto(escapePlaceholder(value, escapers), delegate);
+    } else {
+      delegate.appendOutputFunctionInvocation(funCall, escapers);
     }
     return this;
   }

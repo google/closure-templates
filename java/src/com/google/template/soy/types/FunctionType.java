@@ -31,12 +31,20 @@ import java.util.Collection;
 public abstract class FunctionType extends SoyType {
 
   public static FunctionType of(Collection<Parameter> parameters, SoyType returnType) {
-    return new AutoValue_FunctionType(returnType, ImmutableList.copyOf(parameters));
+    return of(parameters, returnType, /* isOutputFunction= */ false);
+  }
+
+  public static FunctionType of(
+      Collection<Parameter> parameters, SoyType returnType, boolean isOutputFunction) {
+    return new AutoValue_FunctionType(
+        returnType, ImmutableList.copyOf(parameters), isOutputFunction);
   }
 
   public abstract SoyType getReturnType();
 
   public abstract ImmutableList<Parameter> getParameters();
+
+  public abstract boolean isOutputFunction();
 
   public boolean isVarArgs() {
     return getParameters().stream().anyMatch(Parameter::isVarArgs);
@@ -77,16 +85,20 @@ public abstract class FunctionType extends SoyType {
 
   @Override
   public final Kind getKind() {
-    return Kind.FUNCTION;
+    return isOutputFunction() ? Kind.OUTPUT_FUNCTION : Kind.FUNCTION;
   }
 
   @Override
   final boolean doIsAssignableFromNonUnionType(SoyType srcType, AssignabilityPolicy policy) {
-    if (srcType.getKind() != Kind.FUNCTION) {
+    if (srcType.getKind() != getKind()) {
       return false;
     }
 
     FunctionType srcFunction = (FunctionType) srcType;
+    if (this.isOutputFunction() != srcFunction.isOutputFunction()) {
+      return false;
+    }
+
     int paramsInCommon = Math.min(getParameters().size(), srcFunction.getParameters().size());
     if (srcFunction.getParameters().size() > paramsInCommon) {
       return false;
@@ -106,6 +118,9 @@ public abstract class FunctionType extends SoyType {
   @Override
   public final String toString() {
     StringBuilder sb = new StringBuilder();
+    if (isOutputFunction()) {
+      sb.append("outputfunction ");
+    }
     sb.append("(");
     boolean first = true;
     for (Parameter parameter : getParameters()) {
@@ -131,6 +146,7 @@ public abstract class FunctionType extends SoyType {
   protected void doToProto(SoyTypeP.Builder builder) {
     FunctionTypeP.Builder templateBuilder =
         builder.getFunctionBuilder().setReturnType(getReturnType().toProto());
+    templateBuilder.setIsOutputFunction(isOutputFunction());
     for (Parameter parameter : getParameters()) {
       templateBuilder.addParameters(
           FunctionTypeP.Parameter.newBuilder()

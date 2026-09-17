@@ -83,15 +83,12 @@ public abstract class SanitizedContent extends SoyValue {
   }
 
   /** Creates a SanitizedContent from a command buffer. */
-  static SanitizedContent create(
+  public static SanitizedContent create(
       LoggingAdvisingAppendable.CommandBuffer commandBuffer, ContentKind kind, @Nullable Dir dir) {
-    if (kind == ContentKind.HTML) {
-      return new BufferedImpl(commandBuffer, kind, dir);
-    }
     if (kind == ContentKind.ATTRIBUTES) {
       return new BufferedAttributes(commandBuffer, dir);
     }
-    throw new IllegalArgumentException("Only kind ATTRIBUTES and HTML are supported, got: " + kind);
+    return new BufferedImpl(commandBuffer, kind, dir);
   }
 
   /** A kind of textual content. */
@@ -631,7 +628,7 @@ public abstract class SanitizedContent extends SoyValue {
   }
 
   /**
-   * According the the spec, these are the only whitespace characters that are relevant in html
+   * According to the spec, these are the only whitespace characters that are relevant in html
    * attributes.
    *
    * <p>https://html.spec.whatwg.org/multipage/parsing.html#before-attribute-name-state

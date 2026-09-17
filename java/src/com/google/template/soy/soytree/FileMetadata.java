@@ -82,6 +82,11 @@ public interface FileMetadata extends PartialFileMetadata {
 
       MethodType type();
 
+      @Nullable
+      default String fallbackMethod() {
+        return null;
+      }
+
       /**
        * Returns whether the receiver of the non-static method should be obtained from the render
        * context.

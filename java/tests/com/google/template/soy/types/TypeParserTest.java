@@ -18,6 +18,7 @@ package com.google.template.soy.types;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.soytree.TemplateNode;
@@ -79,6 +80,17 @@ public class TypeParserTest {
         LegacyObjectMapType.of(IntType.getInstance(), BoolType.getInstance()),
         "legacy_object_map<int, bool>");
     assertTypeEquals(MapType.of(IntType.getInstance(), BoolType.getInstance()), "map<int, bool>");
+  }
+
+  @Test
+  public void testParseOutputFunctionType() {
+    FunctionType expected =
+        FunctionType.of(
+            ImmutableList.of(FunctionType.Parameter.of("s", StringType.getInstance())),
+            SanitizedType.HtmlType.getInstance(),
+            /* isOutputFunction= */ true);
+    assertTypeEquals(expected, "outputfunction(s: string) => html");
+    assertTypeEquals(expected, "outputfunction (s: string) => html");
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -23,6 +23,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.shared.internal.EscapingConventions.CrossLanguageStringXform;
 import java.io.IOException;
 import java.util.function.Function;
@@ -86,6 +87,15 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException {
     return append(escapePlaceholder(funCall.placeholderValue(), escapers));
+  }
+
+  @CanIgnoreReturnValue
+  @Override
+  public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+      OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+      throws IOException {
+    String value = funCall.evalPrimary();
+    return append(escapePlaceholder(value, escapers));
   }
 
   @Override

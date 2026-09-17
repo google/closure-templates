@@ -240,6 +240,7 @@ message JavaImplP {
   TypeP return_type = 3;
   repeated TypeP param_types = 4;
   MethodType method_type = 5;
+  string fallback_method = 6;
 }
 
 message ParameterP {
@@ -273,6 +274,7 @@ message FunctionTypeP {
 
   repeated Parameter parameters = 1;
   SoyTypeP return_type = 2;
+  bool is_output_function = 3;
 }
 
 // Represents a call within a template.
