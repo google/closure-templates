@@ -116,6 +116,7 @@ public abstract class SoyType implements ErrorArg {
     PROTO_ENUM,
     TEMPLATE,
     FUNCTION,
+    OUTPUT_FUNCTION,
     VE,
     VE_DATA,
     // Resolvable types

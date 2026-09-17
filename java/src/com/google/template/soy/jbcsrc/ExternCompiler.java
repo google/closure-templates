@@ -65,6 +65,7 @@ import com.google.template.soy.types.FunctionType;
 import com.google.template.soy.types.FunctionType.Parameter;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.MessageType;
+import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -141,12 +142,16 @@ public final class ExternCompiler {
     // TODO(b/408029720): Do not code gen if private and not auto java. Private externs from
     //    function pointers are still invoked via the dynamic path.
     requiresRenderContext = ExpressionCompiler.requiresRenderContext(externMetadata);
+    boolean hasFallback =
+        javaOpt.map(j -> j.fallbackMethodName() != null).orElse(false)
+            || extern.getType().isOutputFunction();
     Method memberMethod =
         buildMemberMethod(
             extern.getIdentifier().identifier(),
             extern.getType(),
             requiresRenderContext,
-            extern.isJavaImplAsync());
+            extern.isJavaImplAsync(),
+            hasFallback);
     int declaredMethodArgs = extern.getType().getParameters().size();
 
     int paramNamesOffset = 0;
@@ -258,14 +263,46 @@ public final class ExternCompiler {
         adaptedParams.add(adaptImplicitParameter(vars, paramTypesInfos[i]));
       }
 
-      MethodRef extMethodRef =
-          getMethodRef(javaImpl.type(), externClass, javaImpl.methodName(), returnType, paramTypes);
-      body =
-          Statement.returnExpression(
-              adaptReturnType(
-                  returnType,
-                  extern.getType().getReturnType(),
-                  extMethodRef.invoke(adaptedParams)));
+      if (javaImpl.fallbackMethodName() != null) {
+        MethodRef extMethodRef =
+            getMethodRef(
+                javaImpl.type(), externClass, javaImpl.methodName(), returnType, paramTypes);
+        MethodRef fallbackRef =
+            getMethodRef(
+                javaImpl.type(),
+                externClass,
+                javaImpl.fallbackMethodName(),
+                returnType,
+                paramTypes);
+        List<Expression> boxedParams = new ArrayList<>(adaptedParams.size());
+        for (Expression p : adaptedParams) {
+          boxedParams.add(
+              BytecodeUtils.isPrimitive(p.resultType()) ? BytecodeUtils.boxJavaPrimitive(p) : p);
+        }
+        Expression argsList = BytecodeUtils.asImmutableList(boxedParams);
+        Expression contentKindExpr =
+            (extern.getType().getReturnType() instanceof SanitizedType)
+                ? BytecodeUtils.constantSanitizedContentKindAsContentKind(
+                    ((SanitizedType) extern.getType().getReturnType()).getContentKind())
+                : BytecodeUtils.constantNull(BytecodeUtils.CONTENT_KIND_TYPE);
+        Expression deferred =
+            JbcSrcExternRuntime.CREATE_OUTPUT_FUNCTION_INVOCATION.invoke(
+                BytecodeUtils.constantMethodHandle(extMethodRef.asHandle()),
+                BytecodeUtils.constantMethodHandle(fallbackRef.asHandle()),
+                argsList,
+                contentKindExpr);
+        body = Statement.returnExpression(deferred);
+      } else {
+        MethodRef extMethodRef =
+            getMethodRef(
+                javaImpl.type(), externClass, javaImpl.methodName(), returnType, paramTypes);
+        body =
+            Statement.returnExpression(
+                adaptReturnType(
+                    returnType,
+                    extern.getType().getReturnType(),
+                    extMethodRef.invoke(adaptedParams)));
+      }
     }
 
     checkState(body.isTerminal());
@@ -285,6 +322,17 @@ public final class ExternCompiler {
         java.type(),
         getTypeInfoForJavaImpl(java.className(), java.type().isInterface()),
         java.method(),
+        getTypeInfoForJavaImpl(java.returnType().className()).type(),
+        java.paramTypes().stream()
+            .map(t -> getTypeInfoForJavaImpl(t.className()).type())
+            .toArray(Type[]::new));
+  }
+
+  public static MethodRef getFallbackMethodRef(JavaImpl java) {
+    return getMethodRef(
+        java.type(),
+        getTypeInfoForJavaImpl(java.className(), java.type().isInterface()),
+        java.fallbackMethod(),
         getTypeInfoForJavaImpl(java.returnType().className()).type(),
         java.paramTypes().stream()
             .map(t -> getTypeInfoForJavaImpl(t.className()).type())
@@ -338,6 +386,15 @@ public final class ExternCompiler {
 
   static Method buildMemberMethod(
       String symbol, FunctionType type, boolean requiresRenderContext, boolean async) {
+    return buildMemberMethod(symbol, type, requiresRenderContext, async, /* hasFallback= */ false);
+  }
+
+  static Method buildMemberMethod(
+      String symbol,
+      FunctionType type,
+      boolean requiresRenderContext,
+      boolean async,
+      boolean hasFallback) {
     Type[] args =
         Streams.concat(
                 requiresRenderContext
@@ -345,10 +402,14 @@ public final class ExternCompiler {
                     : Stream.empty(),
                 type.getParameters().stream().map(p -> getRuntimeType(p.getType()).runtimeType()))
             .toArray(Type[]::new);
-    Type returnType =
-        async
-            ? BytecodeUtils.SOY_VALUE_PROVIDER_TYPE
-            : getRuntimeType(type.getReturnType()).runtimeType();
+    Type returnType;
+    if (async) {
+      returnType = BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
+    } else if (hasFallback) {
+      returnType = BytecodeUtils.SOY_VALUE_TYPE;
+    } else {
+      returnType = getRuntimeType(type.getReturnType()).runtimeType();
+    }
     return new Method(symbol, returnType, args);
   }
 
@@ -549,7 +610,8 @@ public final class ExternCompiler {
           : JbcSrcExternRuntime.UNBOX_OBJECT_CONTENTS.invoke(actualParam);
     }
 
-    if (SoyTypes.isKindOrUnionOfKind(soyType, Kind.FUNCTION)) {
+    if (SoyTypes.isKindOrUnionOfKind(soyType, Kind.FUNCTION)
+        || SoyTypes.isKindOrUnionOfKind(soyType, Kind.OUTPUT_FUNCTION)) {
       return actualParam
           .checkedCast(FUNCTION_VALUE_TYPE)
           .invoke(MethodRefs.FUNCTION_WITH_RENDER_CONTEXT, vars.getRenderContext())

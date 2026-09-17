@@ -23,6 +23,7 @@ import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -145,6 +146,16 @@ public final class BasicDirectivesRuntime {
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
       buffer.append(escapePlaceholder(funCall.placeholderValue(), escapers));
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+        OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
+      Object result = funCall.evalFallback();
+      String value = (result != null) ? result.toString() : "";
+      buffer.append(escapePlaceholder(value, escapers));
       return this;
     }
 

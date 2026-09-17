@@ -195,7 +195,8 @@ final class RewriteShortFormCallsPass implements CompilerFileSetPass {
     ExprNode nameExpr = fnNode.getNameExpr();
 
     // Ignore function/extern pointers.
-    if (SoyTypes.isKindOrUnionOfKind(nameExpr.getType(), Kind.FUNCTION)) {
+    if (SoyTypes.isKindOrUnionOfKind(nameExpr.getType(), Kind.FUNCTION)
+        || SoyTypes.isKindOrUnionOfKind(nameExpr.getType(), Kind.OUTPUT_FUNCTION)) {
       return null;
     }
 

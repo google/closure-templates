@@ -893,6 +893,7 @@ public abstract class Expression extends BytecodeProducer {
         case URI:
           return Optional.of(MethodRefs.CHECK_CONTENT_KIND.invoke(this, constant(ContentKind.URI)));
         case FUNCTION:
+        case OUTPUT_FUNCTION:
           if (BytecodeUtils.isDefinitelyAssignableFrom(
               BytecodeUtils.FUNCTION_VALUE_TYPE, resultType)) {
             return Optional.empty();

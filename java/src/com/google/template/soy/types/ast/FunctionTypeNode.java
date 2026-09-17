@@ -28,8 +28,23 @@ public abstract class FunctionTypeNode extends TypeNode {
 
   public static FunctionTypeNode create(
       SourceLocation sourceLocation, Iterable<Parameter> parameters, TypeNode returnType) {
+    return create(sourceLocation, parameters, returnType, /* isOutputFunction= */ false);
+  }
+
+  public static FunctionTypeNode create(
+      SourceLocation sourceLocation,
+      Iterable<Parameter> parameters,
+      TypeNode returnType,
+      boolean isOutputFunction) {
     return new AutoValue_FunctionTypeNode(
-        sourceLocation, ImmutableList.copyOf(parameters), returnType);
+        sourceLocation, ImmutableList.copyOf(parameters), returnType, isOutputFunction);
+  }
+
+  public FunctionTypeNode withOutputFunction(boolean isOutputFunction) {
+    if (isOutputFunction() == isOutputFunction) {
+      return this;
+    }
+    return create(sourceLocation(), parameters(), returnType(), isOutputFunction);
   }
 
   /** A single named, typed parameter to a template. */
@@ -69,12 +84,15 @@ public abstract class FunctionTypeNode extends TypeNode {
 
   public abstract TypeNode returnType();
 
+  public abstract boolean isOutputFunction();
+
   @Override
   public final String toString() {
+    String prefix = isOutputFunction() ? "outputfunction " : "";
     if (parameters().size() < 3) {
-      return "(" + Joiner.on(", ").join(parameters()) + ") => " + returnType();
+      return prefix + "(" + Joiner.on(", ").join(parameters()) + ") => " + returnType();
     }
-    return "(\n  " + Joiner.on(",\n  ").join(parameters()) + "\n) => " + returnType();
+    return prefix + "(\n  " + Joiner.on(",\n  ").join(parameters()) + "\n) => " + returnType();
   }
 
   @Override
@@ -84,7 +102,11 @@ public abstract class FunctionTypeNode extends TypeNode {
       newParameters.add(parameter.copy(copyState));
     }
     FunctionTypeNode copy =
-        create(sourceLocation(), newParameters.build(), returnType().copy(copyState));
+        create(
+            sourceLocation(),
+            newParameters.build(),
+            returnType().copy(copyState),
+            isOutputFunction());
     copy.copyInternal(this);
     return copy;
   }

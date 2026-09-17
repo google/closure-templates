@@ -36,6 +36,7 @@ import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -249,6 +250,21 @@ public final class Sanitizers {
       } else {
         throw new AssertionError(
             "Logging statements should've already been removed as they're only allowed in HTML");
+      }
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+        OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (isInHtml()) {
+        delegate.appendOutputFunctionInvocation(funCall, escapers);
+      } else {
+        Object result = funCall.evalFallback();
+        String value = (result != null) ? result.toString() : "";
+        buffer.append(escapePlaceholder(value, escapers));
       }
       return this;
     }
@@ -976,6 +992,22 @@ public final class Sanitizers {
       return this;
     }
 
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+        OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        delegate.appendOutputFunctionInvocation(funCall, escapers);
+      } else {
+        Object result = funCall.evalFallback();
+        String value = (result != null) ? result.toString() : "";
+        String placeholder = escapePlaceholder(value, escapers);
+        getActiveAppendable().append(placeholder);
+      }
+      return this;
+    }
+
     @Override
     public boolean softLimitReached() {
       return delegate.softLimitReached();
@@ -1144,6 +1176,22 @@ public final class Sanitizers {
         delegate.appendLoggingFunctionInvocation(funCall, escapers);
       } else {
         String placeholder = escapePlaceholder(funCall.placeholderValue(), escapers);
+        activeAppendable.append(placeholder);
+      }
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+        OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        delegate.appendOutputFunctionInvocation(funCall, escapers);
+      } else {
+        Object result = funCall.evalFallback();
+        String value = (result != null) ? result.toString() : "";
+        String placeholder = escapePlaceholder(value, escapers);
         activeAppendable.append(placeholder);
       }
       return this;

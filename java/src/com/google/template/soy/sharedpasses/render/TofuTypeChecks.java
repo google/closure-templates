@@ -185,6 +185,7 @@ public final class TofuTypeChecks {
       case VE_DATA:
         return CheckResult.fromBool(value == EvalVisitor.UNDEFINED_VE_DATA);
       case FUNCTION:
+      case OUTPUT_FUNCTION:
         return CheckResult.fromBool(value instanceof TofuFunctionValue);
       case COMPUTED:
         return doIsInstance(type.getEffectiveType(), value);

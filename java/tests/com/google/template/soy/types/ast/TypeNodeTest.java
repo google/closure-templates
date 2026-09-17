@@ -158,6 +158,29 @@ public final class TypeNodeTest {
   }
 
   @Test
+  public void testOutputFunctionTypeToString() throws Exception {
+    assertThat(
+            FunctionTypeNode.create(
+                    SOURCE_LOCATION,
+                    ImmutableList.of(),
+                    NamedTypeNode.create(SOURCE_LOCATION, "html"),
+                    /* isOutputFunction= */ true)
+                .toString())
+        .isEqualTo("outputfunction () => html");
+
+    assertThat(
+            FunctionTypeNode.create(
+                    SOURCE_LOCATION,
+                    ImmutableList.of(
+                        FunctionTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "x", "x", TYPE_ABC, false)),
+                    NamedTypeNode.create(SOURCE_LOCATION, "string"),
+                    /* isOutputFunction= */ true)
+                .toString())
+        .isEqualTo("outputfunction (x: abc) => string");
+  }
+
+  @Test
   public void testUnionTypeToString() throws Exception {
     assertThat(UnionTypeNode.create(ImmutableList.of(TYPE_ABC, TYPE_DEF)).toString())
         .isEqualTo("abc|def");
@@ -185,6 +208,10 @@ public final class TypeNodeTest {
     assertRoundTrip("template () => string|null");
     assertRoundTrip("template () => (string|null)");
     assertRoundTrip("(template () => string)|null");
+    assertRoundTrip("outputfunction () => string|null");
+    assertRoundTrip("outputfunction () => (string|null)");
+    assertRoundTrip("(outputfunction () => string)|null");
+    assertRoundTrip("outputfunction (s: string) => html");
 
     assertRoundTrip("'prop1' | 'prop2'");
   }
@@ -283,6 +310,9 @@ public final class TypeNodeTest {
 
       @Override
       public Void visit(FunctionTypeNode node) {
+        assertThat(((FunctionTypeNode) right).isOutputFunction())
+            .isEqualTo(node.isOutputFunction());
+        assertEquals(node.returnType(), ((FunctionTypeNode) right).returnType());
         return null;
       }
 

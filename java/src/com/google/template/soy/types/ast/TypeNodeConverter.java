@@ -666,7 +666,7 @@ public final class TypeNodeConverter
         map.put(parameter.name(), oldParameter);
       }
     }
-    SoyType type = FunctionType.of(map.values(), exec(node.returnType()));
+    SoyType type = FunctionType.of(map.values(), exec(node.returnType()), node.isOutputFunction());
     node.setResolvedType(type);
     return type;
   }

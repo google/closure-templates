@@ -144,6 +144,7 @@ public abstract class SoyRuntimeType {
       case UNKNOWN:
       case ANY:
       case FUNCTION:
+      case OUTPUT_FUNCTION:
         // no unique unboxed representation
         return null;
       case COMPUTED:

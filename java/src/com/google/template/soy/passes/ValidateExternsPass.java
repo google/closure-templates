@@ -151,6 +151,35 @@ class ValidateExternsPass implements CompilerFilePass {
       SoyErrorKind.of(
           "Declared type {0} does not match actual type {1}.",
           Impression.ERROR_VALIDATE_EXTERNS_PASS_GENERICS_DONT_MATCH);
+  private static final SoyErrorKind OUTPUT_FUNCTION_MISSING_FALLBACK_METHOD =
+      SoyErrorKind.of(
+          "Output function ''{0}'' must define the ''fallbackMethod'' attribute in '{'javaimpl'}'.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_ATTRIBUTE_REQUIRED);
+  private static final SoyErrorKind EXTERN_CANNOT_HAVE_FALLBACK_METHOD =
+      SoyErrorKind.of(
+          "Extern ''{0}'' cannot specify the ''fallbackMethod'' attribute. Use '{'outputfunction'}'"
+              + " instead.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_ATTRIBUTE_REQUIRED);
+  private static final SoyErrorKind OUTPUT_FUNCTION_RETURN_TYPE_NOT_RENDERABLE =
+      SoyErrorKind.of(
+          "Output function ''{0}'' must have a renderable return type (string, html, css, uri,"
+              + " attributes, int, float, or bool), but found ''{1}''.",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_INCOMPATIBLE_RETURN_TYPE);
+  private static final SoyErrorKind FALLBACK_METHOD_TYPE_MISMATCH =
+      SoyErrorKind.of(
+          "Fallback method ''{0}'' must have matching method type (static vs instance).",
+          Impression.ERROR_VALIDATE_EXTERNS_PASS_JAVA_METHOD_TYPE_MISMATCH);
+
+  private static final ImmutableSet<Kind> RENDERABLE_KINDS =
+      ImmutableSet.of(
+          Kind.STRING,
+          Kind.HTML,
+          Kind.CSS,
+          Kind.URI,
+          Kind.ATTRIBUTES,
+          Kind.INT,
+          Kind.FLOAT,
+          Kind.BOOL);
 
   // Additions to this should be minimal as this circumvents Soy's compile time VE checks. Please
   private static final ImmutableSetMultimap<String, String> ALLOWED_VE_EXTERNS =
@@ -180,6 +209,15 @@ class ValidateExternsPass implements CompilerFilePass {
 
   private void validateNamedExterns(List<ExternNode> externs) {
     for (ExternNode extern : externs) {
+      if (extern.isOutputFunction()) {
+        if (!SoyTypes.isKindOrUnionOfKinds(extern.getType().getReturnType(), RENDERABLE_KINDS)) {
+          errorReporter.report(
+              extern.getTypeNode().returnType().sourceLocation(),
+              OUTPUT_FUNCTION_RETURN_TYPE_NOT_RENDERABLE,
+              extern.getIdentifier().identifier(),
+              extern.getType().getReturnType());
+        }
+      }
       extern.getJavaImpl().ifPresent(java -> validateJava(extern, java));
       extern.getJsImpl().ifPresent(this::validateJs);
     }
@@ -259,6 +297,22 @@ class ValidateExternsPass implements CompilerFilePass {
           java.getAttributeValueLocation(JavaImplNode.PARAMS), ARITY_MISMATCH, requiredParamCount);
     }
 
+    if (extern.isOutputFunction()) {
+      if (java.fallbackMethodName() == null) {
+        errorReporter.report(
+            java.getSourceLocation(),
+            OUTPUT_FUNCTION_MISSING_FALLBACK_METHOD,
+            extern.getIdentifier().identifier());
+      }
+    } else {
+      if (java.fallbackMethodName() != null) {
+        errorReporter.report(
+            java.getAttributeValueLocation(JavaImplNode.FALLBACK_METHOD),
+            EXTERN_CANNOT_HAVE_FALLBACK_METHOD,
+            extern.getIdentifier().identifier());
+      }
+    }
+
     if (!validateJavaMethods) {
       // Any validations beyond this require looking at the actual implementation of the Java
       // method. We only want to do this in some cases, like when compiling for JBCSRC. If we're
@@ -336,6 +390,65 @@ class ValidateExternsPass implements CompilerFilePass {
         loc = java.getSourceLocation();
       }
       errorReporter.report(loc, JAVA_METHOD_TYPE_MISMATCH, actualType);
+    }
+
+    if (extern.isOutputFunction() && java.fallbackMethodName() != null) {
+      MethodChecker.Response fallbackResponse =
+          checker.findMethod(
+              java.className(),
+              java.fallbackMethodName(),
+              java.returnType().className(),
+              java.paramTypes().stream().map(TypeReference::className).collect(toImmutableList()));
+
+      switch (fallbackResponse.getCode()) {
+        case EXISTS -> {
+          ReadMethodData fallbackMethodData = fallbackResponse.getMethod();
+          if (fallbackMethodData.instanceMethod() != method.instanceMethod()
+              || fallbackMethodData.classIsInterface() != method.classIsInterface()) {
+            errorReporter.report(
+                java.getAttributeValueLocation(JavaImplNode.FALLBACK_METHOD),
+                FALLBACK_METHOD_TYPE_MISMATCH,
+                java.fallbackMethodName());
+          }
+        }
+        case NO_SUCH_CLASS -> {
+          errorReporter.report(
+              java.getAttributeValueLocation(JavaImplNode.CLASS), NO_SUCH_JAVA_CLASS);
+          return;
+        }
+        case NOT_PUBLIC -> {
+          errorReporter.report(
+              java.getAttributeValueLocation(JavaImplNode.FALLBACK_METHOD), NOT_PUBLIC);
+          return;
+        }
+        case NO_SUCH_METHOD_SIG -> {
+          errorReporter.report(
+              java.getAttributeValueLocation(JavaImplNode.FALLBACK_METHOD),
+              JAVA_METHOD_SIG_MISMATCH,
+              java.fallbackMethodName(),
+              String.join(", ", fallbackResponse.getSuggesions()));
+          return;
+        }
+        case NO_SUCH_RETURN_TYPE -> {
+          errorReporter.report(
+              java.getAttributeValueLocation(JavaImplNode.FALLBACK_METHOD),
+              JAVA_METHOD_RETURN_TYPE_MISMATCH,
+              java.fallbackMethodName(),
+              String.join(", ", fallbackResponse.getSuggesions()));
+          return;
+        }
+        case NO_SUCH_METHOD_NAME -> {
+          String didYouMean =
+              SoyErrors.getDidYouMeanMessage(
+                  fallbackResponse.getSuggesions(), java.fallbackMethodName());
+          errorReporter.report(
+              java.getAttributeValueLocation(JavaImplNode.FALLBACK_METHOD),
+              NO_SUCH_JAVA_METHOD_NAME,
+              java.fallbackMethodName(),
+              didYouMean);
+          return;
+        }
+      }
     }
 
     TypeReference javaReturnType = method.returnTypeData();
@@ -435,7 +548,8 @@ class ValidateExternsPass implements CompilerFilePass {
     // Validate after eliminating any Future<> box
     Class<?> javaType = getType(parameterizedType.className());
 
-    if (SoyTypes.isKindOrUnionOfKind(soyType, Kind.FUNCTION)) {
+    if (SoyTypes.isKindOrUnionOfKind(soyType, Kind.FUNCTION)
+        || SoyTypes.isKindOrUnionOfKind(soyType, Kind.OUTPUT_FUNCTION)) {
       if (javaType == null) {
         // Allow user-defined functional interfaces, which won't be loaded.
         return true;

@@ -42,6 +42,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.NodeBuilder;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
@@ -537,6 +538,18 @@ public final class JbcSrcRuntime {
         public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
             LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
           String val = funCall.placeholderValue();
+          for (Function<String, String> directive : escapers) {
+            val = directive.apply(val);
+          }
+          System.out.append(val);
+          return this;
+        }
+
+        @Override
+        public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+            OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers) {
+          Object result = funCall.evalPrimary();
+          String val = (result != null) ? result.toString() : "";
           for (Function<String, String> directive : escapers) {
             val = directive.apply(val);
           }

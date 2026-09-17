@@ -69,7 +69,8 @@ public class FunctionBindingUtil {
                   FunctionType ft = (FunctionType) t;
                   return FunctionType.of(
                       ft.getParameters().subList(argTypes.size(), ft.getParameters().size()),
-                      ft.getReturnType());
+                      ft.getReturnType(),
+                      ft.isOutputFunction());
                 })
             .collect(toImmutableList()));
   }
