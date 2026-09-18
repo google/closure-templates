@@ -932,7 +932,6 @@ public class BytecodeCompilerTest {
 
     Method templateMethod = templateData.templateMethod();
     assertThat(template).isSameInstanceAs(templateMethod.invoke(null));
-    assertThat(template).isSameInstanceAs(templateMethod.invoke(null));
   }
 
   @Test
@@ -1440,6 +1439,32 @@ public class BytecodeCompilerTest {
     HashMultiset<String> loadedClasses() {
       return loadedClassesTracker;
     }
+  }
+
+  @Test
+  public void testParamAlias() throws Exception {
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns}",
+            "{template caller}",
+            "  {@param foo as localFoo: string}",
+            "  {call callee data=\"all\"}",
+            "    {param bar: $localFoo + '_bar' /}",
+            "  {/call}",
+            "{/template}",
+            "{template callee}",
+            "  {@param foo as renamedFoo: string}",
+            "  {@param bar as renamedBar: string}",
+            "  {@param baz as renamedBaz:= 'defaultBaz'}",
+            "  {@param qux as renamedQux: string = 'defaultQux'}",
+            "  {@param? opt as renamedOpt: string}",
+            "  {let $lazy kind=\"text\"}{$renamedFoo}-{$renamedBar}{/let}",
+            "  {$lazy}-{$renamedBaz}-{$renamedQux}-{$renamedOpt ?? 'none'}",
+            "{/template}");
+    ParamStore params =
+        new ParamStore(2).setField(RecordProperty.get("foo"), StringData.forValue("hello"));
+    assertThat(render(templates, params, "ns.caller"))
+        .isEqualTo("hello-hello_bar-defaultBaz-defaultQux-none");
   }
 
   private static SoyFileSetParser createParserForFileContents(Map<String, String> soyFileContents) {

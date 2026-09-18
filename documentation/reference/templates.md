@@ -101,6 +101,7 @@ Syntax:
   {@param <PARAM_NAME>:= <PARAM_DEFAULT>} /** A default param with an inferred type. */
   {@param <PARAM_NAME>: <PARAM_TYPE> = <PARAM_DEFAULT>} /** A default param with an explicit type. */
   {@param? <PARAM_NAME>: <PARAM_TYPE>} /** An optional param. */
+  {@param <PARAM_NAME> as <LOCAL_NAME>: <PARAM_TYPE>} /** A param with a local alias. */
   ...
 {/template}
 ```
@@ -152,6 +153,30 @@ optional parameter or pass a value of `undefined`; both are equivalent.
 
 Default parameters are usually better than optional parameters, because you
 don't have to guard against `undefined` values.
+
+### Parameter aliasing (`as`)
+
+Any parameter declaration (required, default, or optional, as well as `@inject`)
+can include an optional `as <LOCAL_NAME>` clause after `<PARAM_NAME>`:
+
+```soy
+{template greeting}
+  {@param userName as name: string}
+  {@param? greetingPrefix as prefix: string = 'Hello'}
+  {$prefix}, {$name}!
+{/template}
+```
+
+When `as <LOCAL_NAME>` is specified:
+
+*   Callers still pass the parameter using `<PARAM_NAME>` (e.g. `{param
+    userName: 'Alice' /}`).
+*   Within the template body, the parameter is referenced using `$<LOCAL_NAME>`
+    (e.g. `{$name}`) and `$<PARAM_NAME>` is not in scope.
+
+This is useful for avoiding naming collisions (such as when a parameter shares a
+name with a template or imported symbol) or for giving a verbose external
+parameter name a shorter local identifier inside the template.
 
 ## @inject {#inject}
 

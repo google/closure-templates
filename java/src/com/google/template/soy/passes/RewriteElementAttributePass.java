@@ -264,7 +264,9 @@ final class RewriteElementAttributePass implements CompilerFileSetPass {
             /* isImplicit= */ true,
             /* optional= */ true,
             /* desc= */ "Created by ElementAttributePass.",
-            /* defaultValue= */ null);
+            /* defaultValue= */ null,
+            /* alias= */ null,
+            /* aliasLocation= */ null);
     keyParam.setType(SoyTypes.unionWithUndefined(StringType.getInstance()));
     templateNode.addParam(keyParam);
 
@@ -367,7 +369,9 @@ final class RewriteElementAttributePass implements CompilerFileSetPass {
               /* isImplicit= */ true,
               /* optional= */ true,
               /* desc= */ "Created by ElementAttributePass.",
-              /* defaultValue= */ null);
+              /* defaultValue= */ null,
+              /* alias= */ null,
+              /* aliasLocation= */ null);
       VarRefNode extraAttributesRef = new VarRefNode("$" + attrsParam.name(), loc, attrsParam);
       templateNode.addParam(attrsParam);
       attrsParam.setType(SoyTypes.unionWithUndefined(SanitizedType.AttributesType.getInstance()));

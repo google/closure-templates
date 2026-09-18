@@ -222,6 +222,37 @@ public final class ResolveNamesPassTest {
     assertResolveNamesFails("Unknown variable.", "{namespace ns}{template foo}{$ggg}{/template}");
   }
 
+  @Test
+  public void testParamAliasLookupAndRedefinition() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource("{@param pa as localPa: bool}", "{$localPa ? 1 : 0}"))
+            .parse()
+            .fileSet();
+    runPass(soyTree);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
+    VarRefNode varRef =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
+    assertThat(varRef.getDefnDecl()).isSameInstanceAs(n.getParams().get(0));
+
+    // Original external name is not bound in local scope when aliased.
+    assertResolveNamesFails(
+        "Unknown variable.",
+        constructTemplateSource("{@param pa as localPa: bool}", "{$pa ? 1 : 0}"));
+
+    // Duplicate local names fail.
+    assertResolveNamesFails(
+        "Parameter '$sameLocal' conflicts with symbol defined at 4:17-4:25.",
+        constructTemplateSource(
+            "{@param pa as sameLocal: bool}", "{@param pb as sameLocal: bool}", "{$sameLocal}"));
+
+    // Duplicate external names fail even when aliased to different local names.
+    assertResolveNamesFails(
+        "'pa' already declared.",
+        constructTemplateSource(
+            "{@param pa as local1: bool}", "{@param pa as local2: bool}", "{$local1}{$local2}"));
+  }
+
   private void runPass(SoyFileSetNode soyTree) {
     for (SoyFileNode file : soyTree.getChildren()) {
       new ResolveNamesPass(ErrorReporter.exploding()).run(file, soyTree.getNodeIdGenerator());

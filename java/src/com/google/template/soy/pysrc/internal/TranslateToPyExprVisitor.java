@@ -408,8 +408,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     } else if (node.isInjected()) {
       // Case 1: Injected data reference.
       return new PyExpr(
-          genCodeForLiteralKeyAccess(IJ_DATA, node.getNameWithoutLeadingDollar()),
-          Integer.MAX_VALUE);
+          genCodeForLiteralKeyAccess(IJ_DATA, node.getDefnDecl().name()), Integer.MAX_VALUE);
     } else {
       PyExpr translation = localVarExprs.getVariableExpression(node.getDefnDecl());
       if (translation != null) {
@@ -428,7 +427,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
           notFoundBehavior = NotFoundBehavior.defaultValue(defaultValue);
         }
         return new PyExpr(
-            genCodeForLiteralKeyAccess(DATA, node.getNameWithoutLeadingDollar(), notFoundBehavior),
+            genCodeForLiteralKeyAccess(DATA, node.getDefnDecl().name(), notFoundBehavior),
             Integer.MAX_VALUE);
       }
     }
