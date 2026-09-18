@@ -933,7 +933,7 @@ public final class Metadata {
     @Override
     public boolean isJavaAsync() {
       JavaImpl impl = getJavaImpl();
-      if (impl == null) {
+      if (impl == null || impl.returnType() == null) {
         return false;
       }
       return impl.returnType().isGeneric()

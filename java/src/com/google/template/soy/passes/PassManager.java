@@ -705,7 +705,7 @@ public final class PassManager {
                     astRewrites.rewriteShortFormCalls(),
                     accumulatedState::registryFull))
             .add(new ElementCheckCrossTemplatePass(errorReporter))
-            .add(new CheckValidVarrefsPass(errorReporter))
+            .add(new CheckValidVarrefsPass(errorReporter, accumulatedState::registryFull))
             .add(new CheckTemplateVisibilityPass(errorReporter, accumulatedState::registryFull))
             .add(new CheckDelegatesPass(errorReporter, accumulatedState::registryFull))
             .add(
