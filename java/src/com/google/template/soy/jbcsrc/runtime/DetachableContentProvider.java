@@ -24,6 +24,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.NodeBuilder;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
@@ -389,6 +390,23 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
       int size = delegates.size();
       for (int i = 0; i < size; i++) {
         delegates.get(i).appendLoggingFunctionInvocation(funCall, escapers);
+      }
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+        OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      super.appendOutputFunctionInvocation(funCall, escapers);
+      var delegates = this.delegates;
+      if (delegates == null) {
+        return this;
+      }
+      int size = delegates.size();
+      for (int i = 0; i < size; i++) {
+        delegates.get(i).appendOutputFunctionInvocation(funCall, escapers);
       }
       return this;
     }

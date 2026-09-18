@@ -24,6 +24,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericCon
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
@@ -35,6 +36,7 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Optional;
@@ -284,6 +286,16 @@ final class ExpressionToSoyValueProviderCompiler {
     @Override
     Optional<Expression> visitLetNodeVar(VarRefNode varRef, LocalVar local) {
       return Optional.of(variables.getLocal(local));
+    }
+
+    @Override
+    protected Optional<Expression> visitPluginFunction(FunctionNode node) {
+      if (allowsDetaches()
+          && node.getSoyFunction() instanceof Extern extern
+          && extern.isOutputFunction()) {
+        return Optional.of(compileToSoyValueProviderWithDetaching(node));
+      }
+      return visitExprNode(node);
     }
 
     @Override

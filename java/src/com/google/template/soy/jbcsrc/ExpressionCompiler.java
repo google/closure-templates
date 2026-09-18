@@ -120,6 +120,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.jbcsrc.runtime.JbcSrcExternRuntime;
 import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.ExtraConstantBootstraps;
 import com.google.template.soy.jbcsrc.shared.Names;
@@ -152,6 +153,7 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.MutableListType;
 import com.google.template.soy.types.MutableMapType;
+import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SetType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
@@ -2136,7 +2138,7 @@ final class ExpressionCompiler {
       SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
       boolean requiresRenderContext = !linkStatically || requiresRenderContext(extern);
 
-      if (extern.isJavaAsync()) {
+      if (extern.isJavaAsync() || extern.isOutputFunction()) {
         soyReturnType = soyReturnType.box();
       }
       List<Expression> args = new ArrayList<>();
@@ -2201,6 +2203,28 @@ final class ExpressionCompiler {
           MethodRef ref =
               MethodRef.createStaticMethod(externOwner, asmMethod, MethodPureness.NON_PURE);
           externCall = ref.invoke(args);
+        } else if (extern.isOutputFunction()) {
+          MethodRef methodRef = ExternCompiler.getMethodRef(javaImpl);
+          MethodRef fallbackRef = ExternCompiler.getFallbackMethodRef(javaImpl);
+          List<Expression> boxedArgs = new ArrayList<>(args.size());
+          for (Expression arg : args) {
+            boxedArgs.add(
+                BytecodeUtils.isPrimitive(arg.resultType())
+                    ? BytecodeUtils.boxJavaPrimitive(arg)
+                    : arg);
+          }
+          Expression argsList = BytecodeUtils.asImmutableList(boxedArgs);
+          Expression contentKindExpr =
+              (functionType.getReturnType() instanceof SanitizedType sanitizedType)
+                  ? BytecodeUtils.constantSanitizedContentKindAsContentKind(
+                      sanitizedType.getContentKind())
+                  : BytecodeUtils.constantNull(BytecodeUtils.CONTENT_KIND_TYPE);
+          externCall =
+              JbcSrcExternRuntime.CREATE_OUTPUT_FUNCTION_INVOCATION.invoke(
+                  BytecodeUtils.constantMethodHandle(methodRef.asHandle()),
+                  BytecodeUtils.constantMethodHandle(fallbackRef.asHandle()),
+                  argsList,
+                  contentKindExpr);
         } else {
           MethodRef methodRef = ExternCompiler.getMethodRef(javaImpl);
           externCall = methodRef.invoke(args);
@@ -2221,7 +2245,11 @@ final class ExpressionCompiler {
         // required, so that we can dynamically resolve the target.
         Method asmMethod =
             ExternCompiler.buildMemberMethod(
-                extern.getName(), functionType, requiresRenderContext, extern.isJavaAsync());
+                extern.getName(),
+                functionType,
+                requiresRenderContext,
+                extern.isJavaAsync(),
+                extern.isOutputFunction());
         externCall =
             new Expression(soyReturnType.runtimeType()) {
               @Override

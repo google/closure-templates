@@ -83,7 +83,7 @@ public abstract class SanitizedContent extends SoyValue {
   }
 
   /** Creates a SanitizedContent from a command buffer. */
-  static SanitizedContent create(
+  public static SanitizedContent create(
       LoggingAdvisingAppendable.CommandBuffer commandBuffer, ContentKind kind, @Nullable Dir dir) {
     if (kind == ContentKind.HTML) {
       return new BufferedImpl(commandBuffer, kind, dir);

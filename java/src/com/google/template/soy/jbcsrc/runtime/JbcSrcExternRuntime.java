@@ -38,6 +38,8 @@ import com.google.common.html.types.TrustedResourceUrls;
 import com.google.errorprone.annotations.Keep;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyIterable;
@@ -49,8 +51,10 @@ import com.google.template.soy.data.SoyValueUnconverter;
 import com.google.template.soy.data.internal.IterableImpl;
 import com.google.template.soy.data.restricted.GbigintData;
 import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.plugin.java.SharedExternRuntime;
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.Collection;
@@ -76,6 +80,14 @@ public final class JbcSrcExternRuntime {
   public static final MethodRef CONVERT_OBJECT_TO_SOY_VALUE_PROVIDER =
       create("convertObjectToSoyValueProvider", Object.class);
 
+  public static final MethodRef CREATE_OUTPUT_FUNCTION_INVOCATION =
+      create(
+          "createOutputFunctionInvocation",
+          MethodHandle.class,
+          MethodHandle.class,
+          List.class,
+          SanitizedContent.ContentKind.class);
+
   @Keep
   @Nonnull
   public static SoyValue convertObjectToSoyValue(Object o) {
@@ -86,6 +98,22 @@ public final class JbcSrcExternRuntime {
   @Nonnull
   public static SoyValueProvider convertObjectToSoyValueProvider(Object o) {
     return SoyValueConverter.INSTANCE.convert(o);
+  }
+
+  @Keep
+  @Nonnull
+  public static SoyValue createOutputFunctionInvocation(
+      MethodHandle primary,
+      MethodHandle fallback,
+      List<?> args,
+      @Nullable SanitizedContent.ContentKind contentKind) {
+    OutputFunctionInvocation invocation =
+        OutputFunctionInvocation.create(primary, fallback, ImmutableList.copyOf(args), contentKind);
+    LoggingAdvisingAppendable.CommandBuffer buffer =
+        LoggingAdvisingAppendable.CommandBuffer.forOutputFunction(invocation);
+    return (contentKind != null)
+        ? SanitizedContent.create(buffer, contentKind, contentKind.getDefaultDir())
+        : StringData.forValue(buffer);
   }
 
   public static final MethodRef CONVERT_SAFE_HTML_PROTO_TO_SOY_VALUE_PROVIDER =

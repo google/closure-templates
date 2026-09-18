@@ -954,7 +954,8 @@ public final class Metadata {
               implP.getParamTypesList().stream()
                   .map(Metadata::protoToTypeReference)
                   .collect(toImmutableList()),
-              JavaImpl.MethodType.valueOf(implP.getMethodType().name()));
+              JavaImpl.MethodType.valueOf(implP.getMethodType().name()),
+              implP.getFallbackMethod().isEmpty() ? null : implP.getFallbackMethod());
         }
         return null;
       }
@@ -968,7 +969,8 @@ public final class Metadata {
               node.methodName(),
               node.returnType(),
               node.paramTypes(),
-              node.type());
+              node.type(),
+              node.fallbackMethodName());
         }
         return null;
       }
@@ -992,6 +994,10 @@ public final class Metadata {
       @Nullable
       @Override
       public abstract MethodType type();
+
+      @Nullable
+      @Override
+      public abstract String fallbackMethod();
     }
   }
 

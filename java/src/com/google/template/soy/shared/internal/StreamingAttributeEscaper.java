@@ -24,6 +24,7 @@ import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.shared.internal.EscapingConventions.CrossLanguageStringXform;
 import java.io.IOException;
@@ -119,6 +120,25 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
       buffer.append(escapePlaceholder(funCall.placeholderValue(), escapers));
     } else {
       delegate.appendLoggingFunctionInvocation(
+          funCall,
+          new ImmutableList.Builder<Function<String, String>>()
+              .addAll(escapers)
+              .add(transform::escape)
+              .build());
+    }
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  @Override
+  public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+      OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+      throws IOException {
+    var buffer = this.buffer;
+    if (buffer != null) {
+      funCall.appendFallback(buffer, escapers);
+    } else {
+      delegate.appendOutputFunctionInvocation(
           funCall,
           new ImmutableList.Builder<Function<String, String>>()
               .addAll(escapers)
