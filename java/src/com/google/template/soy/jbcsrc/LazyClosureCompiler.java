@@ -1083,7 +1083,7 @@ final class LazyClosureCompiler {
       ParentCapture capture = variableCaptures.get(param);
       if (capture == null) {
         Expression expression = parentParameterLookup.getParam(param);
-        capture = ParentCapture.create(param.name(), expression);
+        capture = ParentCapture.create(param.symbolName(), expression);
         variableCaptures.put(param, capture);
       }
       return capture.childExpression;

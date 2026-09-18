@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
@@ -29,6 +30,7 @@ import static java.util.stream.Collectors.toCollection;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internal.Converters;
@@ -434,9 +436,12 @@ final class TemplateCompiler {
     ImmutableList.Builder<String> paramNames = ImmutableList.builder();
     paramNames.add(StandardNames.STACK_FRAME);
     if (template.hasPositionalSignature()) {
+      ImmutableMap<String, String> paramToLocalName =
+          templateNode.getParams().stream()
+              .collect(toImmutableMap(TemplateParam::name, TemplateParam::symbolName));
       paramNames.addAll(
           template.templateType().getActualParameters().stream()
-              .map(Parameter::getName)
+              .map(p -> paramToLocalName.getOrDefault(p.getName(), p.getName()))
               .collect(toImmutableList()));
     } else {
       paramNames.add(StandardNames.PARAMS);

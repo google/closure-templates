@@ -158,10 +158,12 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
         // goog.soy.data.UnsanitizedText.
         NamedTypeNode.create(SourceLocation.UNKNOWN, "any"),
         /* isInjected= */ true,
-        /* isImplicit = */ false,
+        /* isImplicit= */ false,
         /* optional= */ true,
         /* desc= */ "Created by ContentSecurityPolicyNonceInjectionPass.",
-        /* defaultValue= */ null);
+        /* defaultValue= */ null,
+        /* alias= */ null,
+        /* aliasLocation= */ null);
   }
 
   private NonceType isTagNonceable(HtmlOpenTagNode tag) {

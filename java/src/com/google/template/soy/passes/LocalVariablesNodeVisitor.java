@@ -150,14 +150,16 @@ final class LocalVariablesNodeVisitor {
       VarDefn preexisting = lookup(refName);
       if (preexisting != null) {
         if (errorReporter != null && !shouldSkipError(defn, preexisting)) {
-          SourceLocation defnSourceLocation =
-              defn.nameLocation() == null ? definingNode.getSourceLocation() : defn.nameLocation();
+          SourceLocation defnSourceLocation = defn.symbolLocation();
+          if (defnSourceLocation == null) {
+            defnSourceLocation = definingNode.getSourceLocation();
+          }
           errorReporter.report(
               defnSourceLocation,
               VARIABLE_ALREADY_DEFINED,
               englishName(defn),
               refName,
-              preexisting.nameLocation().toLineColumnString());
+              preexisting.symbolLocation().toLineColumnString());
         }
         return false;
       }

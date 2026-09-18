@@ -736,7 +736,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       if (!headerVar.isRequired()) {
         sb.append("?");
       }
-      sb.append(" ").append(headerVar.name()).append(": ");
+      sb.append(" ").append(headerVar.name());
+      if (!headerVar.symbolName().equals(headerVar.name())) {
+        sb.append(" as ").append(headerVar.symbolName());
+      }
+      sb.append(": ");
       sb.append(headerVar.getTypeNode());
       sb.append("}");
       if (headerVar.desc() != null) {

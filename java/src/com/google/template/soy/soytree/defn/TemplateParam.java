@@ -48,6 +48,8 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
   private final boolean isExplicitlyOptional;
 
   @Nullable private ExprRootNode defaultValue;
+  @Nullable private final String alias;
+  @Nullable private final SourceLocation aliasLocation;
 
   public TemplateParam(
       String name,
@@ -58,7 +60,9 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
       boolean isImplicit,
       boolean optional,
       @Nullable String desc,
-      @Nullable ExprNode defaultValue) {
+      @Nullable ExprNode defaultValue,
+      @Nullable String alias,
+      @Nullable SourceLocation aliasLocation) {
     super(name, nameLocation, /* type= */ null);
     this.isInjected = isInjected;
     this.isImplicit = isImplicit;
@@ -67,6 +71,8 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     this.sourceLocation = sourceLocation;
     this.isExplicitlyOptional = optional;
     this.typeNode = typeNode;
+    this.alias = alias;
+    this.aliasLocation = aliasLocation;
   }
 
   protected TemplateParam(TemplateParam param, CopyState copyState) {
@@ -78,11 +84,24 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     this.desc = param.desc;
     this.isExplicitlyOptional = param.isExplicitlyOptional;
     this.defaultValue = param.defaultValue == null ? null : param.defaultValue.copy(copyState);
+    this.alias = param.alias;
+    this.aliasLocation = param.aliasLocation;
+  }
+
+  @Override
+  public String symbolName() {
+    return alias != null ? alias : name();
+  }
+
+  @Override
+  @Nullable
+  public SourceLocation symbolLocation() {
+    return aliasLocation != null ? aliasLocation : nameLocation();
   }
 
   @Override
   public String refName() {
-    return "$" + name();
+    return "$" + symbolName();
   }
 
   @Override

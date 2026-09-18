@@ -131,7 +131,7 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
 
     static VarKey create(TemplateParam param) {
-      return new AutoValue_TemplateVariableManager_VarKey(Kind.PARAM, param.name());
+      return new AutoValue_TemplateVariableManager_VarKey(Kind.PARAM, param.symbolName());
     }
 
     static VarKey create(AbstractLocalVarDefn<?> local) {

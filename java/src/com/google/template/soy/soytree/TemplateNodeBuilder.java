@@ -271,6 +271,8 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
       // they used to
       if (param.name().equals("ij")) {
         errorReporter.report(param.nameLocation(), INVALID_PARAM_NAMED_IJ);
+      } else if (param.symbolName().equals("ij")) {
+        errorReporter.report(param.symbolLocation(), INVALID_PARAM_NAMED_IJ);
       }
       if (!seenVarDefns.add(param.name())) {
         errorReporter.report(param.nameLocation(), PARAM_ALREADY_DECLARED, param.name());

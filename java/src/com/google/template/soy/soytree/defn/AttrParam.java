@@ -43,7 +43,9 @@ public final class AttrParam extends TemplateParam implements TemplateHeaderVarD
         false,
         optional,
         desc,
-        null);
+        null,
+        /* alias= */ null,
+        /* aliasLocation= */ null);
     this.originalAttributeName = name;
   }
 

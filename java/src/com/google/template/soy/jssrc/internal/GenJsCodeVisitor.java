@@ -1231,7 +1231,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             /* isImplicit= */ typeParam.isImplicit(),
             /* optional= */ !typeParam.isRequired(),
             /* desc= */ null,
-            /* defaultValue= */ null);
+            /* defaultValue= */ null,
+            /* alias= */ null,
+            /* aliasLocation= */ null);
     param.setType(typeParam.getType());
     return param;
   }
@@ -1808,7 +1810,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // injected params are always referenced from the opt_ijData parameter
       boolean isThisParamPositional = isPositionalStyle && !param.isInjected();
       CodeChunk.Generator generator = templateTranslationContext.codeGenerator();
-      String paramAlias = genParamAlias(paramName);
+      String paramAlias = genParamAlias(param.symbolName());
       Expression paramChunk =
           isThisParamPositional
               ? Id.create(getPositionalParamName(param))
@@ -1834,7 +1836,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // Cast to a better type, if necessary and possible.
       JsType declType = getJsTypeForParamForDeclaration(paramType);
-      if (!jsType.typeExpr().equals(declType.typeExpr()) && !JsSrcUtils.isReservedWord(paramName)) {
+      if (!jsType.typeExpr().equals(declType.typeExpr())
+          && !JsSrcUtils.isReservedWord(param.symbolName())) {
         // TODO(b/256679865): rename JS builtins here.
         initializer = initializer.castAs(jsType.typeExpr(), jsType.googRequires());
       }

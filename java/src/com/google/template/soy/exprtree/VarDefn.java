@@ -67,6 +67,19 @@ public interface VarDefn {
   SourceLocation nameLocation();
 
   /**
+   * The local variable name by which this parameter is referenced inside the template. Defaults to
+   * {@link #name()} when not aliased.
+   */
+  default String symbolName() {
+    return name();
+  }
+
+  @Nullable
+  default SourceLocation symbolLocation() {
+    return nameLocation();
+  }
+
+  /**
    * Returns the data type of this variable. This throws an error if the var def does not have a
    * type yet. {@link hasType} should be called first.
    */
