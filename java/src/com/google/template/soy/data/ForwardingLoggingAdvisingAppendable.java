@@ -87,6 +87,15 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
     return this;
   }
 
+  @CanIgnoreReturnValue
+  @Override
+  public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+      OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+      throws IOException {
+    delegate.appendOutputFunctionInvocation(funCall, escapers);
+    return this;
+  }
+
   @Override
   public void flushBuffers(int depth) throws IOException {
     if (depth > 0) {
