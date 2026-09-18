@@ -27,8 +27,6 @@ import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -160,7 +158,7 @@ public final class ConstantsCompiler {
               /* isStatic= */ true,
               TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN);
 
-      Expression renderContext = variableSet.getVariable(StandardNames.RENDER_CONTEXT);
+      Expression renderContext = variableSet.getParamByName(StandardNames.RENDER_CONTEXT);
       RenderContextExpression renderContextExpr = new RenderContextExpression(renderContext);
       TemplateParameterLookup variables =
           new ConstantVariables(variableSet, Optional.of(renderContextExpr));
@@ -186,20 +184,16 @@ public final class ConstantsCompiler {
 
       boolean constIsPrimitive = BytecodeUtils.isPrimitive(methodType);
       var constScope = variableSet.enterScope();
-      Variable tmpVar =
-          constScope.create("tmp", renderContextExpr.getConst(constKey), SaveStrategy.STORE);
+      LocalVariable tmpVar = constScope.createTemporary("tmp", BytecodeUtils.OBJECT.type());
+      Statement initTmp = tmpVar.initialize(renderContextExpr.getConst(constKey));
       Statement storeLocal =
-          tmpVar
-              .local()
-              .store(
-                  constIsPrimitive
-                      ? boxJavaPrimitive(methodType, buildConstValue)
-                      : buildConstValue);
-      Statement storeConst = renderContextExpr.storeConst(constKey, tmpVar.accessor());
+          tmpVar.store(
+              constIsPrimitive ? boxJavaPrimitive(methodType, buildConstValue) : buildConstValue);
+      Statement storeConst = renderContextExpr.storeConst(constKey, tmpVar);
       Expression returnValue =
           constIsPrimitive
-              ? unboxJavaPrimitive(methodType, tmpVar.accessor())
-              : tmpVar.accessor().checkedCast(method.getReturnType());
+              ? unboxJavaPrimitive(methodType, tmpVar)
+              : tmpVar.checkedCast(method.getReturnType());
 
       // Implements a lazily initialized, memoized value. Memoization ensures that values appear
       // constant even if their initializer is not idempotent. The value is memoized into the
@@ -224,8 +218,8 @@ public final class ConstantsCompiler {
             }
           */
           adapter.mark(start);
-          tmpVar.initializer().gen(adapter);
-          tmpVar.accessor().gen(adapter);
+          initTmp.gen(adapter);
+          tmpVar.gen(adapter);
           adapter.ifNonNull(end);
           storeLocal.gen(adapter);
           storeConst.gen(adapter);
@@ -277,7 +271,7 @@ public final class ConstantsCompiler {
 
     @Override
     public Expression getLocal(AbstractLocalVarDefn<?> local) {
-      return variableSet.getVariable(local.name());
+      return variableSet.getVariable(local);
     }
 
     @Override

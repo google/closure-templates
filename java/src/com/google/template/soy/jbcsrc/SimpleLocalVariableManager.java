@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.toCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -133,7 +134,7 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
   }
 
   @Override
-  public Expression getVariable(String name) {
+  public Expression getParamByName(String name) {
     LocalVariable var = activeVariables.get(name);
     if (var == null) {
       throw new IllegalArgumentException(
@@ -143,6 +144,11 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
               + activeVariables.keySet());
     }
     return var;
+  }
+
+  @Override
+  public Expression getVariable(VarDefn local) {
+    return getParamByName(local.name());
   }
 
   ImmutableMap<String, LocalVariable> allActiveVariables() {
@@ -172,9 +178,9 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
       boolean exited;
 
       @Override
-      public LocalVariable createNamedLocal(String name, Type type) {
-        LocalVariable var = createTemporary(name, type);
-        activeVariables.put(name, var);
+      public LocalVariable createNamedLocal(VarDefn varDefn, Type type) {
+        LocalVariable var = createTemporary(varDefn.name(), type);
+        activeVariables.put(varDefn.name(), var);
         return var;
       }
 

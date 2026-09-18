@@ -1102,7 +1102,7 @@ final class LazyClosureCompiler {
     public Expression getLocal(AbstractLocalVarDefn<?> local) {
       if (isDescendantOf(local.declaringNode(), params.node)) {
         // in this case, we just delegate to VariableSet
-        return variableSet.getVariable(local.name());
+        return variableSet.getVariable(local);
       }
 
       ParentCapture capture = variableCaptures.get(local);

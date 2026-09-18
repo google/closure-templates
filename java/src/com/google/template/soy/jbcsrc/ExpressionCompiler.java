@@ -298,7 +298,7 @@ final class ExpressionCompiler {
 
               @Override
               public Expression getLocal(AbstractLocalVarDefn<?> local) {
-                return varManager.getVariable(local.name());
+                return varManager.getVariable(local);
               }
 
               @Override
@@ -637,14 +637,14 @@ final class ExpressionCompiler {
       LocalVariable resultVar = scope.createTemporary(varName + "_output_list", LIST_TYPE);
       Statement resultVarInitializer = resultVar.initialize(MethodRefs.ARRAY_LIST.invoke());
       LocalVariable itemVar =
-          scope.createNamedLocal(node.getListIterVar().name(), SOY_VALUE_PROVIDER_TYPE);
+          scope.createNamedLocal(node.getListIterVar(), SOY_VALUE_PROVIDER_TYPE);
       Statement itemVarInitializer =
           itemVar.initialize(
               MethodRefs.ITERATOR_NEXT.invoke(iteratorVar).checkedCast(SOY_VALUE_PROVIDER_TYPE));
       LocalVariable userIndexVar =
           node.getIndexVar() == null
               ? null
-              : scope.createNamedLocal(node.getIndexVar().name(), Type.INT_TYPE);
+              : scope.createNamedLocal(node.getIndexVar(), Type.INT_TYPE);
       Statement userIndexVarInitializer =
           userIndexVar == null ? null : userIndexVar.initialize(constant(0));
       Expression hasNext = MethodRefs.ITERATOR_HAS_NEXT.invoke(iteratorVar);

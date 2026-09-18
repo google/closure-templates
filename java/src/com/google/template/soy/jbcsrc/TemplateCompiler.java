@@ -455,10 +455,10 @@ final class TemplateCompiler {
     Optional<Expression> paramsVar =
         template.hasPositionalSignature()
             ? Optional.empty()
-            : Optional.of(variableSet.getVariable(StandardNames.PARAMS));
+            : Optional.of(variableSet.getParamByName(StandardNames.PARAMS));
 
     var renderContext =
-        new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT));
+        new RenderContextExpression(variableSet.getParamByName(StandardNames.RENDER_CONTEXT));
     TemplateVariables variables =
         new TemplateVariables(
             variableSet,
@@ -467,7 +467,7 @@ final class TemplateCompiler {
             renderContext);
     AppendableExpression appendable =
         AppendableExpression.forExpression(
-            variableSet.getVariable(StandardNames.APPENDABLE).asNonJavaNullable());
+            variableSet.getParamByName(StandardNames.APPENDABLE).asNonJavaNullable());
     SoyNodeCompiler nodeCompiler =
         SoyNodeCompiler.create(
             templateNode,
@@ -504,28 +504,28 @@ final class TemplateCompiler {
         // referenced.
         if (isExplicitlyReferenced) {
           initialValue = renderContext.getInjectedValue(param.name(), defaultValue);
-          localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
+          localVariable = templateScope.createNamedLocal(param, initialValue.resultType());
           paramInitStatements.add(localVariable.initialize(initialValue));
         }
       } else if (paramsVar.isPresent()) {
         initialValue = getFieldProviderOrDefault(param.name(), paramsVar.get(), defaultValue);
         if (isExplicitlyReferenced) {
-          localVariable = templateScope.createNamedLocal(param.name(), initialValue.resultType());
+          localVariable = templateScope.createNamedLocal(param, initialValue.resultType());
           paramInitStatements.add(localVariable.initialize(initialValue));
         } else {
-          templateScope.createTrivial(param.name(), initialValue);
+          templateScope.createTrivial(param, initialValue);
         }
       } else {
         // positional parameters just need defaults to be managed
         if (defaultValue != null) {
-          localVariable = (LocalVariable) variableSet.getVariable(param.name());
+          localVariable = (LocalVariable) variableSet.getVariable(param);
           Expression initializer =
               MethodRefs.SOY_VALUE_PROVIDER_WITH_DEFAULT.invoke(localVariable, defaultValue.box());
           if (isExplicitlyReferenced) {
             paramInitStatements.add(localVariable.store(initializer));
           } else {
             // If they aren't referenced just compute default on demand.
-            templateScope.createTrivial(param.name(), initializer);
+            templateScope.createTrivial(param, initializer);
           }
         }
       }
@@ -652,11 +652,11 @@ final class TemplateCompiler {
             end,
             /* isStatic= */ true,
             TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN);
-    Expression stackFrameVar = variableSet.getVariable(StandardNames.STACK_FRAME);
-    Expression paramsVar = variableSet.getVariable(StandardNames.PARAMS);
-    Expression appendableVar = variableSet.getVariable(StandardNames.APPENDABLE);
+    Expression stackFrameVar = variableSet.getParamByName(StandardNames.STACK_FRAME);
+    Expression paramsVar = variableSet.getParamByName(StandardNames.PARAMS);
+    Expression appendableVar = variableSet.getParamByName(StandardNames.APPENDABLE);
     RenderContextExpression context =
-        new RenderContextExpression(variableSet.getVariable(StandardNames.RENDER_CONTEXT));
+        new RenderContextExpression(variableSet.getParamByName(StandardNames.RENDER_CONTEXT));
 
     TemplateBasicNode templateBasicNode = (TemplateBasicNode) templateNode;
     Expression renderExpression =
@@ -701,7 +701,7 @@ final class TemplateCompiler {
 
     @Override
     public Expression getParam(TemplateParam param) {
-      return variableSet.getVariable(param.name());
+      return variableSet.getVariable(param);
     }
 
     @Override
@@ -711,7 +711,7 @@ final class TemplateCompiler {
 
     @Override
     public Expression getLocal(AbstractLocalVarDefn<?> local) {
-      return variableSet.getVariable(local.name());
+      return variableSet.getVariable(local);
     }
 
     @Override

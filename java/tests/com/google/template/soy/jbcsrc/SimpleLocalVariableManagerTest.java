@@ -72,15 +72,15 @@ public final class SimpleLocalVariableManagerTest {
             newLabel(),
             newLabel(),
             /* isStatic= */ false);
-    LocalVariable thisVar = (LocalVariable) vars.getVariable("this");
+    LocalVariable thisVar = (LocalVariable) vars.getParamByName("this");
     assertThat(thisVar.index()).isEqualTo(0);
     assertThat(thisVar.variableName()).isEqualTo("this");
 
-    LocalVariable baz = (LocalVariable) vars.getVariable("baz");
+    LocalVariable baz = (LocalVariable) vars.getParamByName("baz");
     assertThat(baz.index()).isEqualTo(1);
     assertThat(baz.variableName()).isEqualTo("baz");
 
-    LocalVariable quux = (LocalVariable) vars.getVariable("quux");
+    LocalVariable quux = (LocalVariable) vars.getParamByName("quux");
     assertThat(quux.index()).isEqualTo(2);
     assertThat(quux.variableName()).isEqualTo("quux");
   }

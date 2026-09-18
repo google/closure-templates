@@ -49,6 +49,7 @@ import com.google.template.soy.exprtree.NumberNode;
 import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.UndefinedNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
@@ -939,10 +940,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Variable userIndexVar =
         nonEmptyNode.getIndexVar() == null
             ? null
-            : scope.create(nonEmptyNode.getIndexVarName(), constant(0), STORE);
+            : scope.create(nonEmptyNode.getIndexVar(), constant(0), STORE);
     Variable itemVar =
         scope.create(
-            nonEmptyNode.getVarName(),
+            nonEmptyNode.getVar(),
             iteratorVar
                 .local()
                 .invoke(MethodRefs.ITERATOR_NEXT)
@@ -2120,12 +2121,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       LocalVar ref = node.getVar();
       return currentScope
           .create(
-              ref.name(),
+              ref,
               compileRootExpression(node.getExpr()),
               TemplateVariableManager.SaveStrategy.STORE)
           .initializer();
     } else {
       return storeClosure(
+          node.getVar(),
           new LazyClosureCompiler(this)
               .compileLazyExpression(node, node.getVarName(), node.getExpr()));
     }
@@ -2133,14 +2135,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitLetContentNode(LetContentNode node) {
-    return storeClosure(new LazyClosureCompiler(this).compileLazyContent(node, node.getVarName()));
+    return storeClosure(
+        node.getVar(), new LazyClosureCompiler(this).compileLazyContent(node, node.getVarName()));
   }
 
   @Override
   protected Statement visitAssignmentNode(AssignmentNode node) {
     VarRefNode ref = (VarRefNode) node.getLhs().getRoot();
-    String varName = ref.getDefnDecl().name();
-    AbstractVariable letOrParam = currentScope.get(varName);
+    VarDefn var = ref.getDefnDecl();
+    AbstractVariable letOrParam = currentScope.get(var);
     SoyExpression newValue = exprCompiler.forceCompileWithNoDetaches(node.getRhs());
 
     // ASM has no common type for object v. primitive representations. So we need to coerce the
@@ -2154,21 +2157,18 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     } else {
       // This is assignment on a param. Param is from parent scope.
       return currentScope
-          .create(varName, newValue, TemplateVariableManager.SaveStrategy.STORE)
+          .create(var, newValue, TemplateVariableManager.SaveStrategy.STORE)
           .initializer();
     }
   }
 
-  Statement storeClosure(LazyClosure newLetValue) {
+  Statement storeClosure(LocalVar var, LazyClosure newLetValue) {
     if (newLetValue.isTrivial()) {
-      currentScope.createTrivial(newLetValue.name(), newLetValue.soyValueProvider());
+      currentScope.createTrivial(var, newLetValue.soyValueProvider());
       return Statement.NULL_STATEMENT;
     } else {
       return currentScope
-          .create(
-              newLetValue.name(),
-              newLetValue.soyValueProvider(),
-              TemplateVariableManager.SaveStrategy.STORE)
+          .create(var, newLetValue.soyValueProvider(), TemplateVariableManager.SaveStrategy.STORE)
           .initializer();
     }
   }

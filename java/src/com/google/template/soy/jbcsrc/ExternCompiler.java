@@ -191,7 +191,7 @@ public final class ExternCompiler {
     var renderContext =
         requiresRenderContext
             ? Optional.of(
-                new RenderContextExpression(paramSet.getVariable(StandardNames.RENDER_CONTEXT)))
+                new RenderContextExpression(paramSet.getParamByName(StandardNames.RENDER_CONTEXT)))
             : Optional.<RenderContextExpression>empty();
     ConstantVariables vars = new ConstantVariables(paramSet, renderContext);
 
@@ -248,7 +248,7 @@ public final class ExternCompiler {
       for (int i = 0; i < declaredMethodArgs; i++) {
         adaptedParams.add(
             adaptParameter(
-                paramSet.getVariable(paramNames.get(i + paramNamesOffset)),
+                paramSet.getParamByName(paramNames.get(i + paramNamesOffset)),
                 paramTypesInfos[i],
                 extern.getType().getParameters().get(i).getType().getEffectiveType(),
                 vars));

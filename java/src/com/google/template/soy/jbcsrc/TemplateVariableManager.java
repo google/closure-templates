@@ -26,6 +26,8 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
+import com.google.template.soy.exprtree.AbstractLocalVarDefn;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -36,6 +38,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.SaveStateMetaFactory;
+import com.google.template.soy.soytree.defn.TemplateParam;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
@@ -69,11 +72,11 @@ final class TemplateVariableManager implements LocalVariableManager {
      * Creates a 'trivial' variable.
      *
      * <p>This simply registers an expression within the scope so it can be looked up via {@link
-     * #getVariable}, but it does not use a local variable or generate save/restore logic, the
+     * #getParamByName}, but it does not use a local variable or generate save/restore logic, the
      * expression will simply be evaluated on every reference. So it is only reasonable for
      * 'trivial' expressions that just read fields or refer to other local variables.
      */
-    abstract void createTrivial(String name, Expression expression);
+    abstract void createTrivial(VarDefn var, Expression expression);
 
     /**
      * Creates a new 'synthetic' variable. A synthetic variable is a variable that is introduced by
@@ -93,15 +96,14 @@ final class TemplateVariableManager implements LocalVariableManager {
     /**
      * Creates a new user-defined variable.
      *
-     * @param name The name of the variable, the name is assumed to be unique (enforced by the
-     *     ResolveNamesPass).
+     * @param param The parameter variable
      * @param initializer The expression that can be used to initialize the variable
      * @param strategy Set this to {@code DERIVED} if the value of the variable is trivially
      *     derivable from other variables already defined.
      */
-    abstract Variable create(String name, Expression initializer, SaveStrategy strategy);
+    abstract Variable create(VarDefn param, Expression initializer, SaveStrategy strategy);
 
-    abstract AbstractVariable get(String name);
+    abstract AbstractVariable get(VarDefn var);
   }
 
   /**
@@ -113,13 +115,11 @@ final class TemplateVariableManager implements LocalVariableManager {
   @AutoValue
   abstract static class VarKey {
     enum Kind {
-      /**
-       * Includes @param, @inject, {let..}, and loop vars.
-       *
-       * <p>Uniqueness of local variable names is enforced by the ResolveNamesPass pass, we just
-       * need uniqueness for the field names
-       */
-      USER_DEFINED,
+      /** Includes @param and @inject. */
+      PARAM,
+
+      /** Includes {let..} and loop vars. */
+      LOCAL_VAR,
 
       /**
        * There are certain operations in which a value must be used multiple times and may have
@@ -130,12 +130,30 @@ final class TemplateVariableManager implements LocalVariableManager {
       SYNTHETIC
     }
 
-    static VarKey create(String proposedName) {
-      return new AutoValue_TemplateVariableManager_VarKey(Kind.USER_DEFINED, proposedName);
+    static VarKey create(TemplateParam param) {
+      return new AutoValue_TemplateVariableManager_VarKey(Kind.PARAM, param.name());
+    }
+
+    static VarKey create(AbstractLocalVarDefn<?> local) {
+      return new AutoValue_TemplateVariableManager_VarKey(Kind.LOCAL_VAR, local.name());
+    }
+
+    static VarKey create(VarDefn var) {
+      if (var instanceof TemplateParam param) {
+        return create(param);
+      } else if (var instanceof AbstractLocalVarDefn<?> local) {
+        return create(local);
+      } else {
+        throw new IllegalArgumentException("Unexpected VarDefn: " + var);
+      }
     }
 
     static VarKey create(SyntheticVarName proposedName) {
       return new AutoValue_TemplateVariableManager_VarKey(Kind.SYNTHETIC, proposedName);
+    }
+
+    static VarKey createParam(String proposedName) {
+      return new AutoValue_TemplateVariableManager_VarKey(Kind.PARAM, proposedName);
     }
 
     abstract Kind kind();
@@ -243,7 +261,7 @@ final class TemplateVariableManager implements LocalVariableManager {
           if (runtimeType != null) {
             exp = SoyExpression.forRuntimeType(runtimeType, value);
           }
-          activeScope.variablesByKey.put(VarKey.create(key), new TrivialVariable(exp));
+          activeScope.variablesByKey.put(VarKey.createParam(key), new TrivialVariable(exp));
         });
   }
 
@@ -271,8 +289,8 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
 
     @Override
-    void createTrivial(String name, Expression expression) {
-      putVariable(VarKey.create(name), new TrivialVariable(expression));
+    void createTrivial(VarDefn param, Expression expression) {
+      putVariable(VarKey.create(param), new TrivialVariable(expression));
     }
 
     @Override
@@ -283,13 +301,13 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
 
     @Override
-    Variable create(String name, Expression initExpr, SaveStrategy strategy) {
-      return doCreate(name, initExpr, VarKey.create(name), strategy);
+    Variable create(VarDefn param, Expression initExpr, SaveStrategy strategy) {
+      return doCreate(param.name(), initExpr, VarKey.create(param), strategy);
     }
 
     @Override
-    AbstractVariable get(String name) {
-      return getVariable(VarKey.create(name));
+    AbstractVariable get(VarDefn var) {
+      return getVariable(VarKey.create(var));
     }
 
     @Override
@@ -298,9 +316,9 @@ final class TemplateVariableManager implements LocalVariableManager {
     }
 
     @Override
-    public LocalVariable createNamedLocal(String name, Type type) {
-      LocalVariable var = delegateScope.createNamedLocal(name, type);
-      putVariable(VarKey.create(name), new TrivialVariable(var));
+    public LocalVariable createNamedLocal(VarDefn param, Type type) {
+      LocalVariable var = delegateScope.createNamedLocal(param, type);
+      putVariable(VarKey.create(param), new TrivialVariable(var));
       return var;
     }
 
@@ -368,12 +386,17 @@ final class TemplateVariableManager implements LocalVariableManager {
   }
 
   /**
-   * Looks up a user defined variable with the given name. The variable must have been created in a
-   * currently active scope.
+   * Looks up a user defined parameter or method parameter with the given name. The variable must
+   * have been created in a currently active scope.
    */
   @Override
-  public Expression getVariable(String name) {
-    return getVariable(VarKey.create(name));
+  public Expression getParamByName(String name) {
+    return getVariable(VarKey.createParam(name));
+  }
+
+  @Override
+  public Expression getVariable(VarDefn param) {
+    return getVariable(VarKey.create(param));
   }
 
   /**
