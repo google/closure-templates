@@ -36,6 +36,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
+import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
@@ -91,6 +92,9 @@ import java.util.function.ToIntFunction;
 
 /** Standard constant MethodRef instances shared throughout the compiler. */
 public final class MethodRefs {
+
+  public static final MethodRef NODE_BUILDER_IS_OUTPUT_BUFFER =
+      createNonPure(NodeBuilder.class, "isOutputBuffer");
 
   public static final MethodRef ARRAY_LIST_ADD =
       createNonPure(ArrayList.class, "add", Object.class);

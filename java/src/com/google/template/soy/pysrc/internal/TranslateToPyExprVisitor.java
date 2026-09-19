@@ -750,6 +750,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case NEW_SET:
         PyExpr spread = genPyExprWithNewToken(Operator.SPREAD, visitChildren(node), "*");
         return new PyExpr("{" + spread.getText() + "}", Integer.MAX_VALUE);
+      case IS_OUTPUT_BUFFER:
+        return new PyExpr("True", Integer.MAX_VALUE);
       case MSG_WITH_ID:
       case REMAINDER:
       case FLUSH_PENDING_LOGGING_ATTRIBUTES:
