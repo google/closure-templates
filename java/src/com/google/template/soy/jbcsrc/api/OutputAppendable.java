@@ -68,6 +68,11 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
   }
 
   @Override
+  public boolean isOutputAppendable() {
+    return true;
+  }
+
+  @Override
   public boolean softLimitReached() {
     return outputAppendable instanceof AdvisingAppendable
         && ((AdvisingAppendable) outputAppendable).softLimitReached();
