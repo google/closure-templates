@@ -68,6 +68,25 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
   }
 
   @Override
+  public boolean isNullish() {
+    return false;
+  }
+
+  @Override
+  public boolean isNull() {
+    return false;
+  }
+
+  @Override
+  public boolean isUndefined() {
+    return false;
+  }
+
+  public final ContentKind getContentKind() {
+    return appendable.getSanitizedContentKind();
+  }
+
+  @Override
   public final RenderResult status() {
     if (isDone) {
       return RenderResult.done();

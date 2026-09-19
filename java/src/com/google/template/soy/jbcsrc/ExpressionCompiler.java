@@ -103,6 +103,7 @@ import com.google.template.soy.exprtree.RegexpLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.Int64ConversionMode;
 import com.google.template.soy.jbcsrc.restricted.Branch;
@@ -166,6 +167,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ConstantDynamic;
@@ -855,69 +857,191 @@ final class ExpressionCompiler {
 
     // Comparison operators
 
+    @Nullable
+    private Expression getRawProviderIfPossible(ExprNode node) {
+      if (node.getKind() == ExprNode.Kind.VAR_REF_NODE) {
+        VarRefNode varRef = (VarRefNode) node;
+        VarDefn defn = varRef.getDefnDecl();
+        Expression raw = null;
+        if (defn instanceof TemplateParam templateParam) {
+          raw = parameters.getParam(templateParam);
+        } else if (defn instanceof LocalVar localVar) {
+          raw = parameters.getLocal(localVar);
+        }
+        if (raw != null
+            && isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, raw.resultType())
+            && !isDefinitelyAssignableFrom(SOY_VALUE_TYPE, raw.resultType())) {
+          return raw;
+        }
+      }
+      return null;
+    }
+
+    private Branch compileNullishBranch(ExprNode node, Function<Expression, Branch> branchFn) {
+      Expression raw = getRawProviderIfPossible(node);
+      if (raw != null) {
+        return Branch.or(
+            Branch.ifInstanceOf(raw, BytecodeUtils.DETACHABLE_CONTENT_PROVIDER_TYPE),
+            branchFn.apply(visit(node)));
+      }
+      return branchFn.apply(visit(node));
+    }
+
+    private Expression ifFastPathOr(Expression fastPathCall, Expression fallback) {
+      return new Expression(Type.BOOLEAN_TYPE) {
+        @Override
+        protected void doGen(CodeBuilder adapter) {
+          Label ifNull = BytecodeUtils.newLabel();
+          Label end = BytecodeUtils.newLabel();
+          fastPathCall.gen(adapter);
+          adapter.dup();
+          adapter.ifNull(ifNull);
+          MethodRefs.BOOLEAN_VALUE.invokeUnchecked(adapter);
+          adapter.goTo(end);
+          adapter.mark(ifNull);
+          adapter.pop();
+          fallback.gen(adapter);
+          adapter.mark(end);
+        }
+      };
+    }
+
+    private Expression maybeWaitForNonDcpSide(
+        Expression rawLeft, Expression rawRight, Expression fallback) {
+      if (detacher == null) {
+        return fallback;
+      }
+      Statement waitRight = detacher.waitForSoyValueProvider(rawRight).toStatement();
+      Statement waitLeft = detacher.waitForSoyValueProvider(rawLeft).toStatement();
+      return new Expression(fallback.resultType()) {
+        @Override
+        protected void doGen(CodeBuilder cb) {
+          Label skipWait = BytecodeUtils.newLabel();
+          Label doWaitLeft = BytecodeUtils.newLabel();
+
+          // If rawLeft is a sanitized DCP:
+          rawLeft.gen(cb);
+          MethodRefs.IS_DCP_SANITIZED.invokeUnchecked(cb);
+          cb.ifZCmp(Opcodes.IFEQ, doWaitLeft);
+
+          // rawLeft is sanitized DCP. If rawRight is NOT DCP, wait for rawRight:
+          rawRight.gen(cb);
+          cb.instanceOf(BytecodeUtils.DETACHABLE_CONTENT_PROVIDER_TYPE);
+          cb.ifZCmp(Opcodes.IFNE, skipWait);
+          waitRight.gen(cb);
+          cb.goTo(skipWait);
+
+          cb.mark(doWaitLeft);
+          // If rawRight is sanitized DCP (and rawLeft is NOT DCP):
+          rawRight.gen(cb);
+          MethodRefs.IS_DCP_SANITIZED.invokeUnchecked(cb);
+          cb.ifZCmp(Opcodes.IFEQ, skipWait);
+          rawLeft.gen(cb);
+          cb.instanceOf(BytecodeUtils.DETACHABLE_CONTENT_PROVIDER_TYPE);
+          cb.ifZCmp(Opcodes.IFNE, skipWait);
+          waitLeft.gen(cb);
+
+          cb.mark(skipWait);
+          fallback.gen(cb);
+        }
+      };
+    }
+
+    private Expression compileTripleEqual(ExprNode leftNode, ExprNode rightNode) {
+      Expression rawLeft = getRawProviderIfPossible(leftNode);
+      Expression rawRight = getRawProviderIfPossible(rightNode);
+      if (rawLeft != null && rawRight != null) {
+        Expression fastPathCall =
+            MethodRefs.CHECK_TRIPLE_EQUAL_DCP_FAST_PATH.invoke(rawLeft, rawRight);
+        return ifFastPathOr(
+            fastPathCall, BytecodeUtils.compareSoyTripleEquals(visit(leftNode), visit(rightNode)));
+      }
+      return BytecodeUtils.compareSoyTripleEquals(visit(leftNode), visit(rightNode));
+    }
+
+    private Expression compileEqual(ExprNode leftNode, ExprNode rightNode) {
+      Expression rawLeft = getRawProviderIfPossible(leftNode);
+      Expression rawRight = getRawProviderIfPossible(rightNode);
+      if (rawLeft != null && rawRight != null) {
+        Expression fastPathCall = MethodRefs.CHECK_EQUAL_DCP_FAST_PATH.invoke(rawLeft, rawRight);
+        Expression fallback =
+            maybeWaitForNonDcpSide(
+                rawLeft,
+                rawRight,
+                BytecodeUtils.compareSoyEquals(visit(leftNode), visit(rightNode)));
+        return ifFastPathOr(fastPathCall, fallback);
+      }
+      return BytecodeUtils.compareSoyEquals(visit(leftNode), visit(rightNode));
+    }
+
     @Override
     protected SoyExpression visitEqualOpNode(EqualOpNode node) {
       if (ExprNodes.isNullishLiteral(node.getChild(0))) {
-        return BytecodeUtils.isSoyNullish(visit(node.getChild(1)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(1), Branch::ifNonSoyNullish).negate().asBoolean());
       }
       if (ExprNodes.isNullishLiteral(node.getChild(1))) {
-        return BytecodeUtils.isSoyNullish(visit(node.getChild(0)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(0), Branch::ifNonSoyNullish).negate().asBoolean());
       }
-      return SoyExpression.forBool(
-          BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1))));
+      return SoyExpression.forBool(compileEqual(node.getChild(0), node.getChild(1)));
     }
 
     @Override
     protected SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
       if (ExprNodes.isNullishLiteral(node.getChild(0))) {
-        return BytecodeUtils.isNonSoyNullish(visit(node.getChild(1)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(1), Branch::ifNonSoyNullish).asBoolean());
       }
       if (ExprNodes.isNullishLiteral(node.getChild(1))) {
-        return BytecodeUtils.isNonSoyNullish(visit(node.getChild(0)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(0), Branch::ifNonSoyNullish).asBoolean());
       }
       return SoyExpression.forBool(
-          Branch.ifTrue(
-                  BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1))))
-              .negate()
-              .asBoolean());
+          Branch.ifTrue(compileEqual(node.getChild(0), node.getChild(1))).negate().asBoolean());
     }
 
     @Override
     protected SoyExpression visitTripleEqualOpNode(TripleEqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isSoyNull(visit(node.getChild(1)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(1), Branch::ifNonSoyNull).negate().asBoolean());
       }
       if (node.getChild(0).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-        return BytecodeUtils.isSoyUndefined(visit(node.getChild(1)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(1), Branch::ifNonSoyUndefined).negate().asBoolean());
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isSoyNull(visit(node.getChild(0)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(0), Branch::ifNonSoyNull).negate().asBoolean());
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-        return BytecodeUtils.isSoyUndefined(visit(node.getChild(0)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(0), Branch::ifNonSoyUndefined).negate().asBoolean());
       }
-      return SoyExpression.forBool(
-          BytecodeUtils.compareSoyTripleEquals(visit(node.getChild(0)), visit(node.getChild(1))));
+      return SoyExpression.forBool(compileTripleEqual(node.getChild(0), node.getChild(1)));
     }
 
     @Override
     protected SoyExpression visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isNonSoyNull(visit(node.getChild(1)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(1), Branch::ifNonSoyNull).asBoolean());
       }
       if (node.getChild(0).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-        return BytecodeUtils.isNonSoyUndefined(visit(node.getChild(1)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(1), Branch::ifNonSoyUndefined).asBoolean());
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isNonSoyNull(visit(node.getChild(0)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(0), Branch::ifNonSoyNull).asBoolean());
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-        return BytecodeUtils.isNonSoyUndefined(visit(node.getChild(0)));
+        return SoyExpression.forBool(
+            compileNullishBranch(node.getChild(0), Branch::ifNonSoyUndefined).asBoolean());
       }
       return SoyExpression.forBool(
-          Branch.ifTrue(
-                  BytecodeUtils.compareSoyTripleEquals(
-                      visit(node.getChild(0)), visit(node.getChild(1))))
+          Branch.ifTrue(compileTripleEqual(node.getChild(0), node.getChild(1)))
               .negate()
               .asBoolean());
     }

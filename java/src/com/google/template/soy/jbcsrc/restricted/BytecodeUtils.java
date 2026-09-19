@@ -130,6 +130,8 @@ public final class BytecodeUtils {
       Type.getType(LoggingAdvisingAppendable.BufferingAppendable.class);
   public static final Type MULTIPLEXING_APPENDABLE_TYPE =
       Type.getType(DetachableContentProvider.MultiplexingAppendable.class);
+  public static final Type DETACHABLE_CONTENT_PROVIDER_TYPE =
+      Type.getType(DetachableContentProvider.class);
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
   public static final Type TEMPLATE_VALUE_TYPE = Type.getType(TemplateValue.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);

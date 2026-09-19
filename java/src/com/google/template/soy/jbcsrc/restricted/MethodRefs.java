@@ -602,6 +602,22 @@ public final class MethodRefs {
       createPure(JbcSrcRuntime.class, "isNonSoyNullish", SoyValueProvider.class);
   public static final MethodRef IS_SOY_NON_NULL =
       createPure(JbcSrcRuntime.class, "isNonSoyNull", SoyValueProvider.class);
+  public static final MethodRef IS_SOY_NON_UNDEFINED =
+      createPure(JbcSrcRuntime.class, "isNonSoyUndefined", SoyValueProvider.class);
+  public static final MethodRef IS_DCP_SANITIZED =
+      createPure(JbcSrcRuntime.class, "isDcpSanitized", SoyValueProvider.class);
+  public static final MethodRef CHECK_TRIPLE_EQUAL_DCP_FAST_PATH =
+      createPure(
+          JbcSrcRuntime.class,
+          "checkTripleEqualDcpFastPath",
+          SoyValueProvider.class,
+          SoyValueProvider.class);
+  public static final MethodRef CHECK_EQUAL_DCP_FAST_PATH =
+      createPure(
+          JbcSrcRuntime.class,
+          "checkEqualDcpFastPath",
+          SoyValueProvider.class,
+          SoyValueProvider.class);
   public static final MethodRef JAVA_TO_SOY_NULL =
       createPure(JbcSrcRuntime.class, "javaToSoyNull", SoyValue.class);
 

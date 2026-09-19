@@ -75,6 +75,21 @@ public abstract class SoyValueProvider {
   public abstract RenderResult renderAndResolve(LoggingAdvisingAppendable appendable)
       throws IOException;
 
+  /** If this value provider resolves to Soy null or Soy undefined. */
+  public boolean isNullish() {
+    return resolve().isNullish();
+  }
+
+  /** If this value provider resolves to Soy null (NullData). */
+  public boolean isNull() {
+    return resolve().isNull();
+  }
+
+  /** If this value provider resolves to Soy undefined (UndefinedData). */
+  public boolean isUndefined() {
+    return resolve().isUndefined();
+  }
+
   /**
    * Coerces the given SoyValueProvider to a SoyValueProvider that always provides a BooleanData.
    *

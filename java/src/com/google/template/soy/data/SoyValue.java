@@ -42,6 +42,7 @@ public abstract class SoyValue extends SoyValueProvider {
   }
 
   /** If this is Soy null or Soy undefined. */
+  @Override
   @SuppressWarnings("ReferenceEquality") // This is safe since we own the definition of nullish
   public final boolean isNullish() {
     return this == UndefinedData.INSTANCE || this == NullData.INSTANCE;
@@ -207,11 +208,13 @@ public abstract class SoyValue extends SoyValueProvider {
   }
 
   /** If this is Soy null (NullData). */
+  @Override
   public final boolean isNull() {
     return this == NullData.INSTANCE;
   }
 
   /** If this is Soy undefined (UndefinedData). */
+  @Override
   public final boolean isUndefined() {
     return this == UndefinedData.INSTANCE;
   }

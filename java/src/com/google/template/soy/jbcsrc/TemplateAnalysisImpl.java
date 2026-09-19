@@ -49,8 +49,12 @@ import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -904,6 +908,30 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     @Override
     protected void visitOperatorNode(OperatorNode node) {
       visitChildren(node);
+    }
+
+    @Override
+    protected void visitEqualOpNode(EqualOpNode node) {
+      executeInBranch(node.getChild(0));
+      executeInBranch(node.getChild(1));
+    }
+
+    @Override
+    protected void visitNotEqualOpNode(NotEqualOpNode node) {
+      executeInBranch(node.getChild(0));
+      executeInBranch(node.getChild(1));
+    }
+
+    @Override
+    protected void visitTripleEqualOpNode(TripleEqualOpNode node) {
+      executeInBranch(node.getChild(0));
+      executeInBranch(node.getChild(1));
+    }
+
+    @Override
+    protected void visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
+      executeInBranch(node.getChild(0));
+      executeInBranch(node.getChild(1));
     }
 
     @Override
