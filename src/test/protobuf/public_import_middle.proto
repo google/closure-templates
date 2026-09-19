@@ -1,0 +1,13 @@
+syntax = "proto2";
+
+package example.publicimport.middle;
+
+import public
+// "src/test/protobuf/public_import_target.proto";
+
+option java_package = "com.google.template.soy.testing.publicimport";
+option java_multiple_files = true;
+
+message MiddleMessage {
+  optional string some_string = 1;
+}

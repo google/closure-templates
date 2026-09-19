@@ -1,0 +1,38 @@
+syntax = "proto2";
+
+package example.publicimport.target;
+
+option java_package = "com.google.template.soy.testing.publicimport";
+option java_multiple_files = true;
+
+message PubliclyImportedMessage {
+  extensions 100 to max;
+
+  message NestedMessage {
+    optional string nested_string = 1;
+  }
+
+  enum NestedEnum {
+    NESTED_ENUM_DEFAULT = 0;
+    NESTED_ENUM_ONE = 1;
+  }
+
+  optional string some_string = 1;
+  optional NestedMessage nested = 2;
+  optional NestedEnum nested_enum = 3;
+}
+
+enum PubliclyImportedEnum {
+  PUBLICLY_IMPORTED_ENUM_DEFAULT = 0;
+  PUBLICLY_IMPORTED_ENUM_ONE = 1;
+}
+
+extend PubliclyImportedMessage {
+  optional int32 publicly_imported_extension = 100;
+}
+
+message PubliclyImportedExtensionHolder {
+  extend PubliclyImportedMessage {
+    optional string nested_extension = 101;
+  }
+}

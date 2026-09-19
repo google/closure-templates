@@ -41,7 +41,9 @@ import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Resolves Soy proto imports; verifies that the imports are valid and populates a local type
@@ -105,20 +107,17 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
     }
     FileDescriptor fd = pathToDescriptor.get(node.getSourceFilePath());
 
-    ImmutableMap<String, Descriptor> messages =
-        fd.getMessageTypes().stream().collect(toImmutableMap(Descriptor::getName, f -> f));
-    ImmutableMap<String, EnumDescriptor> enums =
-        fd.getEnumTypes().stream().collect(toImmutableMap(EnumDescriptor::getName, f -> f));
-    ImmutableMap<String, FieldDescriptor> extensions =
-        fd.getExtensions().stream().collect(toImmutableMap(Field::computeSoyName, f -> f));
+    Map<String, Descriptor> messages = new HashMap<>();
+    Map<String, EnumDescriptor> enums = new HashMap<>();
+    Map<String, FieldDescriptor> extensions = new HashMap<>();
+    collectExportedSymbols(fd, new HashSet<>(), messages, enums, extensions);
 
     for (SymbolVar symbol : node.getIdentifiers()) {
       String name = symbol.getSymbol();
-      String fullName = fd.getPackage().isEmpty() ? name : fd.getPackage() + "." + name;
 
       Descriptor messageDesc = messages.get(name);
       if (messageDesc != null) {
-        putDistinct(msgAndEnumLocalToFqn, symbol.name(), fullName);
+        putDistinct(msgAndEnumLocalToFqn, symbol.name(), messageDesc.getFullName());
         symbol.setType(typeRegistry.getProtoImportType(messageDesc));
         symbol.setSymbolKind(SymbolKind.PROTO_MESSAGE);
         continue;
@@ -126,7 +125,7 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
 
       EnumDescriptor enumDesc = enums.get(name);
       if (enumDesc != null) {
-        putDistinct(msgAndEnumLocalToFqn, symbol.name(), fullName);
+        putDistinct(msgAndEnumLocalToFqn, symbol.name(), enumDesc.getFullName());
         symbol.setType(typeRegistry.getProtoImportType(enumDesc));
         symbol.setSymbolKind(SymbolKind.PROTO_ENUM);
         continue;
@@ -134,7 +133,7 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
 
       FieldDescriptor extDesc = extensions.get(name);
       if (extDesc != null) {
-        putDistinct(this.extLocalToFqn, symbol.name(), fullName);
+        putDistinct(this.extLocalToFqn, symbol.name(), Field.computeSoyFullyQualifiedName(extDesc));
         symbol.setType(typeRegistry.getProtoImportType(extDesc));
         symbol.setSymbolKind(SymbolKind.PROTO_EXT);
         continue;
@@ -150,6 +149,31 @@ final class ProtoImportProcessor implements ImportsPass.ImportProcessor {
           node.getPath(),
           Sets.union(messages.keySet(), Sets.union(enums.keySet(), extensions.keySet())));
     }
+  }
+
+  /**
+   * Collects the symbols that {@code fd} makes visible to files importing it: its own top level
+   * symbols plus, transitively, the symbols exported by the files it declares as {@code import
+   * public}.
+   *
+   * <p>Symbols declared directly by {@code fd} shadow symbols of the same name reached through a
+   * public import.
+   */
+  private static void collectExportedSymbols(
+      FileDescriptor fd,
+      Set<FileDescriptor> visited,
+      Map<String, Descriptor> messages,
+      Map<String, EnumDescriptor> enums,
+      Map<String, FieldDescriptor> extensions) {
+    if (!visited.add(fd)) {
+      return;
+    }
+    for (FileDescriptor publicDep : fd.getPublicDependencies()) {
+      collectExportedSymbols(publicDep, visited, messages, enums, extensions);
+    }
+    fd.getMessageTypes().forEach(d -> messages.put(d.getName(), d));
+    fd.getEnumTypes().forEach(d -> enums.put(d.getName(), d));
+    fd.getExtensions().forEach(f -> extensions.put(Field.computeSoyName(f), f));
   }
 
   private static <K, V> void putDistinct(Map<K, V> into, K key, V value) {

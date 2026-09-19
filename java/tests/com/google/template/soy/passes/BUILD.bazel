@@ -53,6 +53,7 @@ java_library(
         "//java/src/com/google/template/soy/types/ast",
         "//java/tests/com/google/template/soy/passes/htmlmatcher:test_utils",
         "//src/main/protobuf:logging_config_java_proto",
+        "//src/test/protobuf:public_import_shim_java_proto",
         "//src/test/protobuf:test_protos_java_proto",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_extensions_truth_java8_extension",

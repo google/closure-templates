@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package example.publicimport.shim;
+
+import public
+// "src/test/protobuf/public_import_middle.proto";
+
+import
+// "src/test/protobuf/public_import_private_dep.proto";
+
+option java_package = "com.google.template.soy.testing.publicimport";
+option java_multiple_files = true;
+
+message ShimMessage {
+  optional example.publicimport.privatedep.NotReExportedMessage private_dep = 1;
+}
