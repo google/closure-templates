@@ -206,7 +206,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   @Nullable
   public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder, StackFrame stackFrame)
       throws IOException {
-    return nodeBuilder.render(this, stackFrame);
+    return nodeBuilder.render(this, stackFrame, false);
   }
 
   /** A buffer of commands that can be replayed on a {@link LoggingAdvisingAppendable}. */
