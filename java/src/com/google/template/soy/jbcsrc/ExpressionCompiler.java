@@ -2021,6 +2021,11 @@ final class ExpressionCompiler {
           .asNonJavaNullable();
     }
 
+    @Override
+    SoyExpression visitIsOutputBufferFunction(FunctionNode node) {
+      return SoyExpression.forBool(MethodRefs.NODE_BUILDER_IS_OUTPUT_BUFFER.invoke());
+    }
+
     // Non-builtin functions
 
     @Override

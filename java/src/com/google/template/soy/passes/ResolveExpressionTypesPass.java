@@ -3499,7 +3499,12 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           visit(node.getParam(0));
           node.setType(SoyTypes.undefinedToNull(node.getParam(0).getType()));
         }
-        case EVAL_TOGGLE, DEBUG_SOY_TEMPLATE_INFO, BOOLEAN, HAS_CONTENT, IS_TRUTHY_NON_EMPTY ->
+        case EVAL_TOGGLE,
+            DEBUG_SOY_TEMPLATE_INFO,
+            BOOLEAN,
+            HAS_CONTENT,
+            IS_TRUTHY_NON_EMPTY,
+            IS_OUTPUT_BUFFER ->
             node.setType(BoolType.getInstance());
         case NEW_SET -> {
           visit(node.getParam(0));

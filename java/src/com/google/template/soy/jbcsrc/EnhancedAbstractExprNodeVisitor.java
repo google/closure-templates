@@ -122,6 +122,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
           return visitNewSetFunction(node);
         case FLUSH_PENDING_LOGGING_ATTRIBUTES:
           return visitFlushPendingLoggingAttributesFunction(node);
+        case IS_OUTPUT_BUFFER:
+          return visitIsOutputBufferFunction(node);
         case OBJECT_PROPERTY:
           return visit(node.getParam(0));
         case MSG_WITH_ID:
@@ -239,6 +241,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitFlushPendingLoggingAttributesFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitIsOutputBufferFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 }

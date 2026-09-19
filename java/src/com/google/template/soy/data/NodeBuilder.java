@@ -22,9 +22,19 @@ import java.io.UncheckedIOException;
 import java.lang.invoke.CallSite;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Stack;
 
 /** A lazy call. */
 public class NodeBuilder {
+
+  @SuppressWarnings("JdkObsolete")
+  private static final ThreadLocal<Stack<Boolean>> IS_OUTPUT_BUFFER =
+      ThreadLocal.withInitial(Stack::new);
+
+  public static boolean isOutputBuffer() {
+    Stack<Boolean> stack = IS_OUTPUT_BUFFER.get();
+    return !stack.isEmpty() && stack.peek();
+  }
 
   /**
    * Provides a way for this class to override softLimitReached. For use when replaying
@@ -61,16 +71,20 @@ public class NodeBuilder {
     this.renderContext = renderContext;
   }
 
-  public StackFrame render(LoggingAdvisingAppendable appendable, StackFrame stackFrame) {
+  public StackFrame render(
+      LoggingAdvisingAppendable appendable, StackFrame stackFrame, boolean isOutputBuffer) {
     ArrayList<Object> params = new ArrayList<>();
     params.add(stackFrame);
     Collections.addAll(params, templateParams);
     params.add(appendable);
     params.add(renderContext);
+    IS_OUTPUT_BUFFER.get().push(isOutputBuffer);
     try {
       return (StackFrame) callSite.getTarget().invokeWithArguments(params);
     } catch (Throwable e) {
       throw new IllegalArgumentException("Unexpected error while calling " + callSite, e);
+    } finally {
+      IS_OUTPUT_BUFFER.get().pop();
     }
   }
 
