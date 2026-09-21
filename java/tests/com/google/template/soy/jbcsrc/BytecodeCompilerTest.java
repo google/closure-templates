@@ -1491,4 +1491,28 @@ public class BytecodeCompilerTest {
         parser.typeRegistry(),
         parseResult.registry());
   }
+
+  @Test
+  public void testIsOutputBuffer() {
+    SoyFileSetParser parser =
+        createParserForFileContents(
+            ImmutableMap.of(
+                "test.soy",
+                Joiner.on("\n")
+                    .join(
+                        "{namespace ns}",
+                        "{template callee}",
+                        "{_isOutputBuffer()}",
+                        "{/template}",
+                        "{template main}",
+                        "{let $buffered kind=\"html\"}{call callee eval=\"lazy\" /}{/let}",
+                        "{let $bufferedText: htmlToText($buffered) /}",
+                        "{call callee eval=\"lazy\" /},{$bufferedText}",
+                        "{/template}")));
+    ParseResult parseResult = parser.parse();
+    CompilingClassLoader loader = createCompilingClassLoader(parser, parseResult);
+    SoySauce sauce = new SoySauceBuilder().withClassLoader(loader).build();
+    assertThat(sauce.renderTemplate("ns.main").renderHtml().get().toString())
+        .isEqualTo("true,false");
+  }
 }

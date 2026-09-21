@@ -26,6 +26,8 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.NodeBuilder;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.SoyLogger.LoggingAttrs;
 import java.io.IOException;
@@ -65,6 +67,13 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
 
   private boolean isLogOnly() {
     return logOnlyDepth != 0;
+  }
+
+  @Override
+  @Nullable
+  public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder, StackFrame stackFrame)
+      throws IOException {
+    return nodeBuilder.render(this, stackFrame, true);
   }
 
   @Override

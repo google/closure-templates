@@ -1027,6 +1027,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitNewSetFunction(node);
         case OBJECT_PROPERTY:
           return visit(node.getParam(0));
+        case IS_OUTPUT_BUFFER:
+          return BooleanData.forValue(com.google.template.soy.data.NodeBuilder.isOutputBuffer());
         case MSG_WITH_ID:
         case REMAINDER:
         case FLUSH_PENDING_LOGGING_ATTRIBUTES:
