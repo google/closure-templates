@@ -29,11 +29,15 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.ExternNode;
+import com.google.template.soy.soytree.FileMetadata;
+import com.google.template.soy.soytree.FileMetadata.Extern;
+import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.defn.SymbolVar;
 import com.google.template.soy.soytree.defn.SymbolVar.SymbolKind;
 import com.google.template.soy.types.UnionType;
+import java.util.function.Supplier;
 
 /** Reports errors for illegal symbol references. */
 @RunAfter({ResolveExpressionTypesPass.class, MoreCallValidationsPass.class})
@@ -49,11 +53,18 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
           "Cannot reference or bind overloaded functions.",
           Impression.ERROR_CHECK_VALID_VARREFS_PASS_EXTERN_OVERLOAD);
 
+  private static final SoyErrorKind ASYNC_EXTERN =
+      SoyErrorKind.of(
+          "Cannot reference or bind async functions.",
+          Impression.ERROR_CHECK_VALID_VARREFS_PASS_ASYNC_EXTERN);
+
   private final ErrorReporter errorReporter;
+  private final Supplier<FileSetMetadata> fileSetMetadata;
   private ImmutableListMultimap<String, ExternNode> externIndex;
 
-  CheckValidVarrefsPass(ErrorReporter errorReporter) {
+  CheckValidVarrefsPass(ErrorReporter errorReporter, Supplier<FileSetMetadata> fileSetMetadata) {
     this.errorReporter = errorReporter;
+    this.fileSetMetadata = fileSetMetadata;
   }
 
   @Override
@@ -67,9 +78,17 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
   private void checkVarRef(VarRefNode varRef) {
     VarDefn defn = varRef.getDefnDecl();
     if (isOverloadedExtern(defn)) {
-      if (!(varRef.getParent() instanceof FunctionNode functionNode
-          && varRef.equals(functionNode.getNameExpr()))) {
+      if (!isFunctionCallNameExpr(varRef)) {
         errorReporter.report(varRef.getSourceLocation(), EXTERN_OVERLOAD);
+        return;
+      }
+    }
+    // We forbid referencing async externs because the JBCSRC compiler needs to know whether an
+    // extern is async or not (it assumes it isn't) to generate the correct byte code. The type
+    // system does not have a way to represent this and so this information is lost.
+    if (isAsyncExtern(defn)) {
+      if (!isFunctionCallNameExpr(varRef)) {
+        errorReporter.report(varRef.getSourceLocation(), ASYNC_EXTERN);
         return;
       }
     }
@@ -115,12 +134,32 @@ final class CheckValidVarrefsPass implements CompilerFilePass {
     }
   }
 
+  private static boolean isFunctionCallNameExpr(VarRefNode varRef) {
+    return varRef.getParent() instanceof FunctionNode functionNode
+        && !functionNode.hasStaticName()
+        && varRef.equals(functionNode.getNameExpr());
+  }
+
   private boolean isOverloadedExtern(VarDefn defn) {
     if (defn instanceof SymbolVar symbolVar && symbolVar.getSymbolKind() == SymbolKind.EXTERN) {
       if (symbolVar.isImported()) {
         return symbolVar.type() instanceof UnionType;
       } else {
         return externIndex.get(symbolVar.name()).size() > 1;
+      }
+    }
+    return false;
+  }
+
+  private boolean isAsyncExtern(VarDefn defn) {
+    if (defn instanceof SymbolVar symbolVar && symbolVar.getSymbolKind() == SymbolKind.EXTERN) {
+      if (symbolVar.isImported()) {
+        FileMetadata fileMetadata = fileSetMetadata.get().getFile(symbolVar.getSourceFilePath());
+        return fileMetadata != null
+            && fileMetadata.getExterns(symbolVar.getSymbol()).stream()
+                .anyMatch(Extern::isJavaAsync);
+      } else {
+        return externIndex.get(symbolVar.name()).stream().anyMatch(ExternNode::isJavaImplAsync);
       }
     }
     return false;

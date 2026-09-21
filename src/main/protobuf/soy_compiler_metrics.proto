@@ -33,7 +33,7 @@ message Metrics {
 // Convention: Error impressions begin with "ERROR_", warning impressions, begin
 // with "WARNING_", feature impressions begin with "FEATURE_".
 enum Impression {
-  // Next ID: 573
+  // Next ID: 574
   UNKNOWN_IMPRESSION = 0;
 
   // Unexpected diagnostic caught in the main module of the app.
@@ -812,6 +812,7 @@ enum Impression {
   // java_src/soy/java/com/google/template/soy/passes/CheckValidVarrefsPass.java
   ERROR_CHECK_VALID_VARREFS_PASS_ILLEGAL_TYPE_OF_VARIABLE = 557;
   ERROR_CHECK_VALID_VARREFS_PASS_EXTERN_OVERLOAD = 558;
+  ERROR_CHECK_VALID_VARREFS_PASS_ASYNC_EXTERN = 573;
 
   // java_src/soy/java/com/google/template/soy/passes/MsgWithIdFunctionPass.java
   ERROR_MSG_WITH_ID_FUNCTION_PASS_MSG_VARIABLE_NOT_IN_SCOPE = 559;

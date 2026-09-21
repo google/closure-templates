@@ -226,7 +226,9 @@ public final class JavaImplNode extends AbstractCommandNode
   }
 
   public boolean isAsync() {
-    return parsedReturnType.isGeneric() && isSupportedFutureClassName(returnType().className());
+    return parsedReturnType != null
+        && parsedReturnType.isGeneric()
+        && isSupportedFutureClassName(returnType().className());
   }
 
   /** Only these exact future classes are supported in the implementation's method declaration. */
