@@ -903,7 +903,7 @@ final class ProtoUtils {
   static SoyExpression createProto(
       FunctionNode node,
       Function<ExprNode, SoyExpression> compilerFunction,
-      ExpressionDetacher detacher,
+      @Nullable ExpressionDetacher detacher,
       LocalVariableManager varManager) {
     return new ProtoInitGenerator(node, compilerFunction, detacher, varManager).generate();
   }
@@ -911,7 +911,7 @@ final class ProtoUtils {
   private static final class ProtoInitGenerator {
     private final FunctionNode node;
     private final Function<ExprNode, SoyExpression> compilerFunction;
-    private final ExpressionDetacher detacher;
+    @Nullable private final ExpressionDetacher detacher;
     private final LocalVariableManager varManager;
 
     private final SoyProtoType protoType;
@@ -920,7 +920,7 @@ final class ProtoUtils {
     ProtoInitGenerator(
         FunctionNode node,
         Function<ExprNode, SoyExpression> compilerFunction,
-        ExpressionDetacher detacher,
+        @Nullable ExpressionDetacher detacher,
         LocalVariableManager varManager) {
       this.node = node;
       this.compilerFunction = compilerFunction;
@@ -1112,8 +1112,9 @@ final class ProtoUtils {
       checkArgument(mapArg.isNonSoyNullish());
       // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
       // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
+      Expression javaMap = mapArg.invoke(MethodRefs.SOY_VALUE_AS_JAVA_MAP);
       Expression resolved =
-          detacher.resolveSoyValueProviderMap(mapArg.invoke(MethodRefs.SOY_VALUE_AS_JAVA_MAP));
+          detacher != null ? detacher.resolveSoyValueProviderMap(javaMap) : javaMap;
 
       // Enter new scope
       LocalVariableManager.Scope scope = varManager.enterScope();
@@ -1290,7 +1291,8 @@ final class ProtoUtils {
 
       // Unbox listArg as List<SoyValueProvider> and wait until all items are done
       Expression unboxed = listArg.unboxAsListUnchecked();
-      Expression resolved = detacher.resolveSoyValueProviderList(unboxed);
+      Expression resolved =
+          detacher != null ? detacher.resolveSoyValueProviderList(unboxed) : unboxed;
 
       // Enter new scope
       LocalVariableManager.Scope scope = varManager.enterScope();

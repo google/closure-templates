@@ -210,7 +210,7 @@ public final class ExternCompiler {
               variables,
               paramSet,
               javaSourceFunctionCompiler,
-              null,
+              fileSetMetadata,
               null);
       SoyNodeCompiler nodeCompiler =
           SoyNodeCompiler.createForExtern(
