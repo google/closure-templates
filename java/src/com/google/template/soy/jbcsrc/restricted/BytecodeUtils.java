@@ -89,6 +89,7 @@ import com.google.template.soy.types.SoyType;
 import com.ibm.icu.util.ULocale;
 import java.io.Closeable;
 import java.lang.invoke.ConstantBootstraps;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
@@ -134,6 +135,7 @@ public final class BytecodeUtils {
   public static final Type TEMPLATE_VALUE_TYPE = Type.getType(TemplateValue.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
   public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
+  public static final Type METHOD_HANDLE_TYPE = Type.getType(MethodHandle.class);
   public static final Type DIR_TYPE = Type.getType(Dir.class);
   public static final Type HASH_MAP_TYPE = Type.getType(HashMap.class);
 
@@ -621,6 +623,19 @@ public final class BytecodeUtils {
         new ConstantDynamic(
             value, RECORD_SYMBOL_TYPE.getDescriptor(), RECORD_SYMBOL_CONSTANT_HANDLE),
         Features.of(Feature.NON_JAVA_NULLABLE, Feature.CHEAP));
+  }
+
+  /**
+   * Returns an {@link Expression} that loads the given {@link Handle} as a {@link MethodHandle}.
+   */
+  public static Expression constantMethodHandle(Handle handle) {
+    return new Expression(
+        METHOD_HANDLE_TYPE, Features.of(Feature.CHEAP, Feature.NON_JAVA_NULLABLE)) {
+      @Override
+      protected void doGen(CodeBuilder mv) {
+        mv.visitLdcInsn(handle);
+      }
+    };
   }
 
   /**

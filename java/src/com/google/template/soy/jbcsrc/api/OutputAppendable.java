@@ -26,6 +26,7 @@ import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.SoyLogger.LoggingAttrs;
 import java.io.IOException;
@@ -130,6 +131,22 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
         if (!value.isEmpty()) {
           outputAppendable.append(value);
         }
+      }
+    }
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  @Override
+  public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+      OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+      throws IOException {
+    if (isLogOnly()) {
+      funCall.evalFallback();
+    } else {
+      String value = funCall.evalPrimary(escapers);
+      if (!value.isEmpty()) {
+        outputAppendable.append(value);
       }
     }
     return this;

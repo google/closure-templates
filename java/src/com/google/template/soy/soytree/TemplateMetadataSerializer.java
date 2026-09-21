@@ -190,7 +190,7 @@ public final class TemplateMetadataSerializer {
     Optional<JavaImplNode> java = node.getJavaImpl();
     java.ifPresent(
         j -> {
-          builder.setJavaImpl(
+          JavaImplP.Builder javaImplBuilder =
               JavaImplP.newBuilder()
                   .setClassName(j.className())
                   .setMethod(j.methodName())
@@ -199,7 +199,11 @@ public final class TemplateMetadataSerializer {
                       j.paramTypes().stream()
                           .map(TemplateMetadataSerializer::typeProto)
                           .collect(toImmutableList()))
-                  .setMethodType(JavaImplP.MethodType.valueOf(j.type().name())));
+                  .setMethodType(JavaImplP.MethodType.valueOf(j.type().name()));
+          if (j.fallbackMethodName() != null) {
+            javaImplBuilder.setFallbackMethod(j.fallbackMethodName());
+          }
+          builder.setJavaImpl(javaImplBuilder);
         });
     return builder.build();
   }

@@ -240,6 +240,7 @@ message JavaImplP {
   TypeP return_type = 3;
   repeated TypeP param_types = 4;
   MethodType method_type = 5;
+  string fallback_method = 6;
 }
 
 message ParameterP {

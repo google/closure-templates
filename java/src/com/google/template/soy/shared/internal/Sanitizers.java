@@ -36,6 +36,7 @@ import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -249,6 +250,19 @@ public final class Sanitizers {
       } else {
         throw new AssertionError(
             "Logging statements should've already been removed as they're only allowed in HTML");
+      }
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+        OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (isInHtml()) {
+        delegate.appendOutputFunctionInvocation(funCall, escapers);
+      } else {
+        funCall.appendFallback(buffer, escapers);
       }
       return this;
     }
@@ -976,6 +990,19 @@ public final class Sanitizers {
       return this;
     }
 
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+        OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        delegate.appendOutputFunctionInvocation(funCall, escapers);
+      } else {
+        funCall.appendFallback(getActiveAppendable(), escapers);
+      }
+      return this;
+    }
+
     @Override
     public boolean softLimitReached() {
       return delegate.softLimitReached();
@@ -1145,6 +1172,19 @@ public final class Sanitizers {
       } else {
         String placeholder = escapePlaceholder(funCall.placeholderValue(), escapers);
         activeAppendable.append(placeholder);
+      }
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+        OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
+        delegate.appendOutputFunctionInvocation(funCall, escapers);
+      } else {
+        funCall.appendFallback(activeAppendable, escapers);
       }
       return this;
     }

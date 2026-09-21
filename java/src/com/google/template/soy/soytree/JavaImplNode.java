@@ -52,6 +52,7 @@ public final class JavaImplNode extends AbstractCommandNode
   public static final String PARAMS = "params";
   public static final String RETURN = "return";
   public static final String TYPE = "type";
+  public static final String FALLBACK_METHOD = "fallbackMethod";
 
   public static final String TYPE_STATIC = "static"; // static method in a class
   public static final String TYPE_INSTANCE = "instance"; // instance method in a class
@@ -84,6 +85,7 @@ public final class JavaImplNode extends AbstractCommandNode
   private CommandTagAttribute params;
   private CommandTagAttribute returnType;
   private CommandTagAttribute type;
+  private CommandTagAttribute fallbackMethod;
   private TypeReference parsedReturnType;
   private ImmutableList<TypeReference> parsedParamTypes = ImmutableList.of();
 
@@ -141,6 +143,8 @@ public final class JavaImplNode extends AbstractCommandNode
         if (!ALLOWED_TYPES.contains(type.getValue())) {
           errorReporter.report(attr.getSourceLocation(), BAD_TYPE);
         }
+      } else if (attr.hasName(FALLBACK_METHOD)) {
+        this.fallbackMethod = attr;
       } else {
         errorReporter.report(attr.getSourceLocation(), INVALID_IMPL_ATTRIBUTE, attr.getName());
       }
@@ -176,6 +180,16 @@ public final class JavaImplNode extends AbstractCommandNode
 
   public String methodName() {
     return methodName.getValue();
+  }
+
+  @Nullable
+  public String fallbackMethodName() {
+    return fallbackMethod != null ? fallbackMethod.getValue() : null;
+  }
+
+  @Nullable
+  public CommandTagAttribute fallbackMethod() {
+    return fallbackMethod;
   }
 
   public MethodType type() {

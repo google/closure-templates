@@ -54,6 +54,15 @@ public interface FileMetadata extends PartialFileMetadata {
 
     boolean isJavaAsync();
 
+    /**
+     * Returns whether this is an "outputf unction", which buffers until it reaches the
+     * OutputAppendable, and defines a fallback method when buffering is not possible.
+     */
+    default boolean isOutputFunction() {
+      JavaImpl javaImpl = getJavaImpl();
+      return javaImpl != null && javaImpl.fallbackMethod() != null;
+    }
+
     /** Java object version of {@link JavaImplP}. */
     interface JavaImpl {
       /** Java object version of {@link JavaImplP.MethodType}. */
@@ -81,6 +90,11 @@ public interface FileMetadata extends PartialFileMetadata {
       ImmutableList<TypeReference> paramTypes();
 
       MethodType type();
+
+      @Nullable
+      default String fallbackMethod() {
+        return null;
+      }
 
       /**
        * Returns whether the receiver of the non-static method should be obtained from the render

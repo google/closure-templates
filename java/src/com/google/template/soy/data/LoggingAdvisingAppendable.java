@@ -203,6 +203,31 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException;
 
+  /**
+   * Called to append an output function invocation.
+   *
+   * <p>The default implementation evaluates the fallback and appends the escaped result. This is
+   * always correct; subclasses only need to override this if they can do something better. {@link
+   * OutputAppendable} overrides it to evaluate the primary implementation while the output is being
+   * streamed directly to the user, and {@link BufferingAppendable} overrides it to defer evaluation
+   * until the buffer is replayed.
+   *
+   * <p>Because the default routes through {@link #append(CharSequence)}, appendables that merely
+   * forward or escape content inherit correct behavior without overriding this method.
+   *
+   * @param funCall The function invocation
+   * @param escapers The escapers to apply to the result.
+   * @return this
+   */
+  @CanIgnoreReturnValue
+  @Nonnull
+  @SuppressWarnings("NonApiType") // Consistent with appendLoggingFunctionInvocation.
+  public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+      OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+      throws IOException {
+    return append(funCall.evalFallback(escapers));
+  }
+
   @Nullable
   public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder, StackFrame stackFrame)
       throws IOException {
@@ -216,6 +241,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     // The array is never mutated after construction.
     @SuppressWarnings("Immutable")
     private final Object[] commands;
+
+    public static CommandBuffer forOutputFunction(OutputFunctionInvocation fn) {
+      return new CommandBuffer(new Object[] {OutputFunctionCommand.create(fn, ImmutableList.of())});
+    }
 
     private CommandBuffer(Object[] commands) {
       checkArgument(commands.length != 0);
@@ -242,6 +271,9 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         }
         if (command instanceof NodeBuilder) {
           return HasContentResult.NODE_BUILDERS;
+        }
+        if (command instanceof OutputFunctionCommand) {
+          return HasContentResult.TRUE;
         }
         // NOTE: we don't need to check logging functions, because CommandBuffers are only created
         // for HTML and ATTRIBUTES, and logging functions are only used for attribute_values.  So to
@@ -366,6 +398,15 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       return this;
     }
 
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+        OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      getCommandsAndAddPendingStringData().add(OutputFunctionCommand.create(funCall, escapers));
+      return this;
+    }
+
     public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
       if (getSanitizedContentKind() != null) {
         appendable =
@@ -395,6 +436,8 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         appendable.append((String) o);
       } else if (o instanceof LoggingFunctionCommand) {
         ((LoggingFunctionCommand) o).replayOn(appendable);
+      } else if (o instanceof OutputFunctionCommand outputFunctionCommand) {
+        outputFunctionCommand.replayOn(appendable);
       } else if (o == EXIT_LOG_STATEMENT_MARKER) {
         appendable.exitLoggableElement();
       } else if (o instanceof LogStatement) {
@@ -494,6 +537,8 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
         builder.append(
             escapePlaceholder(
                 loggingFunctionCommand.fn().placeholderValue(), loggingFunctionCommand.escapers()));
+      } else if (command instanceof OutputFunctionCommand outputFunctionCommand) {
+        builder.append(outputFunctionCommand.fn().evalFallback(outputFunctionCommand.escapers()));
       } else if (command instanceof NodeBuilder) {
         // TODO(b/421209829): Guarantee non-blocking by allowing a detach here.
         ((NodeBuilder) command).renderBlocking(new DelegatingAppendable(builder));
@@ -555,6 +600,25 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     @Override
     public LoggingAdvisingAppendable exitLoggableElement() {
       return this;
+    }
+  }
+
+  /** A command representing an output function invocation with optional escapers. */
+  @AutoValue
+  abstract static class OutputFunctionCommand {
+    @SuppressWarnings("NonApiType") // Consistent with LoggingFunctionCommand.
+    static OutputFunctionCommand create(
+        OutputFunctionInvocation fn, ImmutableList<Function<String, String>> escapers) {
+      return new AutoValue_LoggingAdvisingAppendable_OutputFunctionCommand(fn, escapers);
+    }
+
+    abstract OutputFunctionInvocation fn();
+
+    abstract ImmutableList<Function<String, String>> escapers();
+
+    @CanIgnoreReturnValue
+    LoggingAdvisingAppendable replayOn(LoggingAdvisingAppendable appendable) throws IOException {
+      return appendable.appendOutputFunctionInvocation(fn(), escapers());
     }
   }
 
