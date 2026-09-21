@@ -33,6 +33,7 @@ import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.OutputFunctionInvocation;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
@@ -463,6 +464,15 @@ public final class StreamingPrintDirectivesTest {
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
       delegate.appendLoggingFunctionInvocation(funCall, escapers);
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public LoggingAdvisingAppendable appendOutputFunctionInvocation(
+        OutputFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      delegate.appendOutputFunctionInvocation(funCall, escapers);
       return this;
     }
 

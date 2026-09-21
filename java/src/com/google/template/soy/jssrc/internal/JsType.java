@@ -606,6 +606,7 @@ public final class JsType implements CodeChunk.HasRequires {
             return builder.build();
           }
         case FUNCTION:
+        case OUTPUT_FUNCTION:
           {
             FunctionType functionType = (FunctionType) soyType;
             Builder builder = builder();

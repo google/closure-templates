@@ -52,7 +52,18 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
       FunctionTypeNode typeNode,
       SourceLocation headerLocation,
       boolean exported) {
-    super(id, location, "extern");
+    this(id, location, "extern", name, typeNode, headerLocation, exported);
+  }
+
+  public ExternNode(
+      int id,
+      SourceLocation location,
+      String commandName,
+      Identifier name,
+      FunctionTypeNode typeNode,
+      SourceLocation headerLocation,
+      boolean exported) {
+    super(id, location, commandName);
     this.name = name;
     this.openTagLocation = headerLocation;
     this.typeNode = typeNode;
@@ -82,6 +93,10 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
         copyState.updateRefs(orig.paramVars.get(i), this.paramVars.get(i));
       }
     }
+  }
+
+  public boolean isOutputFunction() {
+    return getCommandName().equals("outputfunction");
   }
 
   public Identifier getIdentifier() {

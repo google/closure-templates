@@ -2819,7 +2819,8 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
             errorReporter.report(node.getNameExpr().getSourceLocation(), TEMPLATE_CALL_NULLISH);
           }
           return;
-        } else if (SoyTypes.isKindOrUnionOfKind(nameExprType, Kind.FUNCTION)) {
+        } else if (SoyTypes.isKindOrUnionOfKind(nameExprType, Kind.FUNCTION)
+            || SoyTypes.isKindOrUnionOfKind(nameExprType, Kind.OUTPUT_FUNCTION)) {
           if (node.getParamsStyle() == ParamsStyle.NAMED) {
             errorReporter.report(node.getFunctionNameLocation(), INCORRECT_ARG_STYLE);
             node.setSoyFunction(FunctionNode.UNRESOLVED);

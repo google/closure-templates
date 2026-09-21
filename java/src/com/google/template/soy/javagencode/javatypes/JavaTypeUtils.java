@@ -175,6 +175,7 @@ public final class JavaTypeUtils {
       case REGEXP:
         throw new UnsupportedOperationException();
       case FUNCTION:
+      case OUTPUT_FUNCTION:
       case NULL:
       case UNDEFINED:
         break;

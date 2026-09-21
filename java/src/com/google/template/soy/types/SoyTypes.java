@@ -767,6 +767,7 @@ public final class SoyTypes {
                   .collect(Collectors.toList());
 
         case FUNCTION:
+        case OUTPUT_FUNCTION:
           if (skipTemplateAndFunctionTypes) {
             return ImmutableList.of();
           }

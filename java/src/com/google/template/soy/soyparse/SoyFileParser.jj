@@ -888,6 +888,54 @@ public class SoyFileParser {
       this.isPrint = isPrint;
     }
   }
+
+  private ExternNode createExternNode(
+      Token open,
+      Token close,
+      Token name,
+      FunctionTypeNode type,
+      Token openClose,
+      List<ExternImplNode> impls,
+      String commandName) {
+    boolean hasJsImpl = false;
+    boolean hasJavaImpl = false;
+    boolean hasAutoImpl = false;
+    for (ExternImplNode parsedImpl : impls) {
+      if (parsedImpl instanceof JsImplNode) {
+        if (hasJsImpl) {
+          errorReporter.report(parsedImpl.getSourceLocation(), MULTIPLE_IMPLS);
+        }
+        hasJsImpl = true;
+      }
+      if (parsedImpl instanceof JavaImplNode) {
+        if (hasJavaImpl) {
+          errorReporter.report(parsedImpl.getSourceLocation(), MULTIPLE_IMPLS);
+        }
+        hasJavaImpl = true;
+      }
+      if (parsedImpl instanceof AutoImplNode) {
+        if (hasAutoImpl) {
+          errorReporter.report(parsedImpl.getSourceLocation(), MULTIPLE_IMPLS);
+        }
+        hasAutoImpl = true;
+      }
+    }
+    if (hasJsImpl && hasJavaImpl && hasAutoImpl) {
+      errorReporter.report(impls.get(2).getSourceLocation(), THREE_IMPLS);
+    }
+    boolean exported = open.image.startsWith("{export ");
+    ExternNode node =
+        new ExternNode(
+            nodeIdGen.genId(),
+            createSrcLoc(open, close),
+            commandName,
+            Identifier.create(name.image, createSrcLoc(name)),
+            type,
+            createSrcLoc(open, openClose),
+            exported);
+    node.addChildren(impls);
+    return node;
+  }
 }
 
 PARSER_END(SoyFileParser)
@@ -1252,6 +1300,8 @@ TOKEN_MGR_DECLS: {
 | < ELEMENT_OPEN: "{element" <WS> > { isInTemplate = true; } : IN_CMD_TAG
 | < EXTERN_OPEN: "{" ("export ")? "extern" <WS> > : IN_CMD_TAG
 | < CMD_CLOSE_EXTERN : "{/extern}" > { resetState(); } : DEFAULT
+| < OUTPUT_FUNCTION_OPEN: "{" ("export ")? "outputfunction" <WS> > : IN_CMD_TAG
+| < CMD_CLOSE_OUTPUT_FUNCTION : "{/outputfunction}" > { resetState(); } : DEFAULT
 | < CMD_OPEN_JS_IMPL : "{jsimpl" > { isInTemplate = false; } : IN_CMD_TAG
 | < CMD_OPEN_JAVA_IMPL : "{javaimpl" > { isInTemplate = false; } : IN_CMD_TAG
 | < CMD_OPEN_AUTO_IMPL : "{autoimpl}" > { isInTemplate = false; } : IN_CMD_TAG
@@ -1699,6 +1749,8 @@ private SoyFileNode NonEmptySoyFile() :
     |
       child = ExternStmt()
     |
+      child = OutputFunctionStmt()
+    |
       child = Template(headerInfo)
     )
     {
@@ -1743,14 +1795,11 @@ private Token CmdEnd() :
 private ExternNode ExternStmt() :
 {
   Token open, name, openClose, close;
-  List<CommandTagAttribute> attributes;
   FunctionTypeNode type;
   ExternImplNode impl;
+  List<ExternImplNode> impls = new ArrayList<ExternImplNode>();
 }
 {
-  {
-    List<ExternImplNode> impls = new ArrayList<ExternImplNode>();
-  }
   open = <EXTERN_OPEN>
   name = <NAME>
   <CMD_COLON>
@@ -1775,38 +1824,52 @@ private ExternNode ExternStmt() :
   )+
   close = <CMD_CLOSE_EXTERN>
   {
-    boolean hasJsImpl = false;
-    boolean hasJavaImpl = false;
-    boolean hasAutoImpl = false;
-    for (ExternImplNode parsedImpl : impls) {
-      if (parsedImpl instanceof JsImplNode) {
-        if (hasJsImpl) {
-          errorReporter.report(parsedImpl.getSourceLocation(), MULTIPLE_IMPLS);
-        }
-        hasJsImpl = true;
-      }
-      if (parsedImpl instanceof JavaImplNode) {
-        if (hasJavaImpl) {
-          errorReporter.report(parsedImpl.getSourceLocation(), MULTIPLE_IMPLS);
-        }
-        hasJavaImpl = true;
-      }
-      if (parsedImpl instanceof AutoImplNode) {
-        if (hasAutoImpl) {
-          errorReporter.report(parsedImpl.getSourceLocation(), MULTIPLE_IMPLS);
-        }
-        hasAutoImpl = true;
+    return createExternNode(open, close, name, type, openClose, impls, "extern");
+  }
+}
+
+/**
+ * OutputFunctionStmt -> {outputfunction ident: type}{/outputfunction}
+ */
+private ExternNode OutputFunctionStmt() :
+{
+  Token open, name, openClose, close;
+  FunctionTypeNode type;
+  ExternImplNode impl;
+  List<ExternImplNode> impls = new ArrayList<ExternImplNode>();
+}
+{
+  open = <OUTPUT_FUNCTION_OPEN>
+  name = <NAME>
+  <CMD_COLON>
+  (
+    LOOKAHEAD( { "outputfunction".equals(getToken(1).image) && getToken(2).kind == LPAREN } )
+    type = OutputFunctionType()
+  |
+    type = FunctionType()
+    { type = type.withOutputFunction(true); }
+  )
+  openClose = CmdEnd()
+
+  (
+    impl = JsImplStmt()
+    { impls.add(impl); }
+  |
+    impl = JavaImplStmt()
+    {
+      impls.add(impl);
+    }
+  |
+    impl = AutoImplStmt()
+    {
+      if (impl != null) {
+        impls.add(impl);
       }
     }
-    if (hasJsImpl && hasJavaImpl && hasAutoImpl) {
-      errorReporter.report(impls.get(2).getSourceLocation(), THREE_IMPLS);
-    }
-    boolean exported = open.image.startsWith("{export ");
-    ExternNode node = new ExternNode(nodeIdGen.genId(), createSrcLoc(open, close),
-        Identifier.create(name.image, createSrcLoc(name)), type,
-        createSrcLoc(open, openClose), exported);
-    node.addChildren(impls);
-    return node;
+  )+
+  close = <CMD_CLOSE_OUTPUT_FUNCTION>
+  {
+    return createExternNode(open, close, name, type, openClose, impls, "outputfunction");
   }
 }
 
@@ -5552,6 +5615,8 @@ private TypeNode TypeExprPrec3() :
   (
     LOOKAHEAD( { "template".equals(getToken(1).image) } )
     type = TemplateType()
+  | LOOKAHEAD( { "outputfunction".equals(getToken(1).image) && getToken(2).kind == LPAREN } )
+    type = OutputFunctionType()
   | LOOKAHEAD( { isStartOfFunctionType() } )
     type = FunctionType()
   | type = TypeGrouping()
@@ -5694,6 +5759,49 @@ private FunctionTypeNode FunctionType() :
   {
     SourceLocation srcLoc = createSrcLoc(open, returnType.sourceLocation().getEndPoint());
     return FunctionTypeNode.create(srcLoc, parameters, returnType);
+  }
+}
+
+/**
+ * OutputFunctionType -> "outputfunction" "("  ( FunctionParameter ( "," FunctionParameter )* )? ")" "=>" TypeExpr
+ */
+private FunctionTypeNode OutputFunctionType() :
+{
+  List<FunctionTypeNode.Parameter> parameters = ImmutableList.of();
+  Token open, close, arrow;
+  Identifier outputFunctionId;
+  TypeNode returnType;
+  FunctionTypeNode.Parameter parameter;
+}
+{
+  outputFunctionId = Identifier()
+  open = <LPAREN>
+
+  (
+    parameter = FunctionParameter()
+    {
+      parameters = new ArrayList<FunctionTypeNode.Parameter>();
+      parameters.add(parameter);
+    }
+    (
+      <COMMA>
+      parameter = FunctionParameter()
+      {
+        parameters.add(parameter);
+      }
+    )*
+  )?
+
+  close = <RPAREN>
+
+  arrow = <FORWARD_ARROW>
+
+  returnType = TypeExpr()
+
+  {
+    checkState(outputFunctionId.identifier().equals("outputfunction"));
+    SourceLocation srcLoc = outputFunctionId.location().extend(returnType.sourceLocation());
+    return FunctionTypeNode.create(srcLoc, parameters, returnType, /* isOutputFunction= */ true);
   }
 }
 
