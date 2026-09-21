@@ -587,7 +587,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // Case 2: Data reference.
     // TODO(lukes): I believe this case is only present for state vars in jssrc, everything else
     // should hit the above.
-    return genCodeForParamAccess(node.getNameWithoutLeadingDollar(), node.getDefnDecl());
+    String paramName =
+        node.getDefnDecl() instanceof TemplateParam param
+            ? param.name() // opt_data[paramName] not opt_data[aliasName]
+            : node.getNameWithoutLeadingDollar();
+    return genCodeForParamAccess(paramName, node.getDefnDecl());
   }
 
   @Override

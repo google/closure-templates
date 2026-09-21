@@ -1695,6 +1695,52 @@ public final class TemplateParserTest {
     return (TemplateNode) (fileSet.numChildren() > 0 ? fileSet.getChild(0).getChild(0) : null);
   }
 
+  @Test
+  public void testParamAlias() {
+    TemplateNode template =
+        assertValidTemplate(
+            """
+            {@param a as localA: string}
+            {@param b as localB:= 'defaultB'}
+            {@param c as localC: string = 'defaultC'}
+            {@param? d as localD: string}
+            {@inject e as localE: string}
+            {@param as as localAs: string}
+            {$localA}{$localB}{$localC}{$localD}{$localE}{$localAs}\
+            """);
+    ImmutableList<TemplateParam> params = template.getAllParams();
+    assertThat(params).hasSize(6);
+
+    assertThat(params.get(0).name()).isEqualTo("a");
+    assertThat(params.get(0).symbolName()).isEqualTo("localA");
+    assertThat(params.get(0).refName()).isEqualTo("$localA");
+    assertThat(params.get(0).isRequired()).isTrue();
+
+    assertThat(params.get(1).name()).isEqualTo("b");
+    assertThat(params.get(1).symbolName()).isEqualTo("localB");
+    assertThat(params.get(1).refName()).isEqualTo("$localB");
+    assertThat(params.get(1).hasDefault()).isTrue();
+
+    assertThat(params.get(2).name()).isEqualTo("c");
+    assertThat(params.get(2).symbolName()).isEqualTo("localC");
+    assertThat(params.get(2).refName()).isEqualTo("$localC");
+    assertThat(params.get(2).hasDefault()).isTrue();
+
+    assertThat(params.get(3).name()).isEqualTo("d");
+    assertThat(params.get(3).symbolName()).isEqualTo("localD");
+    assertThat(params.get(3).refName()).isEqualTo("$localD");
+    assertThat(params.get(3).isRequired()).isFalse();
+
+    assertThat(params.get(4).name()).isEqualTo("e");
+    assertThat(params.get(4).symbolName()).isEqualTo("localE");
+    assertThat(params.get(4).refName()).isEqualTo("$localE");
+    assertThat(params.get(4).isInjected()).isTrue();
+
+    assertThat(params.get(5).name()).isEqualTo("as");
+    assertThat(params.get(5).symbolName()).isEqualTo("localAs");
+    assertThat(params.get(5).refName()).isEqualTo("$localAs");
+  }
+
   /**
    * Asserts that the given input is a valid template, running all parsing phases.
    *

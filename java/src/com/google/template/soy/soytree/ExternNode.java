@@ -157,7 +157,9 @@ public final class ExternNode extends AbstractParentCommandNode<ExternImplNode>
                           false,
                           false,
                           "",
-                          null))
+                          null,
+                          /* alias= */ null,
+                          /* aliasLocation= */ null))
               .collect(toImmutableList());
     }
     return paramVars;

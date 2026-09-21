@@ -1015,6 +1015,35 @@ public final class GenJsCodeVisitorTest {
     assertThat(genJsCodeVisitor.jsCodeBuilder.getCode().toString()).isEqualTo(expectedJsCode);
   }
 
+  @Test
+  public void testParamAlias() {
+    String soyCode =
+        "{@param foo as localFoo: string}\n"
+            + "{@param bar as localBar:= 'defaultBar'}\n"
+            + "{$localFoo} {$localBar}\n";
+    assertGeneratedJsCode(soyCode, "output += opt_data.foo + ' ' + opt_data.bar;\n");
+
+    String testFileContent =
+        "{namespace boo.foo}\n"
+            + "{template goo}\n"
+            + "  {@param foo as localFoo: string}\n"
+            + "  {@param bar as localBar:= 'defaultBar'}\n"
+            + "  {$localFoo} {$localBar}\n"
+            + "{/template}\n";
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    String generated =
+        genJsCodeVisitor.gen(parseResult.fileSet(), parseResult.registry(), exploding()).get(0);
+    assertThat(generated)
+        .contains(
+            "const localFoo = soy.assertParamType(typeof p$foo === 'string', 'foo',"
+                + " p$foo, '@param', 'string');");
+    assertThat(generated)
+        .contains(
+            "const localBar = soy.assertParamType(typeof p$bar === 'string', 'bar',"
+                + " p$bar, '@param', 'string');");
+    assertThat(generated).contains("localFoo + ' ' + localBar");
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 

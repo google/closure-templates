@@ -750,7 +750,7 @@ final class GenIdomTemplateBodyVisitor extends GenJsTemplateBodyVisitor {
         paramsObject =
             Expressions.arrayLiteral(
                 node.getNearestAncestor(TemplateNode.class).getParams().stream()
-                    .map(p -> id(GenJsCodeVisitor.genParamAlias(p.name())))
+                    .map(p -> id(GenJsCodeVisitor.genParamAlias(p.symbolName())))
                     .collect(toImmutableList()));
       } else {
         paramsObject = OPT_DATA;
