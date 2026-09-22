@@ -26,7 +26,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Optional;
 
 /** A mechanism to lookup expressions for accessing template parameters. */
-interface TemplateParameterLookup {
+interface TemplateParameterLookup extends JbcSrcPluginContext {
   /** Returns the current stack frame. */
   LocalVariable getStackFrame();
 
@@ -65,26 +65,27 @@ interface TemplateParameterLookup {
     // return a lazy delegate.  Most plugins never even need the context, but accessing
     // getRenderContext() will copy the field into the inner class as a side effect.  using a lazy
     // delegate we can avoid that in the common case.
-    return new JbcSrcPluginContext() {
-      @Override
-      public Expression getBidiGlobalDir() {
-        return getRenderContext().getBidiGlobalDir();
-      }
+    return this;
+  }
 
-      @Override
-      public Expression getULocale() {
-        return getRenderContext().getULocale();
-      }
-      @Override
-      public Expression getAllRequiredCssNamespaces(SoyExpression template) {
-        return getRenderContext().getAllRequiredCssNamespaces(template);
-      }
+  @Override
+  default Expression getBidiGlobalDir() {
+    return getRenderContext().getBidiGlobalDir();
+  }
 
-      @Override
-      public Expression getAllRequiredCssPaths(SoyExpression template) {
-        return getRenderContext().getAllRequiredCssPaths(template);
-      }
-    };
+  @Override
+  default Expression getULocale() {
+    return getRenderContext().getULocale();
+  }
+
+  @Override
+  default Expression getAllRequiredCssNamespaces(SoyExpression template) {
+    return getRenderContext().getAllRequiredCssNamespaces(template);
+  }
+
+  @Override
+  default Expression getAllRequiredCssPaths(SoyExpression template) {
+    return getRenderContext().getAllRequiredCssPaths(template);
   }
 
   /**

@@ -31,7 +31,6 @@ import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
@@ -268,7 +267,6 @@ public final class ConstantsCompiler {
       throw unsupported();
     }
 
-
     @Override
     public Expression getLocal(AbstractLocalVarDefn<?> local) {
       return variableSet.getVariable(local);
@@ -282,11 +280,6 @@ public final class ConstantsCompiler {
     @Override
     public RenderContextExpression getRenderContext() {
       return renderContext.orElseThrow(ConstantVariables::unsupported);
-    }
-
-    @Override
-    public JbcSrcPluginContext getPluginContext() {
-      throw unsupported();
     }
   }
 }

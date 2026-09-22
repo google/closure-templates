@@ -41,7 +41,6 @@ import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TypeReference;
-import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
@@ -105,6 +104,7 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.UndefinedNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.internal.proto.Int64ConversionMode;
+import com.google.template.soy.jbcsrc.ConstantsCompiler.ConstantVariables;
 import com.google.template.soy.jbcsrc.restricted.Branch;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -275,42 +275,7 @@ final class ExpressionCompiler {
         new CompilerVisitor(
             context,
             analysis,
-            new TemplateParameterLookup() {
-              UnsupportedOperationException unsupported() {
-                return new UnsupportedOperationException(
-                    "This method isn't supported in constant context");
-              }
-
-              @Override
-              public LocalVariable getStackFrame() {
-                throw unsupported();
-              }
-
-              @Override
-              public Expression getParam(TemplateParam param) {
-                throw unsupported();
-              }
-
-              @Override
-              public Optional<Expression> getParamsRecord() {
-                throw unsupported();
-              }
-
-              @Override
-              public Expression getLocal(AbstractLocalVarDefn<?> local) {
-                return varManager.getVariable(local);
-              }
-
-              @Override
-              public Expression getLocal(SyntheticVarName varName) {
-                throw unsupported();
-              }
-
-              @Override
-              public RenderContextExpression getRenderContext() {
-                throw unsupported();
-              }
-            },
+            new ConstantVariables(varManager, Optional.empty()),
             varManager,
             ExpressionDetacher.NullDetatcher.INSTANCE,
             sourceFunctionCompiler,

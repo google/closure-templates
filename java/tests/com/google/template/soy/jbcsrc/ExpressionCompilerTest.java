@@ -41,7 +41,6 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -582,11 +581,6 @@ public class ExpressionCompilerTest {
               public RenderContextExpression getRenderContext() {
                 return new RenderContextExpression(
                     BytecodeUtils.constantNull(BytecodeUtils.RENDER_CONTEXT_TYPE));
-              }
-
-              @Override
-              public JbcSrcPluginContext getPluginContext() {
-                return getRenderContext();
               }
 
               @Override
