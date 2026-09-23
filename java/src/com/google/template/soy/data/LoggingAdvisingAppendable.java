@@ -203,6 +203,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException;
 
+  public boolean isOutputAppendable() {
+    return false;
+  }
+
   @Nullable
   public StackFrame appendNodeBuilder(NodeBuilder nodeBuilder, StackFrame stackFrame)
       throws IOException {

@@ -464,15 +464,16 @@ final class TemplateCompiler {
 
     var renderContext =
         new RenderContextExpression(variableSet.getParamByName(StandardNames.RENDER_CONTEXT));
+    AppendableExpression appendable =
+        AppendableExpression.forExpression(
+            variableSet.getParamByName(StandardNames.APPENDABLE).asNonJavaNullable());
     TemplateVariables variables =
         new TemplateVariables(
             variableSet,
             variableSet.getMethodParameter(StandardNames.STACK_FRAME),
             paramsVar,
-            renderContext);
-    AppendableExpression appendable =
-        AppendableExpression.forExpression(
-            variableSet.getParamByName(StandardNames.APPENDABLE).asNonJavaNullable());
+            renderContext,
+            appendable);
     SoyNodeCompiler nodeCompiler =
         SoyNodeCompiler.create(
             templateNode,
@@ -687,16 +688,19 @@ final class TemplateCompiler {
     private final Optional<Expression> paramsRecord;
     private final RenderContextExpression renderContext;
     private final LocalVariable stackFrame;
+    @Nullable private final AppendableExpression appendable;
 
     TemplateVariables(
         TemplateVariableManager variableSet,
         LocalVariable stackFrame,
         Optional<Expression> paramsRecord,
-        RenderContextExpression renderContext) {
+        RenderContextExpression renderContext,
+        @Nullable AppendableExpression appendable) {
       this.stackFrame = stackFrame;
       this.variableSet = variableSet;
       this.paramsRecord = paramsRecord;
       this.renderContext = renderContext;
+      this.appendable = appendable;
     }
 
     @Override
@@ -727,6 +731,11 @@ final class TemplateCompiler {
     @Override
     public RenderContextExpression getRenderContext() {
       return checkNotNull(renderContext);
+    }
+
+    @Override
+    public AppendableExpression getAppendable() {
+      return checkNotNull(appendable);
     }
   }
 }

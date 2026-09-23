@@ -215,6 +215,12 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
     private BufferingAppendable flatteningAppendable = null;
 
     @Override
+    public boolean isOutputAppendable() {
+      return delegates != null
+          && delegates.stream().anyMatch(LoggingAdvisingAppendable::isOutputAppendable);
+    }
+
+    @Override
     @Nonnull
     public SoyValue getAsSoyValue() {
       if (resolvedSoyValue != null) {

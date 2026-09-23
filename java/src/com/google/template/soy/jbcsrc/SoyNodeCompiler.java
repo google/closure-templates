@@ -229,6 +229,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(analysis, expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
+        context,
         typeInfo,
         analysis,
         innerMethods,
@@ -268,6 +269,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         checkNotNull(returnMapper));
   }
 
+  final SoyNode context;
   @Nullable final TypeInfo typeInfo;
   final TemplateAnalysis analysis;
   @Nullable final InnerMethods innerMethods;
@@ -286,6 +288,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private final Deque<LoopContext> loopStack = new ArrayDeque<>();
 
   private SoyNodeCompiler(
+      SoyNode context,
       @Nullable TypeInfo typeInfo,
       TemplateAnalysis analysis,
       @Nullable InnerMethods innerMethods,
@@ -300,6 +303,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       JavaSourceFunctionCompiler javaSourceFunctionCompiler,
       FileSetMetadata fileSetMetadata,
       Function<SoyExpression, SoyExpression> returnMapper) {
+    this.context = checkNotNull(context);
     this.typeInfo = typeInfo;
     this.analysis = checkNotNull(analysis);
     this.innerMethods = innerMethods;
@@ -2250,17 +2254,33 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   /** Returns a {@link SoyNodeCompiler} identical to this one but with an alternate appendable. */
   SoyNodeCompiler compilerWithNewAppendable(AppendableExpression appendable) {
+    TemplateParameterLookup newParameterLookup =
+        new DelegatingTemplateParameterLookup(parameterLookup) {
+          @Override
+          public AppendableExpression getAppendable() {
+            return appendable;
+          }
+        };
+    ExpressionCompiler newExprCompiler =
+        ExpressionCompiler.create(
+            context,
+            analysis,
+            newParameterLookup,
+            variables,
+            javaSourceFunctionCompiler,
+            fileSetMetadata);
     return new SoyNodeCompiler(
+        context,
         typeInfo,
         analysis,
         innerMethods,
         detachState,
         variables,
-        parameterLookup,
+        newParameterLookup,
         fields,
         appendable,
-        exprCompiler,
-        expressionToSoyValueProviderCompiler,
+        newExprCompiler,
+        ExpressionToSoyValueProviderCompiler.create(analysis, newExprCompiler, newParameterLookup),
         constantCompiler,
         javaSourceFunctionCompiler,
         fileSetMetadata,

@@ -63,6 +63,11 @@ public final class OutputAppendable extends LoggingAdvisingAppendable {
     this.logger = logger;
   }
 
+  @Override
+  public boolean isOutputAppendable() {
+    return true;
+  }
+
   private boolean isLogOnly() {
     return logOnlyDepth != 0;
   }

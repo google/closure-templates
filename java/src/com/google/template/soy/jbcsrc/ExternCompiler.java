@@ -202,7 +202,8 @@ public final class ExternCompiler {
               paramSet,
               /* stackFrame= */ null,
               /* paramsRecord= */ Optional.empty(),
-              renderContext.orElse(null));
+              renderContext.orElse(null),
+              /* appendable= */ null);
       BasicExpressionCompiler basicCompiler =
           ExpressionCompiler.createBasicCompiler(
               autoImpl,

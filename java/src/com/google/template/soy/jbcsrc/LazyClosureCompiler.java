@@ -575,7 +575,7 @@ final class LazyClosureCompiler {
               TemplateVariableManager.NO_RUNTIME_TYPE_KNOWN);
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(
-              this, parent.parameterLookup, variableSet, Optional.empty());
+              this, parent.parameterLookup, variableSet, Optional.empty(), Optional.empty());
       var detacher =
           createOptimisticDetacher(
               BOOTSTRAP_DETACHABLE_SOY_VALUE_PROVIDER, DETACHABLE_SOY_VALUE_PROVIDER_TYPE);
@@ -636,7 +636,7 @@ final class LazyClosureCompiler {
 
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(
-              this, parent.parameterLookup, variableSet, Optional.empty());
+              this, parent.parameterLookup, variableSet, Optional.empty(), Optional.empty());
       var detacher =
           createOptimisticDetacher(
               BOOTSTRAP_DETACHABLE_SOY_VALUE_PROVIDER_PROVIDER,
@@ -745,16 +745,18 @@ final class LazyClosureCompiler {
                   start,
                   end)
               .asNonJavaNullable();
+      AppendableExpression appendableExpression =
+          AppendableExpression.forStringBuilder(appendableParameter);
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(
-              this, parent.parameterLookup, variableSet, Optional.of(stackFrameParameter));
+              this,
+              parent.parameterLookup,
+              variableSet,
+              Optional.of(stackFrameParameter),
+              Optional.of(appendableExpression));
 
       SoyNodeCompiler soyNodeCompiler =
-          parent.compilerForChildNode(
-              node,
-              variableSet,
-              lookup,
-              AppendableExpression.forStringBuilder(appendableParameter));
+          parent.compilerForChildNode(node, variableSet, lookup, appendableExpression);
       Statement nodeBody = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       boolean isEager =
           !soyNodeCompiler.getDetachState().hasDetaches() && canEagerlyRender(renderUnit);
@@ -1058,19 +1060,23 @@ final class LazyClosureCompiler {
     private final Map<VarDefn, ParentCapture> variableCaptures = new LinkedHashMap<>();
     private final Map<SyntheticVarName, ParentCapture> syntheticCaptures = new LinkedHashMap<>();
     private ParentCapture renderContextCapture;
+    private ParentCapture appendableCapture;
     private ParentCapture ijCapture;
     private Optional<ParentCapture> paramsCapture;
     private final Optional<LocalVariable> stackFrame;
+    private final Optional<AppendableExpression> appendable;
 
     LazyClosureParameterLookup(
         CompilationUnit params,
         TemplateParameterLookup parentParameterLookup,
         TemplateVariableManager variableSet,
-        Optional<LocalVariable> stackFrame) {
+        Optional<LocalVariable> stackFrame,
+        Optional<AppendableExpression> appendable) {
       this.params = params;
       this.parentParameterLookup = parentParameterLookup;
       this.variableSet = variableSet;
       this.stackFrame = stackFrame;
+      this.appendable = appendable;
     }
 
     @Override
@@ -1135,6 +1141,7 @@ final class LazyClosureCompiler {
           Iterables.filter(
               asList(
                   renderContextCapture,
+                  appendableCapture,
                   ijCapture,
                   paramsCapture == null ? null : paramsCapture.orElse(null)),
               Objects::nonNull),
@@ -1150,6 +1157,18 @@ final class LazyClosureCompiler {
                 StandardNames.RENDER_CONTEXT, parentParameterLookup.getRenderContext());
       }
       return new RenderContextExpression(renderContextCapture.childExpression);
+    }
+
+    @Override
+    public AppendableExpression getAppendable() {
+      if (appendable.isPresent()) {
+        return appendable.get();
+      }
+      if (appendableCapture == null) {
+        appendableCapture =
+            ParentCapture.create(StandardNames.APPENDABLE, parentParameterLookup.getAppendable());
+      }
+      return AppendableExpression.forExpression(appendableCapture.childExpression);
     }
   }
 }

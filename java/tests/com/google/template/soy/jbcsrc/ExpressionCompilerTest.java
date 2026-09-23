@@ -587,6 +587,11 @@ public class ExpressionCompilerTest {
               public Optional<Expression> getParamsRecord() {
                 throw new UnsupportedOperationException();
               }
+
+              @Override
+              public AppendableExpression getAppendable() {
+                throw new UnsupportedOperationException();
+              }
             },
             new TemplateVariableManager(
                 BytecodeUtils.OBJECT.type(),

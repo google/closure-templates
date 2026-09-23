@@ -620,6 +620,9 @@ public final class MethodRefs {
   public static final MethodRef REGEXP_DATA_OF =
       createPure(RegexpData.class, "of", String.class, String.class).asCheap();
 
+  public static final MethodRef LOGGING_ADVISING_APPENDABLE_IS_OUTPUT_APPENDABLE =
+      createPure(LoggingAdvisingAppendable.class, "isOutputAppendable");
+
   public static final MethodRef LOGGING_ADVISING_APPENDABLE_BUFFERING =
       createNonPure(
               LoggingAdvisingAppendable.class, "buffering", SanitizedContent.ContentKind.class)

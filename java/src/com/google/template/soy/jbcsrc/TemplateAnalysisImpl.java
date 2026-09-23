@@ -869,6 +869,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case NEW_SET:
           case FLUSH_PENDING_LOGGING_ATTRIBUTES:
           case OBJECT_PROPERTY:
+          case IS_OUTPUT_BUFFER:
             // visit children normally
             break;
           case UNKNOWN_JS_GLOBAL:

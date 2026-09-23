@@ -1491,4 +1491,40 @@ public class BytecodeCompilerTest {
         parser.typeRegistry(),
         parseResult.registry());
   }
+
+  @Test
+  public void testIsOutputBuffer() {
+    SoyFileSetParser parser =
+        createParserForFileContents(
+            ImmutableMap.of(
+                "test.soy",
+                """
+                {namespace ns}
+                {template readValue}
+                  {_isOutputBuffer()}
+                {/template}
+                {template main}
+                  {let $inLet}{call readValue /}{/let}
+                  {let $inLetLazy}{call readValue eval="lazy" /}{/let}
+
+                  {let $inLetRead}{call readValue /}{/let}
+                  {let $inLetRead2: $inLetRead === 'true' ? '+T' : '+F' /}
+
+                  {let $inLetLazyRead}{call readValue eval="lazy" /}{/let}
+                  {let $inLetLazyRead2: $inLetLazyRead === 'true' ? '+T' : '+F' /}
+
+                  1{call readValue /},
+                  2{call readValue eval="lazy" /},
+                  3{$inLet},
+                  4{$inLetLazy},
+                  5{$inLetRead}{$inLetRead2},
+                  6{$inLetLazyRead}{$inLetLazyRead2},
+                {/template}
+                """));
+    ParseResult parseResult = parser.parse();
+    CompilingClassLoader loader = createCompilingClassLoader(parser, parseResult);
+    SoySauce sauce = new SoySauceBuilder().withClassLoader(loader).build();
+    assertThat(sauce.renderTemplate("ns.main").renderHtml().get().toString())
+        .isEqualTo("1true, 2true, 3true, 4true, 5false+F, 6true+F,");
+  }
 }

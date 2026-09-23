@@ -1223,6 +1223,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitNewSetFunction(node);
         case OBJECT_PROPERTY:
           return OBJECT_PROPERTY.call(visit(node.getParam(0)), visit(node.getParam(1)));
+        case IS_OUTPUT_BUFFER:
+          return LITERAL_TRUE;
         case FLUSH_PENDING_LOGGING_ATTRIBUTES:
         case LEGACY_DYNAMIC_TAG:
         case REMAINDER:

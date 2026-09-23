@@ -58,6 +58,12 @@ interface TemplateParameterLookup extends JbcSrcPluginContext {
   RenderContextExpression getRenderContext();
 
   /**
+   * Returns an expression that produces the current {@link
+   * com.google.template.soy.data.LoggingAdvisingAppendable}.
+   */
+  AppendableExpression getAppendable();
+
+  /**
    * Returns the plugin context object. This is required for the plugin apis and should be used in
    * preference to {@link #getRenderContext()} whenever possible.
    */

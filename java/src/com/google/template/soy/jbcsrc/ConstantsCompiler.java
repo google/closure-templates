@@ -281,5 +281,10 @@ public final class ConstantsCompiler {
     public RenderContextExpression getRenderContext() {
       return renderContext.orElseThrow(ConstantVariables::unsupported);
     }
+
+    @Override
+    public AppendableExpression getAppendable() {
+      throw unsupported();
+    }
   }
 }
