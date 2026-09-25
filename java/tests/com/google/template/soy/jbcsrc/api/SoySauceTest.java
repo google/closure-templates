@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.SoyFileSet;
@@ -441,6 +442,218 @@ public class SoySauceTest {
     continuation = continuation.continueRender();
     assertThat(continuation.result()).isEqualTo(RenderResult.done());
     assertThat(continuation.get().getContent()).isEqualTo("it works!");
+  }
+
+  @Test
+  public void testCompareHtmlWithFutureImmediateNullDoesNotExecuteHtml() {
+    // $html == $futureVal and $html != $futureVal with immediate future null
+    SoySauce.Renderer tmpl1 = sauce.renderTemplate("strict_test.testCompareHtmlWithFuture");
+    SanitizedContent result1 =
+        tmpl1
+            .setData(ImmutableMap.of("futureVal", Futures.immediateFuture(null)))
+            .renderHtml()
+            .get();
+    assertThat(result1.getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+
+    // $futureVal == $html and $futureVal != $html with immediate future null
+    SoySauce.Renderer tmpl2 = sauce.renderTemplate("strict_test.testCompareFutureWithHtml");
+    SanitizedContent result2 =
+        tmpl2
+            .setData(ImmutableMap.of("futureVal", Futures.immediateFuture(null)))
+            .renderHtml()
+            .get();
+    assertThat(result2.getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+  }
+
+  @Test
+  public void testCompareHtmlWithPendingFutureNullDoesNotExecuteHtml() {
+    // $html == $futureVal with pending future resolving to null
+    SoySauce.Renderer tmpl1 = sauce.renderTemplate("strict_test.testCompareHtmlWithFuture");
+    SettableFuture<String> future1 = SettableFuture.create();
+
+    Continuation<SanitizedContent> continuation1 =
+        tmpl1.setData(ImmutableMap.of("futureVal", future1)).renderHtml();
+    assertThat(continuation1.result().type()).isEqualTo(RenderResult.Type.DETACH);
+
+    // Resolve future to null
+    future1.set(null);
+    continuation1 = continuation1.continueRender();
+    assertThat(continuation1.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation1.get().getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+
+    // $futureVal == $html with pending future resolving to null
+    SoySauce.Renderer tmpl2 = sauce.renderTemplate("strict_test.testCompareFutureWithHtml");
+    SettableFuture<String> future2 = SettableFuture.create();
+
+    Continuation<SanitizedContent> continuation2 =
+        tmpl2.setData(ImmutableMap.of("futureVal", future2)).renderHtml();
+    assertThat(continuation2.result().type()).isEqualTo(RenderResult.Type.DETACH);
+
+    future2.set(null);
+    continuation2 = continuation2.continueRender();
+    assertThat(continuation2.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation2.get().getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+  }
+
+  @Test
+  public void testCompareHtmlWithPendingFutureNonNullDoesExecuteHtml() {
+    // When future resolves to "hello", loose equality ($html == $futureVal) must evaluate $html and
+    // match!
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.testCompareHtmlWithFuture");
+    SettableFuture<String> future = SettableFuture.create();
+
+    Continuation<SanitizedContent> continuation =
+        tmpl.setData(ImmutableMap.of("futureVal", future, "failVal", "safe")).renderHtml();
+    assertThat(continuation.result().type()).isEqualTo(RenderResult.Type.DETACH);
+
+    future.set("hello");
+    continuation = continuation.continueRender();
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation.get().getContent()).isEqualTo("looseEqualtripleNotEqual");
+
+    // Also test reverse operand order: $futureVal == $html
+    SoySauce.Renderer tmpl2 = sauce.renderTemplate("strict_test.testCompareFutureWithHtml");
+    SettableFuture<String> future2 = SettableFuture.create();
+
+    Continuation<SanitizedContent> continuation2 =
+        tmpl2.setData(ImmutableMap.of("futureVal", future2, "failVal", "safe")).renderHtml();
+    assertThat(continuation2.result().type()).isEqualTo(RenderResult.Type.DETACH);
+
+    future2.set("hello");
+    continuation2 = continuation2.continueRender();
+    assertThat(continuation2.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation2.get().getContent()).isEqualTo("looseEqualtripleNotEqual");
+  }
+
+  @Test
+  public void testCompareBlobWithNullDoesNotExecuteHtml() {
+    // $blob has static type ? but runtime type HTML. Comparing against null literal must not
+    // execute HTML.
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.callTestCompareBlobWithNull");
+    // failVal is not set, so checkNotNull($failVal) will throw if executed!
+    var continuation = tmpl.renderHtml();
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation.get().getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+  }
+
+  @Test
+  public void testCompareBlobWithOtherImmediateNullDoesNotExecuteHtml() {
+    // Both $blob and $other have static type ?, with $blob = HTML and $other = null / immediate
+    // future null.
+    SoySauce.Renderer tmpl1 = sauce.renderTemplate("strict_test.callTestCompareBlobWithOther");
+    var c1 = tmpl1.setData(ImmutableMap.of("other", NullData.INSTANCE)).renderHtml();
+    assertThat(c1.result()).isEqualTo(RenderResult.done());
+    assertThat(c1.get().getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+
+    SoySauce.Renderer tmpl2 = sauce.renderTemplate("strict_test.callTestCompareOtherWithBlob");
+    var c2 = tmpl2.setData(ImmutableMap.of("other", NullData.INSTANCE)).renderHtml();
+    assertThat(c2.result()).isEqualTo(RenderResult.done());
+    assertThat(c2.get().getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+
+    // Immediate future null
+    SoySauce.Renderer tmpl3 = sauce.renderTemplate("strict_test.callTestCompareBlobWithOther");
+    var c3 = tmpl3.setData(ImmutableMap.of("other", Futures.immediateFuture(null))).renderHtml();
+    assertThat(c3.result()).isEqualTo(RenderResult.done());
+    assertThat(c3.get().getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+
+    SoySauce.Renderer tmpl4 = sauce.renderTemplate("strict_test.callTestCompareOtherWithBlob");
+    var c4 = tmpl4.setData(ImmutableMap.of("other", Futures.immediateFuture(null))).renderHtml();
+    assertThat(c4.result()).isEqualTo(RenderResult.done());
+    assertThat(c4.get().getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+
+    // Non-null immediate string and immediate future (matching "hello")
+    SoySauce.Renderer tmpl5 = sauce.renderTemplate("strict_test.callTestCompareBlobWithOther");
+    var c5 = tmpl5.setData(ImmutableMap.of("other", "hello", "failVal", "safe")).renderHtml();
+    assertThat(c5.result()).isEqualTo(RenderResult.done());
+    assertThat(c5.get().getContent()).isEqualTo("looseEqualtripleNotEqual");
+
+    SoySauce.Renderer tmpl6 = sauce.renderTemplate("strict_test.callTestCompareBlobWithOther");
+    var c6 =
+        tmpl6
+            .setData(ImmutableMap.of("other", Futures.immediateFuture("hello"), "failVal", "safe"))
+            .renderHtml();
+    assertThat(c6.result()).isEqualTo(RenderResult.done());
+    assertThat(c6.get().getContent()).isEqualTo("looseEqualtripleNotEqual");
+
+    SoySauce.Renderer tmpl7 = sauce.renderTemplate("strict_test.callTestCompareOtherWithBlob");
+    var c7 = tmpl7.setData(ImmutableMap.of("other", "hello", "failVal", "safe")).renderHtml();
+    assertThat(c7.result()).isEqualTo(RenderResult.done());
+    assertThat(c7.get().getContent()).isEqualTo("looseEqualtripleNotEqual");
+
+    SoySauce.Renderer tmpl8 = sauce.renderTemplate("strict_test.callTestCompareOtherWithBlob");
+    var c8 =
+        tmpl8
+            .setData(ImmutableMap.of("other", Futures.immediateFuture("hello"), "failVal", "safe"))
+            .renderHtml();
+    assertThat(c8.result()).isEqualTo(RenderResult.done());
+    assertThat(c8.get().getContent()).isEqualTo("looseEqualtripleNotEqual");
+  }
+
+  @Test
+  public void testCompareBlobWithPendingFutureNullDoesNotExecuteHtml() {
+    // Both $blob and $other have static type ?, with $blob = HTML and $other = pending
+    // SettableFuture.
+    SoySauce.Renderer tmpl1 = sauce.renderTemplate("strict_test.callTestCompareBlobWithOther");
+    SettableFuture<String> future1 = SettableFuture.create();
+
+    Continuation<SanitizedContent> continuation1 =
+        tmpl1.setData(ImmutableMap.of("other", future1)).renderHtml();
+    assertThat(continuation1.result().type()).isEqualTo(RenderResult.Type.DETACH);
+
+    future1.set(null);
+    continuation1 = continuation1.continueRender();
+    assertThat(continuation1.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation1.get().getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+
+    // Reverse operand order: $other == $blob
+    SoySauce.Renderer tmpl2 = sauce.renderTemplate("strict_test.callTestCompareOtherWithBlob");
+    SettableFuture<String> future2 = SettableFuture.create();
+
+    Continuation<SanitizedContent> continuation2 =
+        tmpl2.setData(ImmutableMap.of("other", future2)).renderHtml();
+    assertThat(continuation2.result().type()).isEqualTo(RenderResult.Type.DETACH);
+
+    future2.set(null);
+    continuation2 = continuation2.continueRender();
+    assertThat(continuation2.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation2.get().getContent()).isEqualTo("looseNotEqualtripleNotEqual");
+  }
+
+  @Test
+  public void testCompareBlobWithPendingFutureNonNullDoesExecuteHtml() {
+    // When future resolves to "hello", loose equality must evaluate $blob and match!
+    SoySauce.Renderer tmpl1 = sauce.renderTemplate("strict_test.callTestCompareBlobWithOther");
+    SettableFuture<String> future1 = SettableFuture.create();
+
+    Continuation<SanitizedContent> continuation1 =
+        tmpl1.setData(ImmutableMap.of("other", future1, "failVal", "safe")).renderHtml();
+    assertThat(continuation1.result().type()).isEqualTo(RenderResult.Type.DETACH);
+
+    future1.set("hello");
+    continuation1 = continuation1.continueRender();
+    assertThat(continuation1.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation1.get().getContent()).isEqualTo("looseEqualtripleNotEqual");
+
+    // Reverse operand order: $other == $blob
+    SoySauce.Renderer tmpl2 = sauce.renderTemplate("strict_test.callTestCompareOtherWithBlob");
+    SettableFuture<String> future2 = SettableFuture.create();
+
+    Continuation<SanitizedContent> continuation2 =
+        tmpl2.setData(ImmutableMap.of("other", future2, "failVal", "safe")).renderHtml();
+    assertThat(continuation2.result().type()).isEqualTo(RenderResult.Type.DETACH);
+
+    future2.set("hello");
+    continuation2 = continuation2.continueRender();
+    assertThat(continuation2.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation2.get().getContent()).isEqualTo("looseEqualtripleNotEqual");
+  }
+
+  @Test
+  public void testCompareNullWithBlobDoesNotExecuteHtml() {
+    SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.callTestCompareNullWithBlob");
+    var continuation = tmpl.renderHtml();
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(continuation.get().getContent()).isEqualTo("looseNotEqualtripleNotEqual");
   }
 
   private static final class TestAppendable implements AdvisingAppendable {

@@ -66,6 +66,21 @@ public abstract class RenderableThunk extends SoyValueProvider {
   }
 
   @Override
+  public boolean isNullish() {
+    return false;
+  }
+
+  @Override
+  public boolean isNull() {
+    return false;
+  }
+
+  @Override
+  public boolean isUndefined() {
+    return false;
+  }
+
+  @Override
   @Nonnull
   public RenderResult status() {
     resolve();

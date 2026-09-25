@@ -35,14 +35,38 @@ import java.io.IOException;
 public abstract class DetachableSoyValueProviderProvider extends SoyValueProvider {
   private SoyValueProvider resolvedValueProvider;
 
+  private SoyValueProvider resolveProvider() {
+    SoyValueProvider local = resolvedValueProvider;
+    if (local == null) {
+      Object subResult = evaluate();
+      if (subResult.getClass() != RenderResult.class) {
+        local = resolvedValueProvider = (SoyValueProvider) subResult;
+      } else {
+        JbcSrcRuntime.awaitProvider(this);
+        local = resolvedValueProvider;
+      }
+    }
+    return local;
+  }
+
   @Override
   public final SoyValue resolve() {
-    var local = resolvedValueProvider;
-    if (local == null) {
-      JbcSrcRuntime.awaitProvider(this);
-      local = resolvedValueProvider;
-    }
-    return resolvedValueProvider.resolve();
+    return resolveProvider().resolve();
+  }
+
+  @Override
+  public boolean isNullish() {
+    return resolveProvider().isNullish();
+  }
+
+  @Override
+  public boolean isNull() {
+    return resolveProvider().isNull();
+  }
+
+  @Override
+  public boolean isUndefined() {
+    return resolveProvider().isUndefined();
   }
 
   @Override

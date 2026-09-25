@@ -45,6 +45,7 @@ import com.google.template.soy.data.NodeBuilder;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -971,13 +972,74 @@ public final class JbcSrcRuntime {
   }
 
   @Keep
-  public static boolean isNonSoyNullish(SoyValueProvider value) {
-    return !value.resolve().isNullish();
+  public static boolean isNonSoyNullish(@Nullable SoyValueProvider value) {
+    return value != null && !value.isNullish();
   }
 
   @Keep
-  public static boolean isNonSoyNull(SoyValueProvider value) {
-    return !value.resolve().isNull();
+  public static boolean isNonSoyNull(@Nullable SoyValueProvider value) {
+    return value != null && !value.isNull();
+  }
+
+  @Keep
+  public static boolean isNonSoyUndefined(@Nullable SoyValueProvider value) {
+    return value != null && !value.isUndefined();
+  }
+
+  @Keep
+  public static boolean isDcpSanitized(@Nullable SoyValueProvider provider) {
+    return provider instanceof DetachableContentProvider
+        && ((DetachableContentProvider) provider).getContentKind() != ContentKind.TEXT;
+  }
+
+  private static boolean isNullishSafe(@Nullable SoyValueProvider provider) {
+    if (provider == null) {
+      return true;
+    }
+    if (provider instanceof DetachableContentProvider) {
+      return false;
+    }
+    if (provider == NullData.INSTANCE || provider == UndefinedData.INSTANCE) {
+      return true;
+    }
+    if (provider.status().isDone()) {
+      SoyValue val = provider.resolve();
+      return val == null || val.isNullish();
+    }
+    return false;
+  }
+
+  @Nullable
+  @Keep
+  public static Boolean checkTripleEqualDcpFastPath(
+      @Nullable SoyValueProvider left, @Nullable SoyValueProvider right) {
+    if (left == right) {
+      return Boolean.TRUE;
+    }
+    if (isDcpSanitized(left) || isDcpSanitized(right)) {
+      return Boolean.FALSE;
+    }
+    return checkEqualDcpFastPath(left, right);
+  }
+
+  @Nullable
+  @Keep
+  public static Boolean checkEqualDcpFastPath(
+      @Nullable SoyValueProvider left, @Nullable SoyValueProvider right) {
+    if (left == right) {
+      return Boolean.TRUE;
+    }
+    if (left instanceof DetachableContentProvider) {
+      if (isNullishSafe(right)) {
+        return Boolean.FALSE;
+      }
+    }
+    if (right instanceof DetachableContentProvider) {
+      if (isNullishSafe(left)) {
+        return Boolean.FALSE;
+      }
+    }
+    return null;
   }
 
   @Keep

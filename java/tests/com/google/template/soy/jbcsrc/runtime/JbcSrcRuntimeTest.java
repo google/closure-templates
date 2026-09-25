@@ -22,12 +22,19 @@ import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyFutureValueProvider;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime.MsgRenderer;
+import com.google.template.soy.jbcsrc.shared.StackFrame;
 import com.google.template.soy.msgs.restricted.PlaceholderName;
 import com.google.template.soy.msgs.restricted.SoyMsgRawParts;
 import java.util.function.ToIntFunction;
@@ -230,5 +237,161 @@ public final class JbcSrcRuntimeTest {
   private void assertRendersAs(MsgRenderer renderer, String expected) {
     assertThat(renderer.status().isDone()).isTrue();
     assertThat(renderer.resolve().coerceToString()).isEqualTo(expected);
+  }
+
+  @Test
+  public void testNullishChecks() {
+    assertThat(JbcSrcRuntime.isNonSoyNullish(null)).isFalse();
+    assertThat(JbcSrcRuntime.isNonSoyNull(null)).isFalse();
+    assertThat(JbcSrcRuntime.isNonSoyUndefined(null)).isFalse();
+
+    assertThat(JbcSrcRuntime.isNonSoyNullish(NullData.INSTANCE)).isFalse();
+    assertThat(JbcSrcRuntime.isNonSoyNull(NullData.INSTANCE)).isFalse();
+    assertThat(JbcSrcRuntime.isNonSoyUndefined(NullData.INSTANCE)).isTrue();
+
+    assertThat(JbcSrcRuntime.isNonSoyNullish(UndefinedData.INSTANCE)).isFalse();
+    assertThat(JbcSrcRuntime.isNonSoyNull(UndefinedData.INSTANCE)).isTrue();
+    assertThat(JbcSrcRuntime.isNonSoyUndefined(UndefinedData.INSTANCE)).isFalse();
+
+    StringData stringValue = StringData.forValue("foo");
+    assertThat(JbcSrcRuntime.isNonSoyNullish(stringValue)).isTrue();
+    assertThat(JbcSrcRuntime.isNonSoyNull(stringValue)).isTrue();
+    assertThat(JbcSrcRuntime.isNonSoyUndefined(stringValue)).isTrue();
+
+    DetachableContentProvider contentProvider =
+        new DetachableContentProvider(ContentKind.HTML) {
+          @Override
+          protected StackFrame doRender(
+              StackFrame frame, DetachableContentProvider.MultiplexingAppendable appendable) {
+            throw new AssertionError("doRender should not be called for nullish checks!");
+          }
+        };
+    assertThat(JbcSrcRuntime.isNonSoyNullish(contentProvider)).isTrue();
+    assertThat(JbcSrcRuntime.isNonSoyNull(contentProvider)).isTrue();
+    assertThat(JbcSrcRuntime.isNonSoyUndefined(contentProvider)).isTrue();
+  }
+
+  @Test
+  public void testDcpEqualityFastPath() {
+    DetachableContentProvider htmlProvider1 =
+        new DetachableContentProvider(ContentKind.HTML) {
+          @Override
+          protected StackFrame doRender(
+              StackFrame frame, DetachableContentProvider.MultiplexingAppendable appendable) {
+            throw new AssertionError(
+                "doRender should not be called for fast-path equality checks!");
+          }
+        };
+
+    DetachableContentProvider htmlProvider2 =
+        new DetachableContentProvider(ContentKind.HTML) {
+          @Override
+          protected StackFrame doRender(
+              StackFrame frame, DetachableContentProvider.MultiplexingAppendable appendable) {
+            throw new AssertionError(
+                "doRender should not be called for fast-path equality checks!");
+          }
+        };
+
+    StringData stringValue = StringData.forValue("foo");
+
+    // Strict equality (===)
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(htmlProvider1, htmlProvider1))
+        .isEqualTo(Boolean.TRUE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(htmlProvider1, null))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(null, htmlProvider1))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(htmlProvider1, NullData.INSTANCE))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(NullData.INSTANCE, htmlProvider1))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(htmlProvider1, UndefinedData.INSTANCE))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(UndefinedData.INSTANCE, htmlProvider1))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(htmlProvider1, stringValue))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(stringValue, htmlProvider1))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(htmlProvider1, htmlProvider2))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(stringValue, NullData.INSTANCE)).isNull();
+
+    // Loose equality (==)
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(htmlProvider1, htmlProvider1))
+        .isEqualTo(Boolean.TRUE);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(htmlProvider1, null)).isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(null, htmlProvider1)).isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(htmlProvider1, NullData.INSTANCE))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(NullData.INSTANCE, htmlProvider1))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(htmlProvider1, UndefinedData.INSTANCE))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(UndefinedData.INSTANCE, htmlProvider1))
+        .isEqualTo(Boolean.FALSE);
+    // Comparing HTML to string or another HTML for loose equality requires evaluating content.
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(htmlProvider1, stringValue)).isNull();
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(stringValue, htmlProvider1)).isNull();
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(htmlProvider1, htmlProvider2)).isNull();
+
+    // Futures
+    SoyFutureValueProvider nullFuture =
+        new SoyFutureValueProvider(immediateFuture(null), SoyValueConverter.INSTANCE::convert);
+    SoyFutureValueProvider stringFuture =
+        new SoyFutureValueProvider(immediateFuture("foo"), SoyValueConverter.INSTANCE::convert);
+
+    // Strict equality with futures
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(htmlProvider1, nullFuture))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(nullFuture, htmlProvider1))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(htmlProvider1, stringFuture))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(stringFuture, htmlProvider1))
+        .isEqualTo(Boolean.FALSE);
+
+    // Loose equality with completed futures
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(htmlProvider1, nullFuture))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(nullFuture, htmlProvider1))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(htmlProvider1, stringFuture)).isNull();
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(stringFuture, htmlProvider1)).isNull();
+
+    // Loose equality with pending future (returns null so detacher handles it)
+    SettableFuture<String> pendingFuture = SettableFuture.create();
+    SoyFutureValueProvider pendingFutureProvider =
+        new SoyFutureValueProvider(pendingFuture, SoyValueConverter.INSTANCE::convert);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(htmlProvider1, pendingFutureProvider)).isNull();
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(pendingFutureProvider, htmlProvider1)).isNull();
+
+    // ContentKind.TEXT provider
+    DetachableContentProvider textProvider =
+        new DetachableContentProvider(ContentKind.TEXT) {
+          @Override
+          protected StackFrame doRender(
+              StackFrame frame, DetachableContentProvider.MultiplexingAppendable appendable) {
+            throw new AssertionError(
+                "doRender should not be called for fast-path equality checks!");
+          }
+        };
+
+    // Strict equality: text provider does NOT short-circuit to FALSE against string future
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(textProvider, nullFuture))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(nullFuture, textProvider))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(textProvider, stringFuture)).isNull();
+    assertThat(JbcSrcRuntime.checkTripleEqualDcpFastPath(stringFuture, textProvider)).isNull();
+
+    // Loose equality: text provider short-circuits against null, falls back for strings
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(textProvider, nullFuture))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(nullFuture, textProvider))
+        .isEqualTo(Boolean.FALSE);
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(textProvider, stringFuture)).isNull();
+    assertThat(JbcSrcRuntime.checkEqualDcpFastPath(stringFuture, textProvider)).isNull();
   }
 }

@@ -142,3 +142,179 @@ import {Foo} from 'src/test/protobuf/test.proto';
   {/for}
 {/template}
 
+{template testCompareHtmlWithFuture}
+  {@param futureVal: string|null}
+  {@param failVal: string|null = null}
+
+  {let $html kind="html"}
+    {let $unused: checkNotNull($failVal) /}hello
+  {/let}
+
+  {if $html == $futureVal}
+    looseEqual
+  {/if}
+  {if $html != $futureVal}
+    looseNotEqual
+  {/if}
+  {if $html === $futureVal}
+    tripleEqual
+  {/if}
+  {if $html !== $futureVal}
+    tripleNotEqual
+  {/if}
+{/template}
+
+{template testCompareFutureWithHtml}
+  {@param futureVal: string|null}
+  {@param failVal: string|null = null}
+
+  {let $html kind="html"}
+    {let $unused: checkNotNull($failVal) /}hello
+  {/let}
+
+  {if $futureVal == $html}
+    looseEqual
+  {/if}
+  {if $futureVal != $html}
+    looseNotEqual
+  {/if}
+  {if $futureVal === $html}
+    tripleEqual
+  {/if}
+  {if $futureVal !== $html}
+    tripleNotEqual
+  {/if}
+{/template}
+
+{template testCompareBlobWithNull}
+  {@param blob: ?}
+  {@param failVal: string|null = null}
+
+  {if $blob == null}
+    looseEqual
+  {/if}
+  {if $blob != null}
+    looseNotEqual
+  {/if}
+  {if $blob === null}
+    tripleEqual
+  {/if}
+  {if $blob !== null}
+    tripleNotEqual
+  {/if}
+{/template}
+
+{template testCompareBlobWithOther}
+  {@param blob: ?}
+  {@param other: ?}
+  {@param failVal: string|null = null}
+
+  {if $blob == $other}
+    looseEqual
+  {/if}
+  {if $blob != $other}
+    looseNotEqual
+  {/if}
+  {if $blob === $other}
+    tripleEqual
+  {/if}
+  {if $blob !== $other}
+    tripleNotEqual
+  {/if}
+{/template}
+
+{template testCompareOtherWithBlob}
+  {@param other: ?}
+  {@param blob: ?}
+  {@param failVal: string|null = null}
+
+  {if $other == $blob}
+    looseEqual
+  {/if}
+  {if $other != $blob}
+    looseNotEqual
+  {/if}
+  {if $other === $blob}
+    tripleEqual
+  {/if}
+  {if $other !== $blob}
+    tripleNotEqual
+  {/if}
+{/template}
+
+{template callTestCompareBlobWithNull}
+  {@param failVal: string|null = null}
+
+  {let $html kind="html"}
+    {let $unused: checkNotNull($failVal) /}hello
+  {/let}
+
+  {call testCompareBlobWithNull}
+    {param blob: $html /}
+    {param failVal: $failVal /}
+  {/call}
+{/template}
+
+{template callTestCompareBlobWithOther}
+  {@param other: ?}
+  {@param failVal: string|null = null}
+
+  {let $html kind="html"}
+    {let $unused: checkNotNull($failVal) /}hello
+  {/let}
+
+  {call testCompareBlobWithOther}
+    {param blob: $html /}
+    {param other: $other /}
+    {param failVal: $failVal /}
+  {/call}
+{/template}
+
+{template callTestCompareOtherWithBlob}
+  {@param other: ?}
+  {@param failVal: string|null = null}
+
+  {let $html kind="html"}
+    {let $unused: checkNotNull($failVal) /}hello
+  {/let}
+
+  {call testCompareOtherWithBlob}
+    {param other: $other /}
+    {param blob: $html /}
+    {param failVal: $failVal /}
+  {/call}
+{/template}
+
+{template testCompareNullWithBlob}
+  {@param blob: ?}
+  {@param failVal: string|null = null}
+
+  {if null == $blob}
+    looseEqual
+  {/if}
+  {if null != $blob}
+    looseNotEqual
+  {/if}
+  {if null === $blob}
+    tripleEqual
+  {/if}
+  {if null !== $blob}
+    tripleNotEqual
+  {/if}
+{/template}
+
+{template callTestCompareNullWithBlob}
+  {@param failVal: string|null = null}
+
+  {let $html kind="html"}
+    {let $unused: checkNotNull($failVal) /}hello
+  {/let}
+
+  {call testCompareNullWithBlob}
+    {param blob: $html /}
+    {param failVal: $failVal /}
+  {/call}
+{/template}
+
+
+

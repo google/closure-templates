@@ -356,15 +356,22 @@ public final class Branch {
   }
 
   public static Branch ifNonSoyNull(Expression expression) {
-    if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, expression.resultType())) {
+    if (isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, expression.resultType())) {
       if (expression.isNonSoyNullish()) {
         return always();
       }
-      return new Branch(
-              expression.features(),
-              new BooleanBrancher(MethodRefs.SOY_VALUE_IS_NULL.invoke(expression)),
-              () -> "ifSoyNull{" + expression + "}")
-          .negate();
+      if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, expression.resultType())) {
+        return new Branch(
+                expression.features(),
+                new BooleanBrancher(MethodRefs.SOY_VALUE_IS_NULL.invoke(expression)),
+                () -> "ifSoyNull{" + expression + "}")
+            .negate();
+      } else {
+        return new Branch(
+            expression.features(),
+            new BooleanBrancher(MethodRefs.IS_SOY_NON_NULL.invoke(expression)),
+            () -> "ifNonSoyNull{" + expression + "}");
+      }
     } else {
       if (expression.isNonJavaNullable()) {
         return always();
@@ -374,15 +381,22 @@ public final class Branch {
   }
 
   public static Branch ifNonSoyUndefined(Expression expression) {
-    if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, expression.resultType())) {
+    if (isDefinitelyAssignableFrom(SOY_VALUE_PROVIDER_TYPE, expression.resultType())) {
       if (expression.isNonSoyNullish()) {
         return always();
       }
-      return new Branch(
-              expression.features(),
-              new BooleanBrancher(MethodRefs.SOY_VALUE_IS_UNDEFINED.invoke(expression)),
-              () -> "ifSoyUndefined{" + expression + "}")
-          .negate();
+      if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, expression.resultType())) {
+        return new Branch(
+                expression.features(),
+                new BooleanBrancher(MethodRefs.SOY_VALUE_IS_UNDEFINED.invoke(expression)),
+                () -> "ifSoyUndefined{" + expression + "}")
+            .negate();
+      } else {
+        return new Branch(
+            expression.features(),
+            new BooleanBrancher(MethodRefs.IS_SOY_NON_UNDEFINED.invoke(expression)),
+            () -> "ifNonSoyUndefined{" + expression + "}");
+      }
     } else {
       return always();
     }
@@ -401,6 +415,21 @@ public final class Branch {
           }
         },
         () -> "ifNonNull{" + expression + "}");
+  }
+
+  public static Branch ifInstanceOf(Expression expression, Type type) {
+    return new Branch(
+        expression.features(),
+        (CodeBuilder adapter, Label ifTrue, boolean negate) -> {
+          expression.gen(adapter);
+          adapter.instanceOf(type);
+          if (negate) {
+            adapter.ifZCmp(Opcodes.IFEQ, ifTrue);
+          } else {
+            adapter.ifZCmp(Opcodes.IFNE, ifTrue);
+          }
+        },
+        () -> "ifInstanceOf{" + expression + ", " + type + "}");
   }
 
   private static final Brancher NEVER =
