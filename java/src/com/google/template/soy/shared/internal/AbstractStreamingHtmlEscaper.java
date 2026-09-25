@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -39,14 +40,13 @@ import javax.annotation.Nullable;
  * {@code activeAppendable} field in the {@link #notifyKindAndDirectionality(ContentKind,Dir)}
  * method based on the content kind.
  */
-public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppendable {
+public abstract class AbstractStreamingHtmlEscaper extends ForwardingLoggingAdvisingAppendable {
 
-  protected final LoggingAdvisingAppendable delegate;
   @Nullable protected CrossLanguageStringXform transform;
 
   protected AbstractStreamingHtmlEscaper(
       LoggingAdvisingAppendable delegate, CrossLanguageStringXform transform) {
-    this.delegate = checkNotNull(delegate);
+    super(delegate);
     this.transform = checkNotNull(transform);
   }
 
@@ -101,11 +101,6 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
     return this;
   }
 
-  @Override
-  public final boolean softLimitReached() {
-    return delegate.softLimitReached();
-  }
-
   /**
    * Override this to set the appendable for the {@code append} methods to delegate to, based on the
    * content kind. Force subtypes to override by marking abstract
@@ -113,13 +108,6 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
   @Override
   protected abstract LoggingAdvisingAppendable notifyKindAndDirectionality(
       ContentKind kind, @Nullable Dir contentDir);
-
-  @Override
-  public void flushBuffers(int depth) throws IOException {
-    if (depth > 0) {
-      delegate.flushBuffers(depth - 1);
-    }
-  }
 
   protected final boolean isInHtml() {
     return getSanitizedContentKind() == ContentKind.HTML;

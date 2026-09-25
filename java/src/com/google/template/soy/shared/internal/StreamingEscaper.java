@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -31,7 +32,7 @@ import java.util.function.Function;
  * A StreamingEscaper is a decorator for a {@link LoggingAdvisingAppendable} that applies escaping
  * logic to untrusted content.
  */
-public final class StreamingEscaper extends LoggingAdvisingAppendable {
+public final class StreamingEscaper extends ForwardingLoggingAdvisingAppendable {
   /**
    * Creates a streaming escaper, or returns the delegate if it is already escaping with the same
    * settings.
@@ -47,11 +48,10 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
     return new StreamingEscaper(delegate, transform);
   }
 
-  private final LoggingAdvisingAppendable delegate;
   private final CrossLanguageStringXform transform;
 
   private StreamingEscaper(LoggingAdvisingAppendable delegate, CrossLanguageStringXform transform) {
-    this.delegate = checkNotNull(delegate);
+    super(delegate);
     this.transform = checkNotNull(transform);
   }
 
@@ -89,11 +89,6 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
   }
 
   @Override
-  public boolean softLimitReached() {
-    return delegate.softLimitReached();
-  }
-
-  @Override
   public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
     return this;
   }
@@ -101,12 +96,5 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
   @Override
   public LoggingAdvisingAppendable exitLoggableElement() {
     return this;
-  }
-
-  @Override
-  public void flushBuffers(int depth) throws IOException {
-    if (depth > 0) {
-      delegate.flushBuffers(depth - 1);
-    }
   }
 }

@@ -33,6 +33,7 @@ import com.google.common.net.PercentEscaper;
 import com.google.common.primitives.Chars;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -165,15 +166,14 @@ public final class Sanitizers {
     return new CleanHtmlAppendable(delegate, optionalSafeTags);
   }
 
-  private static final class CleanHtmlAppendable extends LoggingAdvisingAppendable {
+  private static final class CleanHtmlAppendable extends ForwardingLoggingAdvisingAppendable {
     private final Collection<? extends OptionalSafeTag> optionalSafeTags;
-    private final LoggingAdvisingAppendable delegate;
     private final StringBuilder buffer = new StringBuilder();
 
     CleanHtmlAppendable(
         LoggingAdvisingAppendable delegate,
         Collection<? extends OptionalSafeTag> optionalSafeTags) {
-      this.delegate = delegate;
+      super(delegate);
       this.optionalSafeTags = optionalSafeTags;
     }
 
@@ -263,14 +263,7 @@ public final class Sanitizers {
           buffer.setLength(0);
         }
       }
-      if (depth > 0) {
-        delegate.flushBuffers(depth - 1);
-      }
-    }
-
-    @Override
-    public boolean softLimitReached() {
-      return delegate.softLimitReached();
+      super.flushBuffers(depth);
     }
 
     private boolean isInHtml() {
@@ -899,12 +892,12 @@ public final class Sanitizers {
     return new FilterHtmlAttributesAppendable(appendable);
   }
 
-  private static final class FilterHtmlAttributesAppendable extends LoggingAdvisingAppendable {
-    private final LoggingAdvisingAppendable delegate;
+  private static final class FilterHtmlAttributesAppendable
+      extends ForwardingLoggingAdvisingAppendable {
     private Appendable activeAppendable;
 
     FilterHtmlAttributesAppendable(LoggingAdvisingAppendable delegate) {
-      this.delegate = delegate;
+      super(delegate);
     }
 
     private Appendable getActiveAppendable() {
@@ -977,18 +970,11 @@ public final class Sanitizers {
     }
 
     @Override
-    public boolean softLimitReached() {
-      return delegate.softLimitReached();
-    }
-
-    @Override
     public void flushBuffers(int depth) throws IOException {
       if (getSanitizedContentKind() != ContentKind.ATTRIBUTES) {
         delegate.append(filterHtmlAttributes(getActiveAppendable().toString()));
       }
-      if (depth > 0) {
-        delegate.flushBuffers(depth - 1);
-      }
+      super.flushBuffers(depth);
     }
   }
 
@@ -1043,13 +1029,13 @@ public final class Sanitizers {
     return new WhitespaceHtmlAttributesAppendable(appendable);
   }
 
-  private static final class WhitespaceHtmlAttributesAppendable extends LoggingAdvisingAppendable {
-    private final LoggingAdvisingAppendable delegate;
+  private static final class WhitespaceHtmlAttributesAppendable
+      extends ForwardingLoggingAdvisingAppendable {
     private Appendable activeAppendable;
     private boolean first;
 
     WhitespaceHtmlAttributesAppendable(LoggingAdvisingAppendable delegate) {
-      this.delegate = delegate;
+      super(delegate);
       this.first = true;
     }
 
@@ -1150,11 +1136,6 @@ public final class Sanitizers {
     }
 
     @Override
-    public boolean softLimitReached() {
-      return delegate.softLimitReached();
-    }
-
-    @Override
     public void flushBuffers(int depth) throws IOException {
       if (getSanitizedContentKind() != ContentKind.ATTRIBUTES) {
         var activeAppendable = this.activeAppendable;
@@ -1163,9 +1144,7 @@ public final class Sanitizers {
           delegate.append(whitespaceHtmlAttributes(((StringBuilder) activeAppendable).toString()));
         }
       }
-      if (depth > 0) {
-        delegate.flushBuffers(depth - 1);
-      }
+      super.flushBuffers(depth);
     }
   }
 
