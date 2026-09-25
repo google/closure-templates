@@ -20,11 +20,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.LoopNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -35,6 +37,7 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
     implements StandaloneNode,
         SplitLevelTopNode<BlockNode>,
         StatementNode,
+        LoopNode,
         ExprHolderNode,
         HtmlContext.HtmlContextHolder {
 
@@ -42,6 +45,8 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
   private final ExprRootNode expr;
 
   private final SourceLocation openTagLocation;
+
+  @Nullable private final Identifier label;
 
   @Nullable private HtmlContext htmlContext;
 
@@ -51,10 +56,20 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
    * @param openTagLocation The source location of the {for ...} block.
    * @param expr The loop collection expression
    */
-  public ForNode(int id, SourceLocation location, SourceLocation openTagLocation, ExprNode expr) {
+  public ForNode(
+      int id,
+      SourceLocation location,
+      SourceLocation openTagLocation,
+      ExprNode expr,
+      @Nullable Identifier label) {
     super(id, location, "for");
     this.expr = new ExprRootNode(expr);
     this.openTagLocation = openTagLocation;
+    this.label = label;
+  }
+
+  public ForNode(int id, SourceLocation location, SourceLocation openTagLocation, ExprNode expr) {
+    this(id, location, openTagLocation, expr, null);
   }
 
   /**
@@ -67,6 +82,7 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
     this.expr = orig.expr.copy(copyState);
     this.openTagLocation = orig.openTagLocation;
     this.htmlContext = orig.htmlContext;
+    this.label = orig.label;
   }
 
   @Override
@@ -94,15 +110,23 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
   }
 
   @Override
+  @Nullable
+  public Identifier getLabel() {
+    return label;
+  }
+
+  @Override
   public String getCommandText() {
-    return ((ForNonemptyNode) getChild(0)).getIndexVar() == null
-        ? String.format(
-            "%s in %s", ((ForNonemptyNode) getChild(0)).getVarRefName(), expr.toSourceString())
-        : String.format(
-            "%s, %s in %s",
-            ((ForNonemptyNode) getChild(0)).getVarRefName(),
-            ((ForNonemptyNode) getChild(0)).getIndexVar().refName(),
-            expr.toSourceString());
+    String base =
+        ((ForNonemptyNode) getChild(0)).getIndexVar() == null
+            ? String.format(
+                "%s in %s", ((ForNonemptyNode) getChild(0)).getVarRefName(), expr.toSourceString())
+            : String.format(
+                "%s, %s in %s",
+                ((ForNonemptyNode) getChild(0)).getVarRefName(),
+                ((ForNonemptyNode) getChild(0)).getIndexVar().refName(),
+                expr.toSourceString());
+    return label == null ? base : base + " label=\"" + label.identifier() + "\"";
   }
 
   @Override
