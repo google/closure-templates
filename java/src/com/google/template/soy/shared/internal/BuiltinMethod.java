@@ -408,6 +408,35 @@ public enum BuiltinMethod implements SoyMethod {
           soyTypeRegistry,
           errorReporter.bind(param.getSourceLocation()));
     }
+  },
+
+  /**
+   * Represents the dynamic invocation of a function stored in a record property (e.g.,
+   * `$myRecord.fn()`). This is a special BuiltinMethod that is never matched normally; it is
+   * exclusively injected by the ResolveExpressionTypesPass when it intercepts a method call that
+   * targets a function-typed record field.
+   */
+  INVOKE_FUNCTION_PROPERTY("", -1) {
+
+    @Override
+    public boolean appliesToBase(SoyType baseType) {
+      return false; // Handled dynamically in ResolveExpressionTypesPass
+    }
+
+    @Override
+    public boolean appliesTo(String methodName, SoyType baseType) {
+      return false; // Handled dynamically
+    }
+
+    @Override
+    public SoyType getReturnType(
+        String methodName,
+        SoyType baseType,
+        List<ExprNode> params,
+        SoyTypeRegistry soyTypeRegistry,
+        ErrorReporter errorReporter) {
+      return UnknownType.getInstance(); // Resolved dynamically in ResolveExpressionTypesPass
+    }
   };
 
   private static final SoyErrorKind GET_EXTENSION_BAD_ARG =
@@ -493,6 +522,7 @@ public enum BuiltinMethod implements SoyMethod {
       case MAP_GET:
       case FUNCTION_BIND:
       case BIND:
+      case INVOKE_FUNCTION_PROPERTY:
         break;
     }
     throw new AssertionError("not a proto getter: " + node.getSoyMethod());
@@ -648,6 +678,7 @@ public enum BuiltinMethod implements SoyMethod {
       case MAP_GET:
       case FUNCTION_BIND:
       case BIND:
+      case INVOKE_FUNCTION_PROPERTY:
         return ImmutableList.of();
     }
     throw new AssertionError(this);

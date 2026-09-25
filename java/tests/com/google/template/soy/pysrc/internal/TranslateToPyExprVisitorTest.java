@@ -152,4 +152,17 @@ public class TranslateToPyExprVisitorTest {
     assertThatSoyExpr("{@param p:= 18}\n" + "  {$p}\n")
         .compilesTo(new PyExpr("sanitize.escape_html(data.get('p', 18))", Integer.MAX_VALUE));
   }
+
+  @Test
+  public void testInvokeFunctionProperty() {
+    assertThatSoyExpr(
+            """
+            {@param r: [fn: (a: any, b: any) => any]}
+            {$r.fn(1, 2)}
+            """)
+        .compilesTo(
+            new PyExpr(
+                "sanitize.escape_html(runtime.check_not_null(data.get('r')).get('fn')(###, 2))",
+                Integer.MAX_VALUE));
+  }
 }
