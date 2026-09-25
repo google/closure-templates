@@ -1588,7 +1588,7 @@ final class ExpressionCompiler {
       if (sourceMethod != null) {
         Optional<Extern> externApi = ExternAdaptors.asExtern(sourceMethod, args);
         if (externApi.isPresent()) {
-          return callExtern(externApi.get(), args);
+          return callExtern(externApi.get(), args, node.getType());
         }
         return sourceFunctionCompiler.compile(node, sourceMethod, args, parameters, detacher);
       }
@@ -1744,7 +1744,7 @@ final class ExpressionCompiler {
             visitAllParams(node, ImmutableList.<SoyExpression>builder().add(baseExpr));
         Optional<Extern> externApi = ExternAdaptors.asExtern(sourceMethod, args);
         if (externApi.isPresent()) {
-          return callExtern(externApi.get(), args);
+          return callExtern(externApi.get(), args, node.getType());
         }
         return sourceFunctionCompiler.compile(node, sourceMethod, args, parameters, detacher);
       }
@@ -2003,13 +2003,14 @@ final class ExpressionCompiler {
         return callExtern(
             ExternAdaptors.asExtern(
                 (SoyJavaExternFunction) fn, args, node.getType(), node.getAllowedParamTypes()),
-            args);
+            args,
+            node.getType());
       } else if (fn instanceof SoyJavaSourceFunction) {
         ImmutableList<SoyExpression> args = visitAllParams(node);
         return sourceFunctionCompiler.compile(
             node, (SoyJavaSourceFunction) fn, args, parameters, detacher);
       } else if (fn instanceof Extern) {
-        return callExtern((Extern) fn, visitAllParams(node));
+        return callExtern((Extern) fn, visitAllParams(node), node.getType());
       } else if (fn == FunctionNode.FUNCTION_POINTER) {
         FunctionType functionType = node.getNameExpr().getType().asType(FunctionType.class);
         SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
@@ -2087,7 +2088,8 @@ final class ExpressionCompiler {
       return builder.build();
     }
 
-    private SoyExpression callExtern(Extern extern, List<SoyExpression> params) {
+    private SoyExpression callExtern(
+        Extern extern, List<SoyExpression> params, SoyType resolvedReturnType) {
       SourceLogicalPath path = extern.getPath();
       JavaImpl javaImpl = extern.getJavaImpl();
       boolean hasJavaImpl = javaImpl != null || extern.hasAutoImpl();
@@ -2105,7 +2107,7 @@ final class ExpressionCompiler {
         linkStatically = hasJavaImpl && owningFile.getSoyFileKind() == SoyFileKind.SRC;
       }
       FunctionType functionType = extern.getSignature();
-      SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(functionType.getReturnType());
+      SoyRuntimeType soyReturnType = ExternCompiler.getRuntimeType(resolvedReturnType);
       boolean requiresRenderContext = !linkStatically || requiresRenderContext(extern);
 
       if (extern.isJavaAsync()) {
@@ -2179,7 +2181,7 @@ final class ExpressionCompiler {
           externCall =
               ExternCompiler.adaptReturnType(
                   getTypeInfoForJavaImpl(javaImpl.returnType().className()).type(),
-                  functionType.getReturnType(),
+                  resolvedReturnType,
                   externCall);
           // Allow ExternSourceFunction to return a boxed value.
           if (isDefinitelyAssignableFrom(SOY_VALUE_TYPE, externCall.resultType())) {
@@ -2194,8 +2196,12 @@ final class ExpressionCompiler {
         Method asmMethod =
             ExternCompiler.buildMemberMethod(
                 extern.getName(), functionType, requiresRenderContext, extern.isJavaAsync());
+
+        Type descriptorReturnType = Type.getReturnType(asmMethod.getDescriptor());
+        Type expressionReturnType = soyReturnType.runtimeType();
+
         externCall =
-            new Expression(soyReturnType.runtimeType()) {
+            new Expression(expressionReturnType) {
               @Override
               protected void doGen(CodeBuilder adapter) {
                 for (var arg : args) {
@@ -2207,6 +2213,39 @@ final class ExpressionCompiler {
                     CALL_EXTERN_HANDLE,
                     externOwner.className(),
                     asmMethod.getName());
+
+                // Unbox if needed
+                if (!descriptorReturnType.equals(expressionReturnType)) {
+                  if (expressionReturnType.equals(Type.LONG_TYPE)) {
+                    adapter.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        "com/google/template/soy/data/SoyValue",
+                        "longValue",
+                        "()J",
+                        false);
+                  } else if (expressionReturnType.equals(Type.INT_TYPE)) {
+                    adapter.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        "com/google/template/soy/data/SoyValue",
+                        "integerValue",
+                        "()I",
+                        false);
+                  } else if (expressionReturnType.equals(Type.DOUBLE_TYPE)) {
+                    adapter.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        "com/google/template/soy/data/SoyValue",
+                        "floatValue",
+                        "()D",
+                        false);
+                  } else if (expressionReturnType.equals(Type.BOOLEAN_TYPE)) {
+                    adapter.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        "com/google/template/soy/data/SoyValue",
+                        "booleanValue",
+                        "()Z",
+                        false);
+                  }
+                }
               }
             };
       }
