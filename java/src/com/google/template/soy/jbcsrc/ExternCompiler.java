@@ -211,8 +211,8 @@ public final class ExternCompiler {
               variables,
               paramSet,
               javaSourceFunctionCompiler,
-              null,
-              null);
+              fileSetMetadata,
+              ExpressionDetacher.NullDetatcher.INSTANCE);
       SoyNodeCompiler nodeCompiler =
           SoyNodeCompiler.createForExtern(
               autoImpl,

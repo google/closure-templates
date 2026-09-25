@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.exprtree.ExprNodes.isNullishLiteral;
 import static com.google.template.soy.internal.proto.JavaQualifiedNames.getFieldName;
@@ -924,7 +925,7 @@ final class ProtoUtils {
         LocalVariableManager varManager) {
       this.node = node;
       this.compilerFunction = compilerFunction;
-      this.detacher = detacher;
+      this.detacher = checkNotNull(detacher);
       this.varManager = varManager;
 
       this.protoType = node.getType().asType(SoyProtoType.class);

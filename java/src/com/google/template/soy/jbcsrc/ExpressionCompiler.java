@@ -167,7 +167,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
@@ -304,7 +303,7 @@ final class ExpressionCompiler {
         varManager,
         sourceFunctionCompiler,
         fileSetMetadata,
-        detacher);
+        checkNotNull(detacher));
   }
 
   /**
@@ -387,16 +386,7 @@ final class ExpressionCompiler {
   }
 
   SoyExpression forceCompileWithNoDetaches(ExprNode node) {
-    return new CompilerVisitor(
-            context,
-            analysis,
-            parameters,
-            varManager,
-            /* detacher= */ null,
-            sourceFunctionCompiler,
-            fileSetMetadata,
-            /* isConstantContext= */ false)
-        .exec(node);
+    return asBasicCompilerWithoutDetaches().compile(node);
   }
 
   /**
@@ -410,16 +400,24 @@ final class ExpressionCompiler {
             analysis,
             parameters,
             varManager,
-            detacher,
+            checkNotNull(detacher),
             sourceFunctionCompiler,
             fileSetMetadata,
             /* isConstantContext= */ false));
   }
 
+  /**
+   * Returns a {@link BasicExpressionCompiler} that assumes all expressions are resolved and does
+   * not perform detaches.
+   */
+  BasicExpressionCompiler asBasicCompilerWithoutDetaches() {
+    return asBasicCompiler(ExpressionDetacher.NullDetatcher.INSTANCE);
+  }
+
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
-    // is null when we are generating code with no detaches.
-    @Nullable private final ExpressionDetacher detacher;
+    // Is never null; non-detaching contexts use ExpressionDetacher.NullDetatcher.INSTANCE.
+    private final ExpressionDetacher detacher;
     private final SoyNode context;
     private final TemplateAnalysis analysis;
     private final TemplateParameterLookup parameters;
@@ -440,7 +438,7 @@ final class ExpressionCompiler {
         boolean isConstantContext) {
       this.context = checkNotNull(context);
       this.analysis = analysis;
-      this.detacher = detacher;
+      this.detacher = checkNotNull(detacher);
       this.parameters = parameters;
       this.varManager = varManager;
       this.sourceFunctionCompiler = checkNotNull(sourceFunctionCompiler);

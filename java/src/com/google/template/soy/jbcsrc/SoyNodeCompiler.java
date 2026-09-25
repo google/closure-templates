@@ -1060,7 +1060,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     DetachState detach = getNullableDetachState();
     return detach != null
         ? exprCompiler.compileRootExpression(expr, detach)
-        : exprCompiler.asBasicCompiler(null).compile(expr);
+        : exprCompiler.asBasicCompilerWithoutDetaches().compile(expr);
   }
 
   @Override

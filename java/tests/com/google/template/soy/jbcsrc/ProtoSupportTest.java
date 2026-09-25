@@ -80,10 +80,13 @@ public final class ProtoSupportTest {
   }
 
   private CompiledTemplateSubject assertThatTemplateBody(String... body) {
+    return assertThatFileContent(JOINER.join("{template foo}", JOINER.join(body), "{/template}"));
+  }
+
+  private CompiledTemplateSubject assertThatFileContent(String... content) {
     try {
       SoyFileSetParserBuilder builder =
-          SoyFileSetParserBuilder.forTemplateAndImports(
-              "{template foo}\n" + Joiner.on("\n").join(body) + "\n{/template}\n", descriptors);
+          SoyFileSetParserBuilder.forTemplateAndImports(JOINER.join(content), descriptors);
       return TemplateTester.assertThatFile(
               Iterables.getOnlyElement(builder.build().soyFileSuppliers().values())
                   .asCharSource()
