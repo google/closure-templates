@@ -516,6 +516,12 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     @Override
+    public boolean isOutputAppendable() {
+      return outputAppendable instanceof LoggingAdvisingAppendable loggingAdvisingAppendable
+          && loggingAdvisingAppendable.isOutputAppendable();
+    }
+
+    @Override
     public boolean softLimitReached() {
       return false;
     }

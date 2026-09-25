@@ -16,11 +16,11 @@
 
 package com.google.template.soy.shared.internal;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.data.Dir;
+import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
  * output since it is expected to be printed in an HTML attribute value. This necessitates a special
  * implementation. TODO: Consider dropping this feature and having users call htmlToText explicitly.
  */
-public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
+public final class StreamingAttributeEscaper extends ForwardingLoggingAdvisingAppendable {
   /**
    * Creates a streaming escaper, or returns the delegate if it is already escaping with the same
    * settings.
@@ -53,13 +53,12 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
     return new StreamingAttributeEscaper(delegate, transform);
   }
 
-  private final LoggingAdvisingAppendable delegate;
   private final CrossLanguageStringXform transform;
   private StringBuilder buffer = null;
 
   private StreamingAttributeEscaper(
       LoggingAdvisingAppendable delegate, CrossLanguageStringXform transform) {
-    this.delegate = checkNotNull(delegate);
+    super(delegate);
     this.transform = transform;
   }
 
@@ -129,11 +128,6 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
   }
 
   @Override
-  public boolean softLimitReached() {
-    return delegate.softLimitReached();
-  }
-
-  @Override
   public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
     return this;
   }
@@ -150,8 +144,6 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
           Sanitizers.stripHtmlTags(
               /* value= */ buffer.toString(), /* safeTags= */ null, /* rawSpacesAllowed= */ true));
     }
-    if (depth > 0) {
-      delegate.flushBuffers(depth - 1);
-    }
+    super.flushBuffers(depth);
   }
 }

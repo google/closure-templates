@@ -80,15 +80,14 @@ public final class BasicDirectivesRuntime {
     return new TruncateAppendable(appendable, maxLength, addEllipsis);
   }
 
-  private static final class TruncateAppendable extends LoggingAdvisingAppendable {
+  private static final class TruncateAppendable extends ForwardingLoggingAdvisingAppendable {
     private final StringBuilder buffer;
-    private final LoggingAdvisingAppendable delegate;
     private final int maxLength;
     private final boolean addEllipsis;
 
     TruncateAppendable(LoggingAdvisingAppendable delegate, int maxLength, boolean addEllipsis) {
+      super(delegate);
       buffer = new StringBuilder();
-      this.delegate = delegate;
       this.maxLength = maxLength;
       this.addEllipsis = addEllipsis;
     }
@@ -156,9 +155,7 @@ public final class BasicDirectivesRuntime {
     @Override
     public void flushBuffers(int depth) throws IOException {
       delegate.append(truncate(buffer.toString(), maxLength, addEllipsis));
-      if (depth > 0) {
-        delegate.flushBuffers(depth - 1);
-      }
+      super.flushBuffers(depth);
     }
   }
 

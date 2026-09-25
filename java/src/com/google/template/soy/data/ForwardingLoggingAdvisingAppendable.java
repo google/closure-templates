@@ -33,6 +33,11 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
   }
 
   @Override
+  public boolean isOutputAppendable() {
+    return delegate.isOutputAppendable();
+  }
+
+  @Override
   public boolean softLimitReached() {
     return delegate.softLimitReached();
   }
