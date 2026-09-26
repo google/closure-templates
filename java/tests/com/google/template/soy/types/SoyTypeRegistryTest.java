@@ -20,8 +20,14 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
+import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.template.soy.base.SourceLogicalPath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.SoyInternalCompilerException;
+import com.google.template.soy.testing.publicimport.PublicImportMiddle;
+import com.google.template.soy.testing.publicimport.PublicImportPrivateDep;
+import com.google.template.soy.testing.publicimport.PublicImportShim;
+import com.google.template.soy.testing.publicimport.PublicImportTarget;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -145,5 +151,50 @@ public class SoyTypeRegistryTest {
         .contains("Identical protobuf message FQN 'example.KvPair' found in multiple dependencies");
     assertThat(e).hasMessageThat().contains("collision.proto");
     assertThat(e).hasMessageThat().contains("example.proto");
+  }
+
+  @Test
+  public void testPublicImportsPropagateDepKind() {
+    SoyTypeRegistry registry =
+        new SoyTypeRegistryBuilder()
+            .addDescriptors(SoyFileKind.DEP, ImmutableList.of(PublicImportShim.getDescriptor()))
+            .build();
+
+    // The shim's symbols live in the files it publicly imports, but users only depend on the shim.
+    assertThat(depKindOf(registry, PublicImportShim.getDescriptor())).isEqualTo(SoyFileKind.DEP);
+    assertThat(depKindOf(registry, PublicImportMiddle.getDescriptor())).isEqualTo(SoyFileKind.DEP);
+    assertThat(depKindOf(registry, PublicImportTarget.getDescriptor())).isEqualTo(SoyFileKind.DEP);
+  }
+
+  @Test
+  public void testPublicImportsUpgradeIndirectDeps() {
+    SoyTypeRegistry registry =
+        new SoyTypeRegistryBuilder()
+            .addDescriptors(
+                SoyFileKind.INDIRECT_DEP,
+                ImmutableList.of(
+                    PublicImportMiddle.getDescriptor(), PublicImportTarget.getDescriptor()))
+            .addDescriptors(SoyFileKind.DEP, ImmutableList.of(PublicImportShim.getDescriptor()))
+            .build();
+
+    assertThat(depKindOf(registry, PublicImportMiddle.getDescriptor())).isEqualTo(SoyFileKind.DEP);
+    assertThat(depKindOf(registry, PublicImportTarget.getDescriptor())).isEqualTo(SoyFileKind.DEP);
+  }
+
+  @Test
+  public void testNonPublicImportsDoNotPropagateDepKind() {
+    SoyTypeRegistry registry =
+        new SoyTypeRegistryBuilder()
+            .addDescriptors(
+                SoyFileKind.INDIRECT_DEP, ImmutableList.of(PublicImportPrivateDep.getDescriptor()))
+            .addDescriptors(SoyFileKind.DEP, ImmutableList.of(PublicImportShim.getDescriptor()))
+            .build();
+
+    assertThat(depKindOf(registry, PublicImportPrivateDep.getDescriptor()))
+        .isEqualTo(SoyFileKind.INDIRECT_DEP);
+  }
+
+  private static SoyFileKind depKindOf(SoyTypeRegistry registry, FileDescriptor file) {
+    return registry.getProtoRegistry().getDepKind(SourceLogicalPath.create(file.getName()));
   }
 }

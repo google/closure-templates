@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package example.publicimport.middle;
+
+// clang-format off
+import public "src/test/protobuf/public_import_target.proto";
+// clang-format on
+
+option java_package = "com.google.template.soy.testing.publicimport";
+option java_multiple_files = true;
+
+message MiddleMessage {
+  optional string some_string = 1;
+}
