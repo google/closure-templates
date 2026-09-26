@@ -28,7 +28,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
+import com.google.template.soy.data.DelegatingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -45,7 +45,6 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -499,7 +498,7 @@ public final class StreamingPrintDirectivesTest {
   }
 
   /** An appendable that buffers all content until a call to close. */
-  public static final class CloseableAppendable extends ForwardingLoggingAdvisingAppendable {
+  public static final class CloseableAppendable extends DelegatingLoggingAdvisingAppendable {
     private final String suffix;
     private boolean appendCalled;
 

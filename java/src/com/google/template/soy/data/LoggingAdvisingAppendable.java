@@ -203,6 +203,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
       throws IOException;
 
+  /**
+   * Whether this appendable is the output stream appendable, rather than some sort of buffer. If
+   * true then the current rendering is guaranteed to appear in the output stream and in order.
+   */
   public boolean isOutputAppendable() {
     return false;
   }
@@ -500,7 +504,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
                 loggingFunctionCommand.fn().placeholderValue(), loggingFunctionCommand.escapers()));
       } else if (command instanceof NodeBuilder) {
         // TODO(b/421209829): Guarantee non-blocking by allowing a detach here.
-        ((NodeBuilder) command).renderBlocking(new DelegatingAppendable(builder));
+        ((NodeBuilder) command).renderBlocking(new StringBuilderAppendable(builder));
       }
       // ignore the logging statements
 
@@ -508,10 +512,10 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   }
 
   /** Wraps an Appendable. Ignores logs. */
-  static class DelegatingAppendable extends LoggingAdvisingAppendable {
-    private final Appendable outputAppendable;
+  static class StringBuilderAppendable extends LoggingAdvisingAppendable {
+    private final StringBuilder outputAppendable;
 
-    DelegatingAppendable(Appendable outputAppendable) {
+    StringBuilderAppendable(StringBuilder outputAppendable) {
       this.outputAppendable = checkNotNull(outputAppendable);
     }
 

@@ -18,8 +18,8 @@ package com.google.template.soy.basicdirectives;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.google.template.soy.data.DelegatingLoggingAdvisingAppendable;
 import com.google.template.soy.data.Dir;
-import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -80,15 +80,14 @@ public final class BasicDirectivesRuntime {
     return new TruncateAppendable(appendable, maxLength, addEllipsis);
   }
 
-  private static final class TruncateAppendable extends LoggingAdvisingAppendable {
+  private static final class TruncateAppendable extends DelegatingLoggingAdvisingAppendable {
     private final StringBuilder buffer;
-    private final LoggingAdvisingAppendable delegate;
     private final int maxLength;
     private final boolean addEllipsis;
 
     TruncateAppendable(LoggingAdvisingAppendable delegate, int maxLength, boolean addEllipsis) {
+      super(delegate);
       buffer = new StringBuilder();
-      this.delegate = delegate;
       this.maxLength = maxLength;
       this.addEllipsis = addEllipsis;
     }
@@ -156,9 +155,7 @@ public final class BasicDirectivesRuntime {
     @Override
     public void flushBuffers(int depth) throws IOException {
       delegate.append(truncate(buffer.toString(), maxLength, addEllipsis));
-      if (depth > 0) {
-        delegate.flushBuffers(depth - 1);
-      }
+      super.flushBuffers(depth);
     }
   }
 
@@ -184,7 +181,7 @@ public final class BasicDirectivesRuntime {
   @Nonnull
   public static LoggingAdvisingAppendable changeNewlineToBrStreaming(
       LoggingAdvisingAppendable appendable) {
-    return new ForwardingLoggingAdvisingAppendable(appendable) {
+    return new DelegatingLoggingAdvisingAppendable(appendable) {
       private boolean lastCharWasCarriageReturn;
 
       @CanIgnoreReturnValue
@@ -277,7 +274,7 @@ public final class BasicDirectivesRuntime {
 
   public static LoggingAdvisingAppendable insertWordBreaksStreaming(
       LoggingAdvisingAppendable appendable, int maxCharsBetweenWordBreaks) {
-    return new ForwardingLoggingAdvisingAppendable(appendable) {
+    return new DelegatingLoggingAdvisingAppendable(appendable) {
       private final InsertWordBreaks insertWordBreaks =
           new InsertWordBreaks(maxCharsBetweenWordBreaks);
 

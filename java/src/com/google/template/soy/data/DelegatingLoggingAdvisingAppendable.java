@@ -24,12 +24,17 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import java.io.IOException;
 import java.util.function.Function;
 
-/** A simple forwarding implementation, forwards all calls to a delegate. */
-public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisingAppendable {
+/** A simple delegating implementation, forwards all calls to a delegate. */
+public abstract class DelegatingLoggingAdvisingAppendable extends LoggingAdvisingAppendable {
   protected final LoggingAdvisingAppendable delegate;
 
-  protected ForwardingLoggingAdvisingAppendable(LoggingAdvisingAppendable delegate) {
+  protected DelegatingLoggingAdvisingAppendable(LoggingAdvisingAppendable delegate) {
     this.delegate = checkNotNull(delegate);
+  }
+
+  @Override
+  public boolean isOutputAppendable() {
+    return delegate.isOutputAppendable();
   }
 
   @Override

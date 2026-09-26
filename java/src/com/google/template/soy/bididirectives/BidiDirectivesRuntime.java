@@ -121,6 +121,11 @@ public final class BidiDirectivesRuntime {
     }
 
     @Override
+    public boolean isOutputAppendable() {
+      return delegate.isOutputAppendable();
+    }
+
+    @Override
     public void flushBuffers(int depth) throws IOException {
       BidiFormatter formatter = BidiFormatter.getInstance(globalDir.toDir());
       BidiWrappingText wrappingText;
