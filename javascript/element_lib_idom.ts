@@ -250,6 +250,9 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
    * They execute right before a patch and influence whether further patching is
    * needed.
    *
+   * Note: The skip handler is **not** called when a Soy Element re-renders
+   * itself via `SoyElement.render()`.
+   *
    * The given function return value means:
    *   - true: skip the element
    *   - false: renders the element
