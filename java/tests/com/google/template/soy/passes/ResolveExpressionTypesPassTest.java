@@ -23,6 +23,7 @@ import static com.google.template.soy.passes.TypeNarrowingConditionVisitor.insta
 import static com.google.template.soy.testing.SharedTestUtils.buildAstStringWithPreview;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -32,6 +33,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.passes.ResolveExpressionTypesPass.AccumulatingTypeRegistry;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -63,6 +65,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
@@ -1495,6 +1498,101 @@ public final class ResolveExpressionTypesPassTest {
                 {template aaa}
                   {t1(s1: null, s2: undefined)}
                 {/template}
+                """)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testImplicitReturnTypeInExternWithoutImplicitParams() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                """
+                {namespace ns}
+
+                {template calls}
+                  // This template should be declared before noParams, to exercise logic that
+                  // resolves noParams() implicit return type before this one.
+                  {assertType('string', noParams())}
+                {/template}
+
+                {extern noParams: () => implicit}
+                  {autoimpl}
+                    {return 'hello' /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern withParams: (n: int, s: string) => implicit}
+                  {autoimpl}
+                    {return $n > 0 ? $n : $s /}
+                  {/autoimpl}
+                {/extern}
+                """)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+
+    List<ExternNode> externs = SoyTreeUtils.allNodesOfType(soyTree, ExternNode.class).toList();
+    assertThat(externs.get(0).getType().getReturnType()).isEqualTo(StringType.getInstance());
+    assertThat(externs.get(1).getType().getReturnType())
+        .isEqualTo(UnionType.of(ImmutableList.of(StringType.getInstance(), IntType.getInstance())));
+  }
+
+  @Test
+  public void testImplicitReturnTypeInExternCallingImplicitReturnTypeExtern() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                """
+                {namespace ns}
+
+                {extern caller: () => implicit}
+                  {autoimpl}
+                    // Calls callee(), which is declared after caller, and calls
+                    // calleeWithImplicitParam('hello') before returning a mutable list.
+                    {let $len: calleeWithImplicitParam(callee()) /}
+                    {let $unused: assertType('int', $len) /}
+                    {let $list: [] /}
+                    {eval $list.push($len)}
+                    {return $list /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern calleeWithImplicitParam: (s: implicit) => implicit}
+                  {autoimpl}
+                    {return $s.length /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern callerWithBoundCallee: (fn: implicit) => implicit}
+                  {autoimpl}
+                    {return $fn() /}
+                  {/autoimpl}
+                {/extern}
+
+                {const C = caller() /}
+
+                {template calls}
+                  {let $calleeAlias: calleeForBind /}
+                  {let $boundCaller: callerWithBoundCallee.bind($calleeAlias) /}
+                  {assertType('mutable_list<?>', C)}
+                  {assertType('mutable_list<?>', caller())}
+                  {assertType('string', $boundCaller())}
+                {/template}
+
+                {extern callee: () => implicit}
+                  {autoimpl}
+                    {return 'hello' /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern calleeForBind: () => implicit}
+                  {autoimpl}
+                    {return 'bound' /}
+                  {/autoimpl}
+                {/extern}
                 """)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .parse()
