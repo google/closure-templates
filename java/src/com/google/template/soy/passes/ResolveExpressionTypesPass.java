@@ -713,7 +713,6 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     ImmutableList<Parameter> oldParams = oldFnType.getParameters();
     ImmutableList<TemplateParam> vars = e.getParamVars();
     List<Parameter> newParams = new ArrayList<>(oldParams.size());
-    SoyType newReturnType = oldFnType.getReturnType();
     for (int i = 0; i < oldParams.size(); i++) {
       Parameter oldP = oldParams.get(i);
       if (oldP.getType() == ImplicitType.getInstance()) {
@@ -726,23 +725,34 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
 
     typeAssignmentSoyVisitor.exec(e);
 
-    if (oldFnType.getReturnType() == ImplicitType.getInstance()) {
-      newReturnType =
-          UnionType.of(
-              SoyTreeUtils.allNodesOfType(e, ReturnNode.class)
-                  .map(r -> r.getExpr().getType())
-                  .collect(toImmutableList()));
-    }
-
-    FunctionType newFnType = FunctionType.of(newParams, newReturnType);
-    if (SoyTypes.transitivelyContainsKind(newFnType, Kind.IMPLICIT)) {
-      errorReporter.report(ref.getSourceLocation(), IMPLICIT_INCOMPLETE);
-    } else {
-      checkTypesAvailable(newFnType, e.getTypeNode().sourceLocation());
-    }
-    e.getTypeNode().setResolvedType(newFnType, true);
-    e.getVar().setType(newFnType);
+    resolveExternType(e, newParams, ref.getSourceLocation());
     return e;
+  }
+
+  /**
+   * Sets an extern's function type with the given parameters, inferring an implicit return type
+   * from its return statements if necessary.
+   */
+  private void resolveExternType(
+      ExternNode extern, List<Parameter> parameters, SourceLocation errorLocation) {
+    SoyType returnType = extern.getType().getReturnType();
+    if (hasImplicitReturnType(extern)) {
+      ImmutableList<ReturnNode> returnNodes =
+          SoyTreeUtils.allNodesOfType(extern, ReturnNode.class).collect(toImmutableList());
+      returnType =
+          returnNodes.isEmpty()
+              ? UnknownType.getInstance()
+              : UnionType.of(
+                  returnNodes.stream().map(r -> r.getExpr().getType()).collect(toImmutableList()));
+    }
+    FunctionType newFnType = FunctionType.of(parameters, returnType);
+    if (SoyTypes.transitivelyContainsKind(newFnType, Kind.IMPLICIT)) {
+      errorReporter.report(errorLocation, IMPLICIT_INCOMPLETE);
+    } else {
+      checkTypesAvailable(newFnType, extern.getTypeNode().sourceLocation());
+    }
+    extern.getTypeNode().setResolvedType(newFnType, true);
+    extern.getVar().setType(newFnType);
   }
 
   @CanIgnoreReturnValue
@@ -856,7 +866,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           visit(child);
         } else if (child instanceof ExternNode externNode) {
           calculateExternType(externNode);
-          if (hasImplicitType(externNode)) {
+          if (hasImplicitParams(externNode)) {
             implicitExterns.put(externNode.getVar(), externNode);
           } else {
             nonImplicitNodes.add(externNode);
@@ -1150,10 +1160,21 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     }
 
     @Override
+    protected void visitExternNode(ExternNode node) {
+      super.visitExternNode(node);
+      if (node.getAutoImpl().isPresent()
+          && hasImplicitReturnType(node)
+          && !hasImplicitParams(node)) {
+        resolveExternType(node, node.getType().getParameters(), node.getSourceLocation());
+      }
+    }
+
+    @Override
     protected void visitAutoImplNode(AutoImplNode node) {
+      boolean prevInAutoExtern = ResolveExpressionTypesPass.this.inAutoExtern;
       ResolveExpressionTypesPass.this.inAutoExtern = true;
       super.visitAutoImplNode(node);
-      ResolveExpressionTypesPass.this.inAutoExtern = false;
+      ResolveExpressionTypesPass.this.inAutoExtern = prevInAutoExtern;
     }
 
     @Override
@@ -3941,6 +3962,15 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
         .anyMatch(n -> SoyTypes.transitivelyContainsKind(n, Kind.IMPLICIT));
   }
 
+  private static boolean hasImplicitParams(ExternNode node) {
+    return node.getType().getParameters().stream()
+        .anyMatch(p -> SoyTypes.transitivelyContainsKind(p.getType(), Kind.IMPLICIT));
+  }
+
+  private static boolean hasImplicitReturnType(ExternNode node) {
+    return SoyTypes.transitivelyContainsKind(node.getType().getReturnType(), Kind.IMPLICIT);
+  }
+
   private static RecordType recordTypeForNamedParameters(FunctionNode node) {
     return RecordType.of(
         IntStream.range(0, node.getParams().size())
@@ -4061,13 +4091,16 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
               exprNodes = Stream.empty();
             } else if (n instanceof ExternNode externNode) {
               typeNodes = externNode.getTypeNodes();
-              exprNodes = Stream.empty();
+              exprNodes = SoyTreeUtils.allNodesOfType(externNode, ExprNode.class);
             } else if (n instanceof TemplateNode templateNode) {
               typeNodes = templateNode.getTypeNodes();
               exprNodes =
-                  templateNode.getAllParams().stream()
-                      .filter(TemplateParam::hasDefault)
-                      .map(TemplateParam::defaultValue);
+                  Streams.concat(
+                      templateNode.getAllParams().stream()
+                          .filter(TemplateParam::hasDefault)
+                          .map(TemplateParam::defaultValue),
+                      SoyTreeUtils.allNodesOfType(templateNode, VarRefNode.class)
+                          .filter(ref -> varDefns.get(ref.getDefnDecl()) instanceof ExternNode));
             } else {
               throw new AssertionError();
             }
