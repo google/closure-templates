@@ -38,6 +38,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
@@ -674,10 +675,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private static class LoopContext {
     private final Label continueToLabel;
     private final Label breakToLabel;
+    @Nullable private final String label;
 
-    LoopContext(Label continueToLabel, Label breakToLabel) {
+    LoopContext(Label continueToLabel, Label breakToLabel, @Nullable String label) {
       this.continueToLabel = continueToLabel;
       this.breakToLabel = breakToLabel;
+      this.label = label;
     }
 
     /** Gets the label to jump to for a 'continue' statement within a loop. */
@@ -688,6 +691,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     /** Gets the label to jump to for a 'break' statement within a loop. */
     Label getBreakToLabel() {
       return breakToLabel;
+    }
+
+    @Nullable
+    String getLabel() {
+      return label;
     }
   }
 
@@ -955,9 +963,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             STORE);
 
     Label loopStart = newLabel();
+    Label loopContinue = newLabel();
     Label loopEnd = newLabel();
 
-    LoopContext context = new LoopContext(loopStart, loopEnd);
+    LoopContext context =
+        new LoopContext(
+            loopContinue, loopEnd, node.getLabel() == null ? null : node.getLabel().identifier());
     loopStack.push(context);
 
     Expression hasNext = MethodRefs.ITERATOR_HAS_NEXT.invoke(iteratorVar.local());
@@ -983,6 +994,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         itemVar.initializer().gen(adapter); // SoyValueProvider item = i.next();
         loopBody.gen(adapter);
 
+        adapter.mark(loopContinue);
         if (userIndexVar != null) {
           adapter.iinc(userIndexVar.local().index(), 1); // index++
         }
@@ -1001,7 +1013,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Label loopStart = newLabel();
     Label loopEnd = newLabel();
 
-    LoopContext context = new LoopContext(loopStart, loopEnd);
+    LoopContext context =
+        new LoopContext(
+            loopStart, loopEnd, node.getLabel() == null ? null : node.getLabel().identifier());
     loopStack.push(context);
 
     Statement loopBody = AppendableExpression.concat(visitChildren(node));
@@ -1027,12 +1041,25 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     };
   }
 
+  private LoopContext findLoopContext(@Nullable Identifier label, String commandName) {
+    if (loopStack.isEmpty()) {
+      throw new IllegalStateException("{" + commandName + " /} found outside of a loop structure.");
+    }
+    if (label == null) {
+      return loopStack.peek();
+    }
+    for (LoopContext context : loopStack) {
+      if (label.identifier().equals(context.getLabel())) {
+        return context;
+      }
+    }
+    throw new IllegalStateException(
+        "No enclosing loop with label '" + label.identifier() + "' found.");
+  }
+
   @Override
   protected Statement visitBreakNode(BreakNode node) {
-    if (loopStack.isEmpty()) {
-      throw new IllegalStateException("{break /} found outside of a loop structure.");
-    }
-    Label breakToLabel = loopStack.peek().getBreakToLabel();
+    Label breakToLabel = findLoopContext(node.getLabel(), "break").getBreakToLabel();
     return new Statement(Statement.Kind.TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -1043,10 +1070,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitContinueNode(ContinueNode node) {
-    if (loopStack.isEmpty()) {
-      throw new IllegalStateException("{continue /} found outside of a loop structure.");
-    }
-    Label continueToLabel = loopStack.peek().getContinueToLabel();
+    Label continueToLabel = findLoopContext(node.getLabel(), "continue").getContinueToLabel();
     return new Statement(
         Statement.Kind.TERMINAL) { // 'continue' terminates the current block iteration
       @Override

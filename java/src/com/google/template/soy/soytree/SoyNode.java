@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
@@ -27,6 +28,7 @@ import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprRootNode;
+import javax.annotation.Nullable;
 
 /**
  * This class defines the base interface for a node in the parse tree, as well as a number of
@@ -234,6 +236,12 @@ public interface SoyNode extends Node {
 
   /** A node that represents a specific Soy statement. */
   interface StatementNode extends StandaloneNode {}
+
+  /** A node that represents a loop statement (for or while). */
+  interface LoopNode extends StatementNode {
+    @Nullable
+    Identifier getLabel();
+  }
 
   // -----------------------------------------------------------------------------------------------
 
