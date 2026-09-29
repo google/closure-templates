@@ -23,6 +23,7 @@ import static com.google.template.soy.passes.TypeNarrowingConditionVisitor.insta
 import static com.google.template.soy.testing.SharedTestUtils.buildAstStringWithPreview;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -32,6 +33,7 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.passes.ResolveExpressionTypesPass.AccumulatingTypeRegistry;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -63,6 +65,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
@@ -1494,6 +1497,157 @@ public final class ResolveExpressionTypesPassTest {
 
                 {template aaa}
                   {t1(s1: null, s2: undefined)}
+                {/template}
+                """)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testImplicitReturnTypeInExternWithoutImplicitParams() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                """
+                {namespace ns}
+
+                {extern definedBefore: () => implicit}
+                  {autoimpl}
+                    {return 'before' /}
+                  {/autoimpl}
+                {/extern}
+
+                {template calls}
+                  {assertType('string', definedBefore())}
+                  {assertType('string', definedAfter())}
+                {/template}
+
+                {extern definedAfter: () => implicit}
+                  {autoimpl}
+                    {return 'after' /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern withParams: (n: int, s: string) => implicit}
+                  {autoimpl}
+                    {return $n > 0 ? $n : $s /}
+                  {/autoimpl}
+                {/extern}
+                """)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+
+    List<ExternNode> externs = SoyTreeUtils.allNodesOfType(soyTree, ExternNode.class).toList();
+    assertThat(externs.get(0).getType().getReturnType()).isEqualTo(StringType.getInstance());
+    assertThat(externs.get(1).getType().getReturnType()).isEqualTo(StringType.getInstance());
+    assertThat(externs.get(2).getType().getReturnType())
+        .isEqualTo(UnionType.of(ImmutableList.of(StringType.getInstance(), IntType.getInstance())));
+  }
+
+  @Test
+  public void testImplicitReturnExternCallingImplicitReturnExtern() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                """
+                {namespace ns}
+
+                {extern calleeBefore: () => implicit}
+                  {autoimpl}
+                    {return 'before' /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern caller: () => implicit}
+                  {autoimpl}
+                    {let $b: calleeBefore() /}
+                    {let $a: calleeAfter() /}
+                    {let $unused1: assertType('string', $b) /}
+                    {let $unused2: assertType('int', $a) /}
+                    {return $b + $a /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern calleeAfter: () => implicit}
+                  {autoimpl}
+                    {return 1 /}
+                  {/autoimpl}
+                {/extern}
+
+                {template calls}
+                  {assertType('string', caller())}
+                {/template}
+                """)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testImplicitParamAndReturnExternCallingImplicitParamAndReturnExtern() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                """
+                {namespace ns}
+
+                {extern calleeBefore: (s: implicit) => implicit}
+                  {autoimpl}
+                    {return $s.substring(1) /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern caller: (s: implicit) => implicit}
+                  {autoimpl}
+                    {let $b: calleeBefore($s) /}
+                    {let $a: calleeAfter($s) /}
+                    {let $unused1: assertType('string', $b) /}
+                    {let $unused2: assertType('int', $a) /}
+                    {return $b + $a /}
+                  {/autoimpl}
+                {/extern}
+
+                {extern calleeAfter: (s: implicit) => implicit}
+                  {autoimpl}
+                    {return $s.length /}
+                  {/autoimpl}
+                {/extern}
+
+                {template calls}
+                  {assertType('string', caller('hello'))}
+                {/template}
+                """)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testConstCallingImplicitReturnExtern() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                """
+                {namespace ns}
+
+                {extern calleeBefore: () => implicit}
+                  {autoimpl}
+                    {return 'before' /}
+                  {/autoimpl}
+                {/extern}
+
+                {const C = calleeBefore() + calleeAfter() /}
+
+                {extern calleeAfter: () => implicit}
+                  {autoimpl}
+                    {return 1 /}
+                  {/autoimpl}
+                {/extern}
+
+                {template calls}
+                  {assertType('string', C)}
                 {/template}
                 """)
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
