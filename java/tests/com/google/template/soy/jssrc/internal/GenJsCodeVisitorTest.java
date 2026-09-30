@@ -1044,6 +1044,32 @@ public final class GenJsCodeVisitorTest {
     assertThat(generated).contains("localFoo + ' ' + localBar");
   }
 
+  @Test
+  public void testLabeledLoopsAndJumps() {
+    String testFileContent =
+        """
+        {namespace boo.foo}
+        {extern testExtern: (items: list<int>) => null}
+          {autoimpl}
+            {for $item in $items label="outer"}
+              {while true label="inner"}
+                {break outer /}
+                {continue inner /}
+              {/while}
+            {/for}
+            {return null /}
+          {/autoimpl}
+        {/extern}
+        """;
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    String generated =
+        genJsCodeVisitor.gen(parseResult.fileSet(), parseResult.registry(), exploding()).get(0);
+    assertThat(generated).contains("outer: for (let");
+    assertThat(generated).contains("inner: while (true)");
+    assertThat(generated).contains("break outer;");
+    assertThat(generated).contains("continue inner;");
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 

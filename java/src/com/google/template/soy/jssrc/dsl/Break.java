@@ -19,19 +19,34 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 @AutoValue
 @Immutable
 abstract class Break extends Statement {
-  private static final Break BREAK = new AutoValue_Break();
+  private static final Break BREAK = new AutoValue_Break(/* label= */ null);
 
   public static Break create() {
     return BREAK;
   }
 
+  public static Break create(@Nullable String label) {
+    if (label == null) {
+      return BREAK;
+    }
+    return new AutoValue_Break(label);
+  }
+
+  @Nullable
+  abstract String label();
+
   @Override
   void doFormatStatement(FormattingContext ctx) {
-    ctx.append("break;");
+    if (label() != null) {
+      ctx.append("break " + label() + ";");
+    } else {
+      ctx.append("break;");
+    }
   }
 
   @Override
