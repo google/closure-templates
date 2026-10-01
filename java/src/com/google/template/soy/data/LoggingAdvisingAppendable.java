@@ -328,7 +328,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     }
 
     /** Returns true if there are any NodeBuilder commands in this buffer. */
-    public boolean hasNodeBuidlers() {
+    public boolean hasNodeBuilders() {
       return this.commands != null
           && this.commands.stream().anyMatch((c) -> c instanceof NodeBuilder);
     }
@@ -374,7 +374,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       return this;
     }
 
-    public void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
+    public final void replayOn(LoggingAdvisingAppendable appendable) throws IOException {
       if (getSanitizedContentKind() != null) {
         appendable =
             appendable.setKindAndDirectionality(
@@ -382,7 +382,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       }
       var commands = this.commands;
       if (commands != null) {
-        replayOn(commands, appendable);
+        replayOnImpl(commands, appendable);
       }
       var builder = this.builder;
       if (builder.length() != 0) {
@@ -390,7 +390,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       }
     }
 
-    private static void replayOn(List<Object> commands, LoggingAdvisingAppendable appendable)
+    private static void replayOnImpl(List<Object> commands, LoggingAdvisingAppendable appendable)
         throws IOException {
       for (Object o : commands) {
         replayCommandOn(o, appendable);

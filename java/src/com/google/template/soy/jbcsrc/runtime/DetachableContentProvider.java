@@ -233,13 +233,12 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
         flatteningAppendable = null;
         return result;
       }
-      if (hasNodeBuidlers()) {
-        // If we have NodeBuidlers, don't cache. Instead flatten and generate a new SanitizedContent
-        // for
-        // each resolve().
+      if (hasNodeBuilders()) {
+        // If we have NodeBuilders, don't cache. Instead flatten and generate a new SanitizedContent
+        // for each resolve().
         BufferingAppendable buffer = LoggingAdvisingAppendable.buffering(getSanitizedContentKind());
         try {
-          super.replayOn(buffer);
+          replayOn(buffer);
         } catch (IOException e) {
           throw new UncheckedIOException(e);
         }
@@ -257,13 +256,13 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
         delegates = new ArrayList<>();
         delegates.add(delegate);
         this.delegates = delegates;
-        super.replayOn(delegate);
+        replayOn(delegate);
         return 0;
       }
       int index = delegates.indexOf(delegate);
       if (index == -1) {
         index = delegates.size();
-        super.replayOn(delegate);
+        replayOn(delegate);
         delegates.add(delegate);
       }
       return index;
@@ -274,7 +273,7 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
       if (delegates != null && delegates.remove(appendable)) {
         return;
       }
-      super.replayOn(appendable);
+      replayOn(appendable);
     }
 
     void removeDelegate(int delegateIndex, LoggingAdvisingAppendable expected) {
