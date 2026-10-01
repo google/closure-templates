@@ -64,20 +64,20 @@ public final class JavaQualifiedNames {
   }
 
   /**
-   * Returns the fully-qualified name for the message descriptor (uses '.' inner class seperator).
+   * Returns the fully-qualified name for the message descriptor (uses '.' inner class separator).
    */
   public static String getQualifiedName(Descriptors.Descriptor msg) {
     return getClassName(msg).replace('$', '.');
   }
 
-  /** Returns the fully-qualified name for the enum descriptor (uses '.' inner class seperator). */
+  /** Returns the fully-qualified name for the enum descriptor (uses '.' inner class separator). */
   public static String getQualifiedName(Descriptors.EnumDescriptor enumType) {
     return getClassName(enumType).replace('$', '.');
   }
 
   /**
    * Returns the fully-qualified name for the message descriptor with the given flavor (uses '.'
-   * inner class seperator).
+   * inner class separator).
    */
   public static String getQualifiedName(Descriptors.Descriptor msg, ProtoFlavor flavor) {
     return getClassName(msg, flavor).replace('$', '.');
@@ -85,18 +85,18 @@ public final class JavaQualifiedNames {
 
   /**
    * Returns the fully-qualified name for the enum descriptor with the given flavor (uses '.' inner
-   * class seperator).
+   * class separator).
    */
   public static String getQualifiedName(Descriptors.EnumDescriptor enumType, ProtoFlavor flavor) {
     return getClassName(enumType, flavor).replace('$', '.');
   }
 
-  /** Returns the class name for the message descriptor (uses '$' inner class seperator). */
+  /** Returns the class name for the message descriptor (uses '$' inner class separator). */
   public static String getClassName(Descriptors.Descriptor msg) {
     return getClassName(msg, ProtoFlavor.PROTO2);
   }
 
-  /** Returns the class name for the enum descriptor (uses '$' inner class seperator). */
+  /** Returns the class name for the enum descriptor (uses '$' inner class separator). */
   public static String getClassName(Descriptors.EnumDescriptor enumType) {
     return getClassName(enumType, ProtoFlavor.PROTO2);
   }
@@ -215,7 +215,7 @@ public final class JavaQualifiedNames {
     return false;
   }
 
-  /** Returns the class name for the enum descriptor (uses '$' inner class seperator). */
+  /** Returns the class name for the enum descriptor (uses '$' inner class separator). */
   public static String getCaseEnumClassName(Descriptors.OneofDescriptor oneOfDescriptor) {
     return getClassName(oneOfDescriptor.getContainingType())
         + '$'
