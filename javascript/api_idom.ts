@@ -398,14 +398,13 @@ export class IncrementalDomRendererImpl implements IncrementalDomRenderer {
     if (!currNode) {
       return;
     }
-    if (
-      currNode.nextSibling != null &&
-      currNode.nextSibling.nodeType === Node.COMMENT_NODE
-    ) {
-      currNode.nextSibling.textContent = val;
-      // This is the case where we are creating new DOM from an empty element.
+    const nextNode = this.currentPointer();
+    if (nextNode != null && nextNode.nodeType === Node.COMMENT_NODE) {
+      nextNode.textContent = val;
+      // This is the case where we are creating new DOM from an empty element
+      // or inserting before a non-comment node at the current pointer.
     } else {
-      currNode.appendChild(document.createComment(val));
+      currNode.insertBefore(document.createComment(val), nextNode);
     }
     this.skipNode();
   }
