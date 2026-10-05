@@ -18,29 +18,45 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.LoopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import javax.annotation.Nullable;
 
 /** Node representing a 'while' statement. */
 public final class WhileNode extends AbstractBlockCommandNode
-    implements ConditionalBlockNode, ExprHolderNode, StatementNode {
+    implements ConditionalBlockNode, ExprHolderNode, StatementNode, LoopNode {
 
   /** The parsed expression for the condition. */
   private final ExprRootNode expr;
 
-  public WhileNode(int id, SourceLocation location, SourceLocation openTagLocation, ExprNode expr) {
+  @Nullable private final Identifier label;
+
+  public WhileNode(
+      int id,
+      SourceLocation location,
+      SourceLocation openTagLocation,
+      ExprNode expr,
+      @Nullable Identifier label) {
     super(id, location, openTagLocation, "while");
     this.expr = new ExprRootNode(expr);
+    this.label = label;
+  }
+
+  public WhileNode(int id, SourceLocation location, SourceLocation openTagLocation, ExprNode expr) {
+    this(id, location, openTagLocation, expr, null);
   }
 
   private WhileNode(WhileNode orig, CopyState copyState) {
     super(orig, copyState);
     this.expr = orig.expr.copy(copyState);
+    this.label = orig.label;
   }
 
   @Override
@@ -54,8 +70,15 @@ public final class WhileNode extends AbstractBlockCommandNode
   }
 
   @Override
+  @Nullable
+  public Identifier getLabel() {
+    return label;
+  }
+
+  @Override
   public String getCommandText() {
-    return getExpr().toSourceString();
+    String exprStr = getExpr().toSourceString();
+    return label == null ? exprStr : exprStr + " label=\"" + label.identifier() + "\"";
   }
 
   @Override
