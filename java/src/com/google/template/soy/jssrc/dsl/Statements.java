@@ -24,6 +24,7 @@ import com.google.common.collect.Streams;
 import com.google.template.soy.jssrc.dsl.Expressions.DecoratedExpression;
 import java.util.List;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /** Static functions related to Expressions. */
 public final class Statements {
@@ -66,8 +67,25 @@ public final class Statements {
 
   /** Creates a code chunk representing a for loop. */
   public static Statement forLoop(
+      @Nullable String label,
+      Id localVar,
+      Expression initial,
+      Expression limit,
+      Expression increment,
+      Statement body) {
+    return For.create(label, localVar, initial, limit, increment, body);
+  }
+
+  /** Creates a code chunk representing a for loop. */
+  public static Statement forLoop(
       Id localVar, Expression initial, Expression limit, Expression increment, Statement body) {
     return For.create(localVar, initial, limit, increment, body);
+  }
+
+  /** Creates a code chunk representing a for loop, with default values for initial & increment. */
+  public static Statement forLoop(
+      @Nullable String label, Id localVar, Expression limit, Statement body) {
+    return For.create(label, localVar, Expressions.number(0), limit, Expressions.number(1), body);
   }
 
   /** Creates a code chunk representing a for loop, with default values for initial & increment. */
@@ -78,6 +96,10 @@ public final class Statements {
   /** Creates a code chunk representing a for of loop. */
   public static Statement forOf(Id localVar, Expression collection, Statement body) {
     return ForOf.create(localVar, collection, body);
+  }
+
+  public static Statement whileLoop(@Nullable String label, Expression condition, Statement body) {
+    return While.create(label, condition, body);
   }
 
   public static Statement whileLoop(Expression condition, Statement body) {
@@ -94,8 +116,16 @@ public final class Statements {
     return Return.create();
   }
 
+  public static Statement breakStatement(@Nullable String label) {
+    return Break.create(label);
+  }
+
   public static Statement breakStatement() {
     return Break.create();
+  }
+
+  public static Statement continueStatement(@Nullable String label) {
+    return Continue.create(label);
   }
 
   public static Statement continueStatement() {

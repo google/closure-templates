@@ -3887,6 +3887,8 @@ private ForNode ForStmt() :
   ExprNode expr = null;
   String name = null;
   List<StandaloneNode> templateBlock;
+  List<CommandTagAttribute> attributes = ImmutableList.of();
+  Identifier label = null;
 }
 {
   tagBegin = <CMD_BEGIN_FOR>
@@ -3903,7 +3905,7 @@ private ForNode ForStmt() :
     }
     <IN>
     expr = Expr()
-
+    attributes = Attributes()
     tagBeginEnd = CmdEnd()
   } catch (ParseException e) {
     tagBeginEnd = reportTemplateBodyErrorAndSkipTo(
@@ -3917,6 +3919,22 @@ private ForNode ForStmt() :
     }
     if (expr == null) {
       expr = errorExpr(tagBegin);
+    }
+  }
+
+  {
+    validateAttributes(expr.getSourceLocation(), attributes, errorReporter);
+    for (CommandTagAttribute attr : attributes) {
+      if (attr.hasName("label")) {
+        label = attr.valueAsIdentifier();
+      } else {
+        errorReporter.report(
+            attr.getSourceLocation(),
+            CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
+            attr.getName().identifier(),
+            "for",
+            "label");
+      }
     }
   }
 
@@ -3938,7 +3956,8 @@ private ForNode ForStmt() :
             nodeIdGen.genId(),
             createSrcLoc(tagBegin, tagClose),
             tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
-            expr);
+            expr,
+            label);
     forNode.addChild(nonEmpty);
     return forNode;
   }
@@ -3982,7 +4001,7 @@ private AssignmentNode AssignmentStmt() :
 }
 
 /**
- * WhileStmt -> CmdBeginWhile Expr CmdEnd TemplateBlock CmdCloseWhile
+ * WhileStmt -> CmdBeginWhile Expr Attributes CmdEnd TemplateBlock CmdCloseWhile
  */
 private WhileNode WhileStmt() :
 {
@@ -3990,6 +4009,8 @@ private WhileNode WhileStmt() :
   Token tagBeginEnd = null;
   ExprNode whileExpr;
   List<StandaloneNode> templateBlock;
+  List<CommandTagAttribute> attributes = ImmutableList.of();
+  Identifier label = null;
 }
 {
   tagBegin = <CMD_BEGIN_WHILE>
@@ -3998,6 +4019,7 @@ private WhileNode WhileStmt() :
   }
   try {
     whileExpr = Expr()
+    attributes = Attributes()
     tagBeginEnd = CmdEnd()
   } catch (ParseException e) {
     whileExpr = errorExpr(tagBegin);
@@ -4007,56 +4029,82 @@ private WhileNode WhileStmt() :
         CMD_END);
 
   }
+  {
+    validateAttributes(whileExpr.getSourceLocation(), attributes, errorReporter);
+    for (CommandTagAttribute attr : attributes) {
+      if (attr.hasName("label")) {
+        label = attr.valueAsIdentifier();
+      } else {
+        errorReporter.report(
+            attr.getSourceLocation(),
+            CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
+            attr.getName().identifier(),
+            "while",
+            "label");
+      }
+    }
+  }
   templateBlock = TemplateBlock()
   tagClose = <CMD_CLOSE_WHILE>
   {
     WhileNode whileNode = new WhileNode(
         nodeIdGen.genId(),
-        createSrcLoc(tagClose),
         createSrcLoc(tagBegin, tagClose),
-        whileExpr);
+        tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
+        whileExpr,
+        label);
     whileNode.addChildren(templateBlock);
     return whileNode;
   }
 }
 
 /**
- * BreakStmt -> CmdBreak CmdEnd
+ * BreakStmt -> CmdBreak [ Name ] CmdEnd
  */
 private BreakNode BreakStmt() :
 {
   Token tagBegin, tagEnd;
+  Token labelTok = null;
 }
 {
   tagBegin = <CMD_BREAK>
   {
     assertInFunction(tagBegin);
   }
+  [
+    labelTok = <NAME>
+  ]
   tagEnd = <CMD_SELF_CLOSE>
   {
     return new BreakNode(
         nodeIdGen.genId(),
-        createSrcLoc(tagBegin, tagEnd));
+        createSrcLoc(tagBegin, tagEnd),
+        labelTok == null ? null : Identifier.create(labelTok.image, createSrcLoc(labelTok)));
   }
 }
 
 /**
- * ContinueStmt -> CmdContinue CmdEnd
+ * ContinueStmt -> CmdContinue [ Name ] CmdEnd
  */
 private ContinueNode ContinueStmt() :
 {
   Token tagBegin, tagEnd;
+  Token labelTok = null;
 }
 {
   tagBegin = <CMD_CONTINUE>
   {
     assertInFunction(tagBegin);
   }
+  [
+    labelTok = <NAME>
+  ]
   tagEnd = <CMD_SELF_CLOSE>
   {
     return new ContinueNode(
         nodeIdGen.genId(),
-        createSrcLoc(tagBegin, tagEnd));
+        createSrcLoc(tagBegin, tagEnd),
+        labelTok == null ? null : Identifier.create(labelTok.image, createSrcLoc(labelTok)));
   }
 }
 

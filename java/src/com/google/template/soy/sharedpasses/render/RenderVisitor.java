@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLogicalPath;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.RecordProperty;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -505,10 +506,16 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         try {
           visitChildren(child);
         } catch (ContinueException e) {
+          if (!matchesLabel(e.getLabel(), node.getLabel())) {
+            throw e;
+          }
           // Do nothing and continue the loop.
         }
       }
     } catch (BreakException e) {
+      if (!matchesLabel(e.getLabel(), node.getLabel())) {
+        throw e;
+      }
       // Do nothing and break out of the loop.
     }
   }
@@ -520,17 +527,39 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
         try {
           visitChildren(node);
         } catch (ContinueException e) {
+          if (!matchesLabel(e.getLabel(), node.getLabel())) {
+            throw e;
+          }
           // Do nothing and continue the loop.
         }
       }
     } catch (BreakException e) {
+      if (!matchesLabel(e.getLabel(), node.getLabel())) {
+        throw e;
+      }
       // Do nothing and break out of the loop.
     }
   }
 
+  private static boolean matchesLabel(
+      @Nullable String exceptionLabel, @Nullable Identifier nodeLabel) {
+    if (exceptionLabel == null) {
+      return true;
+    }
+    return nodeLabel != null && exceptionLabel.equals(nodeLabel.identifier());
+  }
+
   private static class BreakException extends RuntimeException {
-    public BreakException() {
+    @Nullable private final String label;
+
+    BreakException(@Nullable String label) {
       super("Break statement encountered");
+      this.label = label;
+    }
+
+    @Nullable
+    String getLabel() {
+      return label;
     }
 
     @Override
@@ -542,12 +571,20 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitBreakNode(BreakNode node) {
-    throw new BreakException();
+    throw new BreakException(node.getLabel() == null ? null : node.getLabel().identifier());
   }
 
   private static class ContinueException extends RuntimeException {
-    public ContinueException() {
+    @Nullable private final String label;
+
+    ContinueException(@Nullable String label) {
       super("Continue statement encountered");
+      this.label = label;
+    }
+
+    @Nullable
+    String getLabel() {
+      return label;
     }
 
     @Override
@@ -559,7 +596,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitContinueNode(ContinueNode node) {
-    throw new ContinueException();
+    throw new ContinueException(node.getLabel() == null ? null : node.getLabel().identifier());
   }
 
   @Override
