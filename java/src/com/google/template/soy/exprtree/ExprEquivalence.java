@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * An equivalence relation for expressions.
@@ -42,7 +44,7 @@ import java.util.Objects;
  *   <li>{@link ExprNode#getParent()}
  * </ul>
  */
-public final class ExprEquivalence {
+public class ExprEquivalence {
 
   /**
    * A map to cache the wrapper objects.
@@ -54,177 +56,200 @@ public final class ExprEquivalence {
    */
   private final IdentityHashMap<ExprNode, Wrapper> interningMap = new IdentityHashMap<>();
 
-  private final Equivalence<ExprNode> equivalence =
-      new Equivalence<>() {
-        @Override
-        protected boolean doEquivalent(ExprNode a, ExprNode b) {
-          return a.getKind() == b.getKind() && new EqualsVisitor(a).exec(b);
-          // return a.getKind() == b.getKind();
-        }
+  private final Equivalence<ExprNode> equivalence;
 
-        @Override
-        protected int doHash(ExprNode t) {
-          return 31 * t.getKind().hashCode() + hashCodeVisitor.exec(t);
-        }
-      };
+  public ExprEquivalence() {
+    this(DoHash::new, DoEquals::new);
+  }
 
-  private final AbstractReturningExprNodeVisitor<Integer> hashCodeVisitor =
-      new AbstractReturningExprNodeVisitor<>() {
-        @Override
-        protected Integer visitVarRefNode(VarRefNode node) {
-          return Objects.hashCode(node.getDefnDecl());
-        }
-
-        @Override
-        protected Integer visitFieldAccessNode(FieldAccessNode node) {
-          return Objects.hash(
-              wrap(node.getBaseExprChild()), node.getFieldName(), node.isNullSafe());
-        }
-
-        @Override
-        protected Integer visitItemAccessNode(ItemAccessNode node) {
-          return Objects.hash(
-              wrap(node.getBaseExprChild()), wrap(node.getKeyExprChild()), node.isNullSafe());
-        }
-
-        @Override
-        protected Integer visitMethodCallNode(MethodCallNode node) {
-          return 31 * (node.getMethodName().identifier().hashCode() * 31 + hashChildren(node))
-              + Boolean.hashCode(node.isNullSafe());
-        }
-
-        @Override
-        protected Integer visitNullSafeAccessNode(NullSafeAccessNode node) {
-          return hashChildren(node);
-        }
-
-        @Override
-        protected Integer visitFunctionNode(FunctionNode node) {
-          int hash = 1;
-          if (node.hasStaticName()) {
-            hash = hash * 31 + node.getStaticFunctionName().hashCode();
-          } else {
-            hash = hash * 31 + visit(node.getNameExpr());
+  protected ExprEquivalence(
+      Function<ExprEquivalence, DoHash> hashBuilder,
+      BiFunction<ExprEquivalence, ExprNode, DoEquals> equalsBuilder) {
+    var hasher = hashBuilder.apply(this);
+    this.equivalence =
+        new Equivalence<>() {
+          @Override
+          protected boolean doEquivalent(ExprNode a, ExprNode b) {
+            return a.getKind() == b.getKind()
+                && equalsBuilder.apply(ExprEquivalence.this, a).exec(b);
           }
-          if (node.getParamsStyle() == ParamsStyle.NAMED) {
-            hash = hash * 31 + namedParamsMap(node).hashCode();
-          } else {
-            hash = hash * 31 + hashChildren(node);
+
+          @Override
+          protected int doHash(ExprNode t) {
+            return 31 * t.getKind().hashCode() + hasher.exec(t);
           }
-          return hash;
-        }
+        };
+  }
 
-        @Override
-        protected Integer visitGlobalNode(GlobalNode node) {
-          return node.getName().hashCode();
-        }
+  /** Base hashing visitor. */
+  protected static class DoHash extends AbstractReturningExprNodeVisitor<Integer> {
+    private final ExprEquivalence recursion;
 
-        @Override
-        protected Integer visitGroupNode(GroupNode node) {
-          return hashChildren(node);
-        }
+    public DoHash(ExprEquivalence recursion) {
+      this.recursion = recursion;
+    }
 
-        @Override
-        protected Integer visitListLiteralNode(ListLiteralNode node) {
-          return hashChildren(node);
-        }
+    @Override
+    protected Integer visitVarRefNode(VarRefNode node) {
+      return Objects.hashCode(node.getDefnDecl());
+    }
 
-        @Override
-        protected Integer visitListComprehensionNode(ListComprehensionNode node) {
-          return Objects.hash(
-              node.getListIterVar(),
-              node.getIndexVar(),
-              node.getListExpr(),
-              node.getListItemTransformExpr(),
-              node.getFilterExpr());
-        }
+    @Override
+    protected Integer visitFieldAccessNode(FieldAccessNode node) {
+      return Objects.hash(
+          recursion.wrap(node.getBaseExprChild()), node.getFieldName(), node.isNullSafe());
+    }
 
-        @Override
-        protected Integer visitRecordLiteralNode(RecordLiteralNode node) {
-          return recordLiteralFields(node).hashCode();
-        }
+    @Override
+    protected Integer visitItemAccessNode(ItemAccessNode node) {
+      return Objects.hash(
+          recursion.wrap(node.getBaseExprChild()),
+          recursion.wrap(node.getKeyExprChild()),
+          node.isNullSafe());
+    }
 
-        @Override
-        protected Integer visitMapLiteralNode(MapLiteralNode node) {
-          return mapLiteralFields(node).hashCode();
-        }
+    @Override
+    protected Integer visitMethodCallNode(MethodCallNode node) {
+      return 31 * (node.getMethodName().identifier().hashCode() * 31 + hashChildren(node))
+          + Boolean.hashCode(node.isNullSafe());
+    }
 
-        @Override
-        protected Integer visitMapLiteralFromListNode(MapLiteralFromListNode node) {
-          return hashChildren(node);
-        }
+    @Override
+    protected Integer visitNullSafeAccessNode(NullSafeAccessNode node) {
+      return hashChildren(node);
+    }
 
-        // literals
+    @Override
+    protected Integer visitFunctionNode(FunctionNode node) {
+      int hash = 1;
+      if (node.hasStaticName()) {
+        hash = hash * 31 + node.getStaticFunctionName().hashCode();
+      } else {
+        hash = hash * 31 + visit(node.getNameExpr());
+      }
+      if (node.getParamsStyle() == ParamsStyle.NAMED) {
+        hash = hash * 31 + recursion.namedParamsMap(node).hashCode();
+      } else {
+        hash = hash * 31 + hashChildren(node);
+      }
+      return hash;
+    }
 
-        @Override
-        protected Integer visitTemplateLiteralNode(TemplateLiteralNode node) {
-          return node.getResolvedName().hashCode();
-        }
+    @Override
+    protected Integer visitGlobalNode(GlobalNode node) {
+      return node.getName().hashCode();
+    }
 
-        @Override
-        protected Integer visitBooleanNode(BooleanNode node) {
-          return Booleans.hashCode(node.getValue());
-        }
+    @Override
+    protected Integer visitGroupNode(GroupNode node) {
+      return hashChildren(node);
+    }
 
-        @Override
-        protected Integer visitNumberNode(NumberNode node) {
-          return Doubles.hashCode(node.getValue());
-        }
+    @Override
+    protected Integer visitListLiteralNode(ListLiteralNode node) {
+      return hashChildren(node);
+    }
 
-        @Override
-        protected Integer visitStringNode(StringNode node) {
-          return node.getValue().hashCode();
-        }
+    @Override
+    protected Integer visitListComprehensionNode(ListComprehensionNode node) {
+      return Objects.hash(
+          node.getListIterVar(),
+          node.getIndexVar(),
+          node.getListExpr(),
+          node.getListItemTransformExpr(),
+          node.getFilterExpr());
+    }
 
-        @Override
-        protected Integer visitRegexpLiteralNode(RegexpLiteralNode node) {
-          return Objects.hash(node.getPattern(), node.getFlags());
-        }
+    @Override
+    protected Integer visitRecordLiteralNode(RecordLiteralNode node) {
+      return recursion.recordLiteralFields(node).hashCode();
+    }
 
-        @Override
-        protected Integer visitProtoEnumValueNode(ProtoEnumValueNode node) {
-          return Objects.hash(node.getType(), node.getValue());
-        }
+    @Override
+    protected Integer visitMapLiteralNode(MapLiteralNode node) {
+      return recursion.mapLiteralFields(node).hashCode();
+    }
 
-        @Override
-        protected Integer visitTypeLiteralNode(TypeLiteralNode node) {
-          return node.toSourceString().hashCode();
-        }
+    @Override
+    protected Integer visitMapLiteralFromListNode(MapLiteralFromListNode node) {
+      return hashChildren(node);
+    }
 
-        @Override
-        protected Integer visitExprRootNode(ExprRootNode node) {
-          return hashChildren(node);
-        }
+    // literals
 
-        @Override
-        protected Integer visitOperatorNode(OperatorNode node) {
-          return node.getOperator().hashCode() * 31 + hashChildren(node);
-        }
+    @Override
+    protected Integer visitTemplateLiteralNode(TemplateLiteralNode node) {
+      return node.getResolvedName().hashCode();
+    }
 
-        @Override
-        protected Integer visitNullNode(NullNode node) {
-          return 0;
-        }
+    @Override
+    protected Integer visitBooleanNode(BooleanNode node) {
+      return Booleans.hashCode(node.getValue());
+    }
 
-        @Override
-        protected Integer visitUndefinedNode(UndefinedNode node) {
-          return -1;
-        }
+    @Override
+    protected Integer visitNumberNode(NumberNode node) {
+      return Doubles.hashCode(node.getValue());
+    }
 
-        @Override
-        protected Integer visitExprNode(ExprNode node) {
-          throw new UnsupportedOperationException(node.toSourceString());
-        }
+    @Override
+    protected Integer visitStringNode(StringNode node) {
+      return node.getValue().hashCode();
+    }
 
-        private int hashChildren(ParentExprNode node) {
-          return hash(node.getChildren());
-        }
-      };
+    @Override
+    protected Integer visitRegexpLiteralNode(RegexpLiteralNode node) {
+      return Objects.hash(node.getPattern(), node.getFlags());
+    }
 
-  final class EqualsVisitor extends AbstractReturningExprNodeVisitor<Boolean> {
+    @Override
+    protected Integer visitProtoEnumValueNode(ProtoEnumValueNode node) {
+      return Objects.hash(node.getType(), node.getValue());
+    }
+
+    @Override
+    protected Integer visitTypeLiteralNode(TypeLiteralNode node) {
+      return node.toSourceString().hashCode();
+    }
+
+    @Override
+    protected Integer visitExprRootNode(ExprRootNode node) {
+      return hashChildren(node);
+    }
+
+    @Override
+    protected Integer visitOperatorNode(OperatorNode node) {
+      return node.getOperator().hashCode() * 31 + hashChildren(node);
+    }
+
+    @Override
+    protected Integer visitNullNode(NullNode node) {
+      return 0;
+    }
+
+    @Override
+    protected Integer visitUndefinedNode(UndefinedNode node) {
+      return -1;
+    }
+
+    @Override
+    protected Integer visitExprNode(ExprNode node) {
+      throw new UnsupportedOperationException(node.toSourceString());
+    }
+
+    private int hashChildren(ParentExprNode node) {
+      return recursion.hash(node.getChildren());
+    }
+  }
+
+  /** Base equality visitor. */
+  protected static class DoEquals extends AbstractReturningExprNodeVisitor<Boolean> {
+
+    private final ExprEquivalence recursion;
     private final ExprNode other;
 
-    EqualsVisitor(ExprNode other) {
+    public DoEquals(ExprEquivalence recursion, ExprNode other) {
+      this.recursion = recursion;
       this.other = other;
     }
 
@@ -248,7 +273,7 @@ public final class ExprEquivalence {
     @Override
     protected Boolean visitFieldAccessNode(FieldAccessNode node) {
       FieldAccessNode typedOther = (FieldAccessNode) other;
-      return equivalent(node.getBaseExprChild(), typedOther.getBaseExprChild())
+      return recursion.equivalent(node.getBaseExprChild(), typedOther.getBaseExprChild())
           && node.getFieldName().equals(typedOther.getFieldName())
           && node.isNullSafe() == typedOther.isNullSafe();
     }
@@ -256,8 +281,8 @@ public final class ExprEquivalence {
     @Override
     protected Boolean visitItemAccessNode(ItemAccessNode node) {
       ItemAccessNode typedOther = (ItemAccessNode) other;
-      return equivalent(node.getBaseExprChild(), typedOther.getBaseExprChild())
-          && equivalent(node.getKeyExprChild(), typedOther.getKeyExprChild())
+      return recursion.equivalent(node.getBaseExprChild(), typedOther.getBaseExprChild())
+          && recursion.equivalent(node.getKeyExprChild(), typedOther.getKeyExprChild())
           && node.isNullSafe() == typedOther.isNullSafe();
     }
 
@@ -287,10 +312,10 @@ public final class ExprEquivalence {
       boolean ok =
           node.hasStaticName()
               ? node.getStaticFunctionName().equals(typedOther.getStaticFunctionName())
-              : equivalent(node.getNameExpr(), typedOther.getNameExpr());
+              : recursion.equivalent(node.getNameExpr(), typedOther.getNameExpr());
 
       if (node.getParamsStyle() == ParamsStyle.NAMED) {
-        ok = ok && namedParamsMap(node).equals(namedParamsMap(typedOther));
+        ok = ok && recursion.namedParamsMap(node).equals(recursion.namedParamsMap(typedOther));
       } else {
         ok = ok && compareChildren(node);
       }
@@ -309,12 +334,16 @@ public final class ExprEquivalence {
 
     @Override
     protected Boolean visitRecordLiteralNode(RecordLiteralNode node) {
-      return recordLiteralFields(node).equals(recordLiteralFields((RecordLiteralNode) other));
+      return recursion
+          .recordLiteralFields(node)
+          .equals(recursion.recordLiteralFields((RecordLiteralNode) other));
     }
 
     @Override
     protected Boolean visitMapLiteralNode(MapLiteralNode node) {
-      return mapLiteralFields(node).equals(mapLiteralFields((MapLiteralNode) other));
+      return recursion
+          .mapLiteralFields(node)
+          .equals(recursion.mapLiteralFields((MapLiteralNode) other));
     }
 
     /**
@@ -406,7 +435,7 @@ public final class ExprEquivalence {
     }
 
     private boolean compareChildren(ParentExprNode node) {
-      return equivalent(node.getChildren(), ((ParentExprNode) other).getChildren());
+      return recursion.equivalent(node.getChildren(), ((ParentExprNode) other).getChildren());
     }
   }
 
@@ -439,11 +468,11 @@ public final class ExprEquivalence {
     return map;
   }
 
-  public boolean equivalent(ExprNode a, ExprNode b) {
+  public final boolean equivalent(ExprNode a, ExprNode b) {
     return equivalence.equivalent(a, b);
   }
 
-  public boolean equivalent(List<ExprNode> a, List<ExprNode> b) {
+  public final boolean equivalent(List<ExprNode> a, List<ExprNode> b) {
     if (a.size() != b.size()) {
       return false;
     }
@@ -455,11 +484,11 @@ public final class ExprEquivalence {
     return true;
   }
 
-  public int hash(ExprNode a) {
+  public final int hash(ExprNode a) {
     return wrap(a).hashCode();
   }
 
-  public int hash(List<ExprNode> a) {
+  public final int hash(List<ExprNode> a) {
     int result = 1;
     for (ExprNode element : a) {
       result = 31 * result + wrap(element).hashCode();
@@ -467,7 +496,7 @@ public final class ExprEquivalence {
     return result;
   }
 
-  public Wrapper wrap(ExprNode expr) {
+  public final Wrapper wrap(ExprNode expr) {
     return interningMap.computeIfAbsent(expr, this::createWrapper);
   }
 

@@ -21,6 +21,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
@@ -41,6 +42,10 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -58,13 +63,13 @@ public final class TemplateAnalysisTest {
 
   @Test
   public void testSimpleSequentalAccess() {
-    runTest("{@param p : string}", "{notrefed($p)}{refed($p)}");
+    runTest("{@param p: string}", "{notrefed($p)}{refed($p)}");
 
     runTest(
-        "{@param b : bool}",
-        "{@param p1 : string}",
-        "{@param p2 : string}",
-        "{@param p3 : string}",
+        "{@param b: bool}",
+        "{@param p1: string}",
+        "{@param p2: string}",
+        "{@param p3: string}",
         "{$b ? $p1 + $p3 : $p2 + $p3}",
         "{refed($b)}",
         "{notrefed($p1)}",
@@ -76,8 +81,8 @@ public final class TemplateAnalysisTest {
   public void testNullSafeDataAccessWithDuplicateFieldName() {
     TemplateNode template =
         parseTemplate(
-            "{@param p : [field:string]}",
-            "{@param x : [field:string]}",
+            "{@param p: [field:string]}",
+            "{@param x: [field:string]}",
             "{$p?.field}",
             "{$x?.field}");
     TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);
@@ -90,7 +95,7 @@ public final class TemplateAnalysisTest {
   public void testNullSafeDataAccessWithDuplicateIndex() {
     TemplateNode template =
         parseTemplate(
-            "{@param p : list<string>}", "{@param x : list<string>}", "{$p?[0]}", "{$x?[0]}");
+            "{@param p: list<string>}", "{@param x: list<string>}", "{$p?[0]}", "{$x?[0]}");
     TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);
     ExprNode xList = ((PrintNode) template.getChild(1)).getExpr().getChild(0);
     DataAccessNode access = (DataAccessNode) ((NullSafeAccessNode) xList).getDataAccess();
@@ -99,24 +104,42 @@ public final class TemplateAnalysisTest {
 
   @Test
   public void testDataAccess() {
-    runTest("{@param p : list<string>}", "{notrefed($p[0])}", "{refed($p[0])}");
-    runTest("{@param p : list<string>}", "{notrefed($p[0])}", "{refed($p)}");
-    runTest("{@param p : list<string>}", "{notrefed($p)}", "{notrefed($p[0])}");
+    runTest("{@param p: list<string>}", "{notrefed($p[0])}", "{refed($p[0])}");
+    runTest("{@param p: list<string>}", "{notrefed($p[0])}", "{refed($p)}");
+    runTest("{@param p: list<string>}", "{notrefed($p)}", "{notrefed($p[0])}");
 
-    // TODO(nicholasyu): $p?[0] should imply $p[0] is already referenced.
-    // runTest("{@param p : list<string>}", "{notrefed($p?[0])}", "{refed($p[0])}");
-    runTest("{@param p : list<string>}", "{notrefed($p?[0])}", "{refed($p)}");
-    runTest("{@param p : list<string>}", "{notrefed($p)}", "{notrefed($p?[0])}");
+    runTest("{@param p: list<string>}", "{notrefed($p?[0])}", "{refed(refed($p)[0])}");
+    runTest("{@param p: list<string>}", "{notrefed($p[0])}", "{refed(refed($p)?[0])}");
+    runTest("{@param p: list<string>}", "{notrefed($p)}", "{notrefed(refed($p)?[0])}");
 
-    runTest("{@param p : [field:string]}", "{notrefed($p.field)}", "{refed($p.field)}");
-    runTest("{@param p : [field:string]}", "{notrefed($p.field)}", "{refed($p)}");
-    runTest("{@param p : [field:string]}", "{notrefed($p)}", "{notrefed($p.field)}");
+    runTest("{@param p: [field:string]}", "{notrefed(notrefed($p).field)}", "{refed($p.field)}");
+    runTest("{@param p: [field:string]}", "{notrefed(notrefed($p).field)}", "{refed($p)}");
+    runTest("{@param p: [field:string]}", "{notrefed($p)}", "{notrefed(refed($p).field)}");
 
-    // TODO(nicholasyu): $p?.field should imply $p.field is already referenced.
+    runTest("{@param p: [field:string]}", "{notrefed($p?.field)}", "{refed(refed($p).field)}");
+    runTest("{@param p: [field:string]}", "{notrefed($p.field)}", "{refed(refed($p)?.field)}");
+    runTest("{@param p: [field:string]}", "{notrefed($p)}", "{notrefed(refed($p)?.field)}");
 
-    // runTest("{@param p : [field:string]}", "{notrefed($p?.field)}", "{refed($p.field)}");
-    runTest("{@param p : [field:string]}", "{notrefed($p?.field)}", "{refed($p)}");
-    runTest("{@param p : [field:string]}", "{notrefed($p)}", "{notrefed($p?.field)}");
+    runTest(
+        "{@param? p: [k:string]}", "{notrefed(notrefed($p)!.field)}", "{refed(refed($p).field)}");
+    runTest(
+        "{@param? p: [k:string]}", "{notrefed(notrefed($p).field)}", "{refed(refed($p)!.field)}");
+
+    runTest(
+        "{@param? map: map<string, string>}",
+        "{@param q: [k:string]}",
+        "{$map?.get($q.k)}",
+        "{notrefed(notrefed($q).k)}");
+    runTest(
+        "{@param? map: map<string, string>}",
+        "{@param q: [k:string]}",
+        "{$map!.get($q.k)}",
+        "{refed(refed($q).k)}");
+    runTest(
+        "{@param map: map<string, string>}",
+        "{@param q: [k:string]}",
+        "{$map.get($q.k)}",
+        "{refed(refed($q).k)}");
   }
 
   @Test
@@ -127,9 +150,9 @@ public final class TemplateAnalysisTest {
   @Test
   public void testIf() {
     runTest(
-        "{@param p1 : string}",
-        "{@param p2 : string}",
-        "{@param p3 : string}",
+        "{@param p1: string}",
+        "{@param p2: string}",
+        "{@param p3: string}",
         "{if $p1}",
         "  {notrefed($p1)}",
         "  {notrefed($p2)}",
@@ -146,9 +169,9 @@ public final class TemplateAnalysisTest {
         "{refed($p3)}");
 
     runTest(
-        "{@param p : string}",
-        "{@param b1 : bool}",
-        "{@param b2 : bool}",
+        "{@param p: string}",
+        "{@param b1: bool}",
+        "{@param b2: bool}",
         "{if $b1}",
         "  {$p}",
         "  {notrefed($b1)}",
@@ -164,9 +187,9 @@ public final class TemplateAnalysisTest {
   @Test
   public void testIfInAttributes() {
     runTest(
-        "{@param p1 : string}",
-        "{@param p2 : string}",
-        "{@param p3 : string}",
+        "{@param p1: string}",
+        "{@param p2: string}",
+        "{@param p3: string}",
         "<div class=\"{if $p1}",
         "  {refed($p1)}",
         "  {notrefed($p2)}",
@@ -185,9 +208,9 @@ public final class TemplateAnalysisTest {
         "</div>");
 
     runTest(
-        "{@param p : string}",
-        "{@param b1 : string}",
-        "{@param b2 : string}",
+        "{@param p: string}",
+        "{@param b1: string}",
+        "{@param b2: string}",
         "<div class=\"{if $b1}",
         "  {$p}",
         "{elseif $b2}",
@@ -202,8 +225,8 @@ public final class TemplateAnalysisTest {
   public void testSwitch() {
     // cases
     runTest(
-        "{@param p : int}",
-        "{@param p2 : int}",
+        "{@param p: int}",
+        "{@param p2: int}",
         "{switch $p}",
         "  {case $p2}",
         "    {refed($p)}",
@@ -216,9 +239,9 @@ public final class TemplateAnalysisTest {
 
     // cases
     runTest(
-        "{@param p : int}",
-        "{@param p2 : int}",
-        "{@param p3 : int}",
+        "{@param p: int}",
+        "{@param p2: int}",
+        "{@param p3: int}",
         "{switch $p}",
         "  {case $p2}",
         "    {refed($p)}",
@@ -236,8 +259,8 @@ public final class TemplateAnalysisTest {
   @Test
   public void testFor() {
     runTest(
-        "{@param limit : int}",
-        "{@param p : string}",
+        "{@param limit: int}",
+        "{@param p: string}",
         "{for $i in range(0, $limit)}",
         "  {$p}",
         "  {refed($i)}",
@@ -248,8 +271,8 @@ public final class TemplateAnalysisTest {
     // In this case we can prove that the loop will execute and thus p will have been referenced
     // after the loop.
     runTest(
-        "{@param p : string}",
-        "{@param p2 : string}",
+        "{@param p: string}",
+        "{@param p2: string}",
         "{for $i in range(0, 1)}",
         "  {$p}",
         "  {refed($i)}",
@@ -258,8 +281,8 @@ public final class TemplateAnalysisTest {
         "{notrefed($p2)}");
 
     runTest(
-        "{@param p : string}",
-        "{@param p2 : string}",
+        "{@param p: string}",
+        "{@param p2: string}",
         "{for $i in range(1, 1)}",
         "  {$p}",
         "  {refed($i)}",
@@ -271,7 +294,7 @@ public final class TemplateAnalysisTest {
   @Test
   public void testForeach() {
     runTest(
-        "{@param list : list<?>}",
+        "{@param list: list<?>}",
         "{@param p: ?}",
         "{@param p2: ?}",
         "{@param p3: ?}",
@@ -303,13 +326,13 @@ public final class TemplateAnalysisTest {
 
   @Test
   public void testLetVariable() {
-    runTest("{@param p: ?}", "{let $l : $p/}", "{notrefed($p)}");
+    runTest("{@param p: ?}", "{let $l: $p/}", "{notrefed($p)}");
     // referencing $l implies we have refed $p
-    runTest("{@param p: ?}", "{let $l : $p/}", "{$l}", "{refed($p)}");
+    runTest("{@param p: ?}", "{let $l: $p/}", "{$l}", "{refed($p)}");
     runTest(
         "{@param p: ?}",
         "{let $l kind=\"text\"}{$p}{/let}",
-        "{let $l2 : '' + $l /}",
+        "{let $l2: '' + $l /}",
         "{notrefed($l2)}",
         "{refed($l2)}",
         "{refed($l)}",
@@ -321,7 +344,7 @@ public final class TemplateAnalysisTest {
     runTest(
         "{@param p: ?}",
         "{let $l kind=\"text\"}{$p}{/let}",
-        "{let $l2 : notrefed($l) ? refed($l) : '' /}",
+        "{let $l2: notrefed($l) ? refed($l) : '' /}",
         "{notrefed($p)}",
         "{notrefed($l2)}",
         "{refed($l2)}",
@@ -332,13 +355,14 @@ public final class TemplateAnalysisTest {
   public void testLetWithVariablesRefedBeforeAndAfter() {
     runTest(
         "{@param p: ?}",
-        "{let $a: notrefed($p.foo) /}",
-        "{let $b: notrefed($p.bar) /}",
+        "{let $a: notrefed(notrefed($p).foo) /}",
+        "{let $b: notrefed(notrefed($p).bar) /}",
         "{notrefed($a)}",
+        "{refed($p)}", // referencing $p.foo -> $p is referenced
         "{let $c: refed($a) + notrefed($b) /}",
-        // $b is referenced after {let $c ...}, but before the variable refrence $c.
-        "{notrefed($b)}",
-        "{notrefed($c)}");
+        "{notrefed($c)}",
+        "{refed($b)}", // referencing $c -> $b is referenced
+        "");
   }
 
   @Test
@@ -361,17 +385,17 @@ public final class TemplateAnalysisTest {
   @Test
   public void testMsg() {
     // Our analysis treats message placeholders as only conditionally evaluated.
-    runTest("{@param p : ?}", "{msg desc=\"\"}", "  Hello {$p}", "{/msg}", "{notrefed($p)}");
+    runTest("{@param p: ?}", "{msg desc=\"\"}", "  Hello {$p}", "{/msg}", "{notrefed($p)}");
     // they do respect the incoming references
-    runTest("{@param p : ?}", "{$p}", "{msg desc=\"\"}", "  Hello {refed($p)}", "{/msg}");
+    runTest("{@param p: ?}", "{$p}", "{msg desc=\"\"}", "  Hello {refed($p)}", "{/msg}");
 
     // Order within messages ignored.  One of these 2 placeholders will be second but it isn't
     // predictable because translators have an opportunity to reorder them.
-    runTest("{@param p : ?}", "{msg desc=\"\"}", "  Hello {notrefed($p)} {notrefed($p)}", "{/msg}");
+    runTest("{@param p: ?}", "{msg desc=\"\"}", "  Hello {notrefed($p)} {notrefed($p)}", "{/msg}");
 
     // these cases aren't really interested because of how we model placeholders
     runTest(
-        "{@param p : ?}",
+        "{@param p: ?}",
         "{msg desc=\"\"}",
         "  Hello {$p}",
         "{fallbackmsg desc=\"\"}",
@@ -380,7 +404,7 @@ public final class TemplateAnalysisTest {
         "{notrefed($p)}");
 
     runTest(
-        "{@param p : ?}",
+        "{@param p: ?}",
         "{msg desc=\"\"}",
         "  Hello {$p}",
         "{fallbackmsg desc=\"\"}",
@@ -395,7 +419,7 @@ public final class TemplateAnalysisTest {
     // translation exists.  We used gendered messages here because gender expressions are always
     // evaluated.
     runTest(
-        "{@param gender2 : ?}",
+        "{@param gender2: ?}",
         "{@param gender: ?}",
         "{msg desc='...' genders='$gender'}",
         "   Hello",
@@ -446,7 +470,7 @@ public final class TemplateAnalysisTest {
     // There are multiple references to the same expression in this case. Test the deduplication
     // logic such that the single $p.foo does not mark itself as resolved.
     runTest(
-        "{@param p : ?}",
+        "{@param p: ?}",
         "{@param gender: ?}",
         "{msg desc=\"...\" genders=\"$gender\"}",
         "  {plural notrefed($p.foo)}",
@@ -463,22 +487,22 @@ public final class TemplateAnalysisTest {
   @Test
   public void testCall() {
     // The tricky thing about calls is how params are handled
-    runTest("{@param p : ?}", "{call foo data=\"$p\"/}", "{refed($p)}");
-    runTest("{@param p : ?}", "{call foo data=\"all\"/}", "{notrefed($p)}");
+    runTest("{@param p: ?}", "{call foo data=\"$p\"/}", "{refed($p)}");
+    runTest("{@param p: ?}", "{call foo data=\"all\"/}", "{notrefed($p)}");
     runTest(
-        "{@param p : ?}",
+        "{@param p: ?}",
         "{call foo}",
-        "  {param p1 : notrefed($p) /}",
-        "  {param p2 : notrefed($p) /}",
+        "  {param p1: notrefed($p) /}",
+        "  {param p2: notrefed($p) /}",
         "{/call}",
         "{notrefed($p)}");
 
     runTest(
-        "{@param p : ?}",
+        "{@param p: ?}",
         "{$p}",
         "{call foo}",
-        "  {param p1 : refed($p) /}",
-        "  {param p2 : refed($p) /}",
+        "  {param p1: refed($p) /}",
+        "  {param p2: refed($p) /}",
         "{/call}",
         "{refed($p)}");
   }
@@ -490,25 +514,24 @@ public final class TemplateAnalysisTest {
     longTemplate.append("{@param p0: ?}\n");
     for (int i = 1; i < 1000; i++) {
       longTemplate.append(
-          String.format(
-              "{let $p%d : $p%d + 1/}\n{if $p%d}{$p%d}{/if}\n\n", i, i - 1, i - 1, i - 1));
+          String.format("{let $p%d: $p%d + 1/}\n{if $p%d}{$p%d}{/if}\n\n", i, i - 1, i - 1, i - 1));
     }
     runTest(longTemplate.toString());
   }
 
   void runTest(String... lines) {
     TemplateNode template = parseTemplate(lines);
-    TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);
     // Due to how MsgNodes are compiled and analyzed, we only want to look at representative nodes
     // so we need a complex query
     // first look at all assertions that aren't in a placeholder.
+    List<FunctionNode> assertions = new ArrayList<>();
     SoyTreeUtils.allNodes(
             template,
             n ->
                 n instanceof MsgPlaceholderNode
                     ? VisitDirective.SKIP_CHILDREN
                     : VisitDirective.CONTINUE)
-        .forEach(n -> runTestOnLeafNode(analysis, n));
+        .forEach(n -> collectAssertion(assertions, n));
 
     // then look at all the message placeholders.  Normalize them
     for (MsgNode msg : SoyTreeUtils.getAllNodesOfType(template, MsgNode.class)) {
@@ -517,54 +540,80 @@ public final class TemplateAnalysisTest {
           // only run on the direct exprs of select/plural, we will find their children as other
           // placeholders.
           for (ExprNode expr : ((ExprHolderNode) placeholder).getExprList()) {
-            SoyTreeUtils.allNodes(expr).forEach(n -> runTestOnLeafNode(analysis, n));
+            SoyTreeUtils.allNodes(expr).forEach(n -> collectAssertion(assertions, n));
           }
         } else {
           // everything else is a normal placeholder
-          SoyTreeUtils.allNodes(placeholder).forEach(n -> runTestOnLeafNode(analysis, n));
+          SoyTreeUtils.allNodes(placeholder).forEach(n -> collectAssertion(assertions, n));
         }
       }
     }
+
+    // Unwrap all refed/notrefed FunctionNodes (bottom-up so nested ones unwrap cleanly) before
+    // running analysis, so that expressions like `notrefed($p1) == null` look like `$p1 == null`
+    // to TemplateAnalysisImpl.
+    Map<FunctionNode, ExprNode> targetExprs = new IdentityHashMap<>();
+    for (FunctionNode fn :
+        Lists.reverse(SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class))) {
+      if (fn.getSoyFunction() == NOT_REFED_FUNCTION || fn.getSoyFunction() == REFED_FUNCTION) {
+        ExprNode child = fn.getChild(0);
+        targetExprs.put(fn, child);
+        fn.getParent().replaceChild(fn, child);
+      }
+    }
+
+    TemplateAnalysisImpl analysis = TemplateAnalysisImpl.analyze(template);
+    StringBuilder error = new StringBuilder();
+    for (FunctionNode functionNode : assertions) {
+      ExprNode child = targetExprs.get(functionNode);
+      if (functionNode.getSoyFunction() == NOT_REFED_FUNCTION) {
+        checkNotReferenced(error, analysis, child);
+      } else if (functionNode.getSoyFunction() == REFED_FUNCTION) {
+        checkReferenced(error, analysis, child);
+      }
+    }
+    if (!error.isEmpty()) {
+      fail(error.toString() + '\n' + analysis.dumpGraph());
+    }
   }
 
-  private static void runTestOnLeafNode(TemplateAnalysisImpl analysis, Node n) {
-    if (n instanceof FunctionNode) {
-      FunctionNode functionNode = (FunctionNode) n;
-      if (functionNode.getSoyFunction() == NOT_REFED_FUNCTION) {
-        checkNotReferenced(analysis, functionNode.getChild(0));
-      } else if (functionNode.getSoyFunction() == REFED_FUNCTION) {
-        checkReferenced(analysis, functionNode.getChild(0));
+  private static void collectAssertion(List<FunctionNode> assertions, Node n) {
+    if (n instanceof FunctionNode functionNode) {
+      if (functionNode.getSoyFunction() == NOT_REFED_FUNCTION
+          || functionNode.getSoyFunction() == REFED_FUNCTION) {
+        assertions.add(functionNode);
       }
     }
   }
 
-  private static void checkNotReferenced(TemplateAnalysisImpl analysis, ExprNode child) {
+  private static void checkNotReferenced(
+      StringBuilder sb, TemplateAnalysisImpl analysis, ExprNode child) {
     if (hasDefinitelyAlreadyBeenAccessed(analysis, child)) {
-      fail(
-          "Expected reference to "
-              + format(child)
-              + " to have not been definitely referenced.\n\n"
-              + analysis.dumpGraph());
+      sb.append("Expected reference to ")
+          .append(format(child))
+          .append(" to have not been definitely referenced.\n");
     }
   }
 
-  private static void checkReferenced(TemplateAnalysisImpl analysis, ExprNode child) {
+  private static void checkReferenced(
+      StringBuilder sb, TemplateAnalysisImpl analysis, ExprNode child) {
     if (!hasDefinitelyAlreadyBeenAccessed(analysis, child)) {
-      fail(
-          "Expected reference to "
-              + format(child)
-              + " to have been definitely referenced.\n\n"
-              + analysis.dumpGraph());
+      sb.append("Expected reference to ")
+          .append(format(child))
+          .append(" to have been definitely referenced.\n");
     }
   }
 
   private static boolean hasDefinitelyAlreadyBeenAccessed(
       TemplateAnalysisImpl analysis, ExprNode child) {
-    if (child instanceof VarRefNode) {
-      return analysis.isResolved((VarRefNode) child);
+    if (child instanceof VarRefNode varRefNode) {
+      return analysis.isResolved(varRefNode);
     }
-    if (child instanceof DataAccessNode) {
-      return analysis.isResolved((DataAccessNode) child);
+    if (child instanceof DataAccessNode dataAccessNode) {
+      return analysis.isResolved(dataAccessNode);
+    }
+    if (child instanceof NullSafeAccessNode nullSafeAccessNode) {
+      return hasDefinitelyAlreadyBeenAccessed(analysis, nullSafeAccessNode.getDataAccess());
     }
     return false;
   }
@@ -591,8 +640,8 @@ public final class TemplateAnalysisTest {
                         "",
                         // add an additional template as a callee.
                         "{template foo}",
-                        "  {@param? p1 : ?}",
-                        "  {@param? p2 : ?}",
+                        "  {@param? p1: ?}",
+                        "  {@param? p2: ?}",
                         "  {$p1 + $p2}",
                         "{/template}",
                         ""))

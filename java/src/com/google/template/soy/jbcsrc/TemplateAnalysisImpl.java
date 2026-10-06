@@ -36,8 +36,11 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.GroupNode;
+import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralFromListNode;
@@ -110,6 +113,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -155,7 +159,7 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
   private static final class PseudoEvaluatorVisitor extends AbstractSoyNodeVisitor<Void> {
     final Map<VarDefn, AccessGraph> letNodes = new HashMap<>();
     final PseudoEvaluatorExprVisitor exprVisitor = new PseudoEvaluatorExprVisitor(letNodes);
-    final ExprEquivalence exprEquivalence = new ExprEquivalence();
+    final ExprEquivalence exprEquivalence = new CustomEquivalence();
     Block current;
 
     AccessGraph evaluate(TemplateNode node) {
@@ -732,17 +736,12 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
-      // The NullSafeAccessNode wraps a base node and DataAccessNode nodes. {x?.field} becomes:
-      //
-      // NullSafeAccessNode
-      //   +--- VarRefNode(x)
-      //   +--- FieldAccessNode("field")
-      //          +--- GroupNode(NullNode())
-      //
-      // Since the DataAccessNode has a global placeholder for its own base expression, all field
-      // accesses with the same name will match each other, regardless of the actual base
-      // expression. Don't traverse it to avoid marking nodes as incorrectly resolved.
-      visit(node.getBase());
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitGroupNode(GroupNode node) {
+      visitChildren(node);
     }
 
     @Override
@@ -835,8 +834,32 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitDataAccessNode(DataAccessNode node) {
-      visitChildren(node); // visit subexpressions first
+      if (isNullSafeAccessChain(node) && node.numChildren() > 1) {
+        visit(node.getBaseExprChild());
+        Block prev = current;
+        Block branch = prev.addBranch();
+        for (int i = 1; i < node.numChildren(); i++) {
+          branch = eval(branch, node.getChild(i));
+        }
+        current = Block.merge(prev, branch);
+      } else {
+        visitChildren(node); // visit subexpressions first
+      }
       current.add(node);
+    }
+
+    private static boolean isNullSafeAccessChain(DataAccessNode node) {
+      ExprNode base = node.getBaseExprChild();
+      while (true) {
+        if (base instanceof DataAccessNode dataAccess) {
+          base = dataAccess.getBaseExprChild();
+        } else if (base instanceof AssertNonNullOpNode assertNonNull) {
+          base = assertNonNull.getChild(0);
+        } else {
+          break;
+        }
+      }
+      return NullSafeAccessNode.isPlaceholder(base);
     }
 
     @Override
@@ -1304,6 +1327,101 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
                   successors.stream()
                       .map(p -> String.valueOf(p.hashCode()))
                       .collect(joining(", ")));
+    }
+  }
+
+  private static class CustomEquivalence extends ExprEquivalence {
+    private static ExprNode getBaseExpr(DataAccessNode node) {
+      ExprNode base = node.getBaseExprChild();
+      while (NullSafeAccessNode.isPlaceholder(base)) {
+        ExprNode cur = base;
+        while (cur.getParent() != null) {
+          ExprNode parent = cur.getParent();
+          if (parent instanceof NullSafeAccessNode nullSafeAccessNode
+              && nullSafeAccessNode.getDataAccess() == cur) {
+            base = nullSafeAccessNode.getBase();
+            break;
+          }
+          cur = parent;
+        }
+        if (cur.getParent() == null) {
+          break;
+        }
+      }
+      return base;
+    }
+
+    private static class CustomDoHash extends DoHash {
+      private final ExprEquivalence recursion;
+
+      public CustomDoHash(ExprEquivalence recursion) {
+        super(recursion);
+        this.recursion = recursion;
+      }
+
+      @Override
+      protected Integer visitFieldAccessNode(FieldAccessNode node) {
+        return Objects.hash(
+            recursion.wrap(getBaseExpr(node)), node.getFieldName(), node.isNullSafe());
+      }
+
+      @Override
+      protected Integer visitItemAccessNode(ItemAccessNode node) {
+        return Objects.hash(
+            recursion.wrap(getBaseExpr(node)),
+            recursion.wrap(node.getKeyExprChild()),
+            node.isNullSafe());
+      }
+
+      @Override
+      protected Integer visitMethodCallNode(MethodCallNode node) {
+        int childrenHash = 31 + recursion.wrap(getBaseExpr(node)).hashCode();
+        for (ExprNode param : node.getParams()) {
+          childrenHash = 31 * childrenHash + recursion.wrap(param).hashCode();
+        }
+        return 31 * (node.getMethodName().identifier().hashCode() * 31 + childrenHash)
+            + Boolean.hashCode(node.isNullSafe());
+      }
+    }
+
+    private static class CustomDoEquals extends DoEquals {
+      private final ExprEquivalence recursion;
+      private final ExprNode other;
+
+      public CustomDoEquals(ExprEquivalence recursion, ExprNode other) {
+        super(recursion, other);
+        this.recursion = recursion;
+        this.other = other;
+      }
+
+      @Override
+      protected Boolean visitFieldAccessNode(FieldAccessNode node) {
+        FieldAccessNode typedOther = (FieldAccessNode) other;
+        return recursion.equivalent(getBaseExpr(node), getBaseExpr(typedOther))
+            && node.getFieldName().equals(typedOther.getFieldName())
+            && node.isNullSafe() == typedOther.isNullSafe();
+      }
+
+      @Override
+      protected Boolean visitItemAccessNode(ItemAccessNode node) {
+        ItemAccessNode typedOther = (ItemAccessNode) other;
+        return recursion.equivalent(getBaseExpr(node), getBaseExpr(typedOther))
+            && recursion.equivalent(node.getKeyExprChild(), typedOther.getKeyExprChild())
+            && node.isNullSafe() == typedOther.isNullSafe();
+      }
+
+      @Override
+      protected Boolean visitMethodCallNode(MethodCallNode node) {
+        MethodCallNode typedOther = (MethodCallNode) other;
+        return node.getMethodName().identifier().equals(typedOther.getMethodName().identifier())
+            && node.isNullSafe() == typedOther.isNullSafe()
+            && recursion.equivalent(getBaseExpr(node), getBaseExpr(typedOther))
+            && recursion.equivalent(node.getParams(), typedOther.getParams());
+      }
+    }
+
+    public CustomEquivalence() {
+      super(CustomDoHash::new, CustomDoEquals::new);
     }
   }
 }
