@@ -36,7 +36,6 @@ goog.require('goog.object');
 goog.require('goog.soy');
 goog.require('goog.soy.data');
 goog.require('goog.string');
-goog.require('goog.string.Const');
 goog.require('google3.javascript.template.soy.soyutils_idom');
 goog.require('proto.webutil.html.types.SafeHtmlProto');
 goog.require('proto.webutil.html.types.SafeScriptProto');
@@ -94,7 +93,6 @@ goog.exportSymbol('goog.soy.data.SanitizedHtmlAttribute', goog.soy.data.Sanitize
 goog.exportSymbol('goog.soy.data.SanitizedJs', goog.soy.data.SanitizedJs);
 goog.exportSymbol('goog.soy.data.SanitizedTrustedResourceUri', goog.soy.data.SanitizedTrustedResourceUri);
 goog.exportSymbol('goog.soy.data.SanitizedUri', goog.soy.data.SanitizedUri);
-goog.exportSymbol('goog.string.Const', goog.string.Const);
 goog.exportSymbol('goog.string.contains', goog.string.contains);
 goog.exportSymbol('goog.string.htmlEscape', goog.string.htmlEscape);
 goog.exportSymbol('goog.string.quote', goog.string.quote);
