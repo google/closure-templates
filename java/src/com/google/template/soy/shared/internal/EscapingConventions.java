@@ -1092,7 +1092,7 @@ public final class EscapingConventions {
     private FilterImageDataUri() {
       super(
           /* valueFilter= */ Pattern.compile(
-              "^data:image/(?:bmp|gif|jpe?g|png|tiff|webp|x-icon);base64,[a-z0-9+/]+=*\\z",
+              "^data:image/(?:bmp|gif|jpe?g|png|tiff|webp|x-icon|avif);base64,[a-z0-9+/]+=*\\z",
               Pattern.CASE_INSENSITIVE));
     }
 
