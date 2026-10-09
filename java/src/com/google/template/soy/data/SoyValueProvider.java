@@ -20,6 +20,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
+import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -87,14 +88,34 @@ public abstract class SoyValueProvider {
    * but it costs more allocations to use it.
    */
   public SoyValueProvider coerceToBooleanProvider() {
+    return coerceToBooleanDataProvider(SoyValue::coerceToBoolean);
+  }
+
+  public SoyValueProvider coerceToNotProvider() {
+    return coerceToBooleanDataProvider(sv -> !sv.coerceToBoolean());
+  }
+
+  public SoyValueProvider coerceToIsNullProvider() {
+    return coerceToBooleanDataProvider(SoyValue::isNull);
+  }
+
+  public SoyValueProvider coerceToIsNullishProvider() {
+    return coerceToBooleanDataProvider(sv -> sv.isNullish());
+  }
+
+  public SoyValueProvider coerceToIsUndefinedProvider() {
+    return coerceToBooleanDataProvider(SoyValue::isUndefined);
+  }
+
+  private SoyValueProvider coerceToBooleanDataProvider(Predicate<SoyValue> predicate) {
     if (status().isDone()) {
-      return BooleanData.forValue(resolve().coerceToBoolean());
+      return BooleanData.forValue(predicate.test(resolve()));
     }
 
     return new SoyValueProvider() {
       @Override
       public SoyValue resolve() {
-        return BooleanData.forValue(SoyValueProvider.this.resolve().coerceToBoolean());
+        return BooleanData.forValue(predicate.test(SoyValueProvider.this.resolve()));
       }
 
       @Override

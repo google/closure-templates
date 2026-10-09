@@ -25,7 +25,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.DataAccessNode;
-import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -54,15 +54,13 @@ public final class ConstantsCompiler {
   static final TemplateAnalysis CONSTANT_CONTEXT =
       new TemplateAnalysis() {
         @Override
-        public boolean isResolved(VarRefNode ref) {
+        public boolean isResolved(ExprNode ref) {
+          if (ref instanceof DataAccessNode) {
+            // Data access is not allowed in const context.
+            throw new UnsupportedOperationException();
+          }
           // Only locals in list comprehension and other globals may possibly be referenced.
           return true;
-        }
-
-        @Override
-        public boolean isResolved(DataAccessNode ref) {
-          // Data access is not allowed in const context.
-          throw new UnsupportedOperationException();
         }
       };
 

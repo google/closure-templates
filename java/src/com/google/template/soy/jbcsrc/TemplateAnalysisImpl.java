@@ -28,13 +28,16 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
+import com.google.template.soy.exprtree.ExprNodes;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -48,12 +51,18 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.NumberNode;
+import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AmpAmpOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.BarBarOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.SpreadOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.TripleNotEqualOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
@@ -117,6 +126,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 final class TemplateAnalysisImpl implements TemplateAnalysis {
 
@@ -143,13 +153,53 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
   }
 
   @Override
-  public boolean isResolved(VarRefNode ref) {
+  public boolean isResolved(ExprNode ref) {
     return resolvedExpressions.contains(ref);
   }
 
-  @Override
-  public boolean isResolved(DataAccessNode ref) {
-    return resolvedExpressions.contains(ref);
+  @Nullable
+  private static ExprNode getNullishComparisonOperand(ExprNode node) {
+    return switch (node.getKind()) {
+      case EQUAL_OP_NODE, NOT_EQUAL_OP_NODE, TRIPLE_EQUAL_OP_NODE, TRIPLE_NOT_EQUAL_OP_NODE -> {
+        OperatorNode opNode = (OperatorNode) node;
+        if (ExprNodes.isNullishLiteral(opNode.getChild(0))) {
+          yield opNode.getChild(1);
+        }
+        if (ExprNodes.isNullishLiteral(opNode.getChild(1))) {
+          yield opNode.getChild(0);
+        }
+        yield null;
+      }
+      default -> null;
+    };
+  }
+
+  private static boolean isBooleanCoercion(ExprNode node) {
+    return node instanceof ExprRootNode
+        || node instanceof NotOpNode
+        || (node instanceof FunctionNode fn && fn.getSoyFunction() == BuiltinFunction.BOOLEAN);
+  }
+
+  @Nullable
+  private static ExprNode getBooleanCoercionOperand(ExprNode node) {
+    if (!isBooleanCoercion(node)) {
+      return null;
+    }
+    ExprNode curr = node;
+    while (isBooleanCoercion(curr)) {
+      curr = ((ParentExprNode) curr).getChild(0);
+    }
+    return curr;
+  }
+
+  private static FunctionNode createBooleanFunctionNode(ExprNode expr) {
+    var fn =
+        FunctionNode.newPositional(
+            Identifier.create(BuiltinFunction.BOOLEAN.getName(), SourceLocation.UNKNOWN),
+            BuiltinFunction.BOOLEAN,
+            SourceLocation.UNKNOWN);
+    fn.addChild(expr.copy(new CopyState()));
+    return fn;
   }
 
   /**
@@ -368,18 +418,23 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     @Override
     protected void visitIfNode(IfNode node) {
       var detachable = DetachState.ifCondNodeDetachableContext(node.getHtmlContext());
-      Block conditionFork = detachable ? this.current : null;
+      Block conditionFork = this.current;
       List<Block> branchEnds = new ArrayList<>();
       boolean hasElse = false;
       for (SoyNode child : node.getChildren()) {
         if (child instanceof IfCondNode) {
           IfCondNode icn = (IfCondNode) child;
           ExprRootNode conditionExpression = icn.getExpr();
-          if (detachable) {
-            // If detachable, each if/else condition is in its own branch.
-            // Soy runtime may choose to not fully evaluate if/else conditions, so if/else blocks
-            // cannot assume that any value used in a condition is fully evaluated.
+          if (detachable
+              && ExpressionToSoyValueProviderCompiler
+                  .canCompileToSoyValueProviderIfUsefulToPreserveStreaming(conditionExpression)) {
+            // If detachable and the condition can be compiled to a SoyValueProvider, each if/else
+            // condition is in its own branch. Soy runtime may choose to not fully evaluate if/else
+            // conditions via coerceToBooleanProvider(), so if/else blocks cannot assume that any
+            // value used in a condition is fully evaluated.
             this.current = evalInBlock(conditionFork.addBranch(), conditionExpression);
+            conditionFork = conditionFork.addBranch();
+            conditionFork.add(conditionExpression);
           } else {
             // For ifs we always evaluate the first condition and if there is an 'else' clause at
             // least
@@ -391,12 +446,9 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
             // at position Y $p1 and $p2 have been ref'd
             // at position Z only $p1 has definitely been ref'd
             // To handle all these cases we need to manage a bunch of forks
-            if (conditionFork == null) {
-              // first condition is always evaluated
-              evalInline(conditionExpression);
-              conditionFork = this.current;
-            } else {
-              conditionFork = exprVisitor.eval(conditionFork.addBranch(), conditionExpression);
+            conditionFork = exprVisitor.eval(conditionFork.addBranch(), conditionExpression);
+            if (!isBooleanCoercion(conditionExpression.getRoot())) {
+              conditionFork.add(conditionExpression);
             }
           }
           Block branch = conditionFork.addBranch();
@@ -886,7 +938,6 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case EMPTY_TO_UNDEFINED:
           case UNDEFINED_TO_NULL:
           case UNDEFINED_TO_NULL_SSR:
-          case BOOLEAN:
           case HAS_CONTENT:
           case IS_TRUTHY_NON_EMPTY:
           case NEW_SET:
@@ -895,6 +946,9 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           case IS_OUTPUT_BUFFER:
             // visit children normally
             break;
+          case BOOLEAN:
+            visitBooleanCoercion(node);
+            return;
           case UNKNOWN_JS_GLOBAL:
             throw new UnsupportedOperationException(
                 "the "
@@ -931,6 +985,91 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
     }
 
     @Override
+    protected void visitNotOpNode(NotOpNode node) {
+      visitBooleanCoercion(node);
+    }
+
+    private void visitBooleanCoercion(ExprNode node) {
+      List<ExprNode> chain = new ArrayList<>();
+      ExprNode curr = node;
+      while (curr instanceof NotOpNode
+          || (curr instanceof FunctionNode fn && fn.getSoyFunction() == BuiltinFunction.BOOLEAN)) {
+        chain.add(curr);
+        curr = ((ParentExprNode) curr).getChild(0);
+      }
+      if (chain.get(chain.size() - 1) instanceof NotOpNode
+          && ExpressionToSoyValueProviderCompiler
+              .canCompileToSoyValueProviderIfUsefulToPreserveStreaming(curr)) {
+        executeInBranch(curr);
+        addBooleanCoercionChain(chain);
+      } else {
+        addBooleanCoercionChain(chain);
+        visit(curr);
+      }
+    }
+
+    private void addBooleanCoercionChain(List<ExprNode> chain) {
+      if (chain.size() == 1) {
+        current.add(chain.get(0));
+      } else {
+        List<Block> branches = new ArrayList<>(chain.size());
+        for (ExprNode coercionNode : chain) {
+          Block b = current.addBranch();
+          b.add(coercionNode);
+          branches.add(b);
+        }
+        current = Block.merge(branches);
+      }
+    }
+
+    @Override
+    protected void visitEqualOpNode(EqualOpNode node) {
+      visitNullishComparisonOpNode(node);
+    }
+
+    @Override
+    protected void visitNotEqualOpNode(NotEqualOpNode node) {
+      visitNullishComparisonOpNode(node);
+    }
+
+    @Override
+    protected void visitTripleEqualOpNode(TripleEqualOpNode node) {
+      visitNullishComparisonOpNode(node);
+    }
+
+    @Override
+    protected void visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
+      visitNullishComparisonOpNode(node);
+    }
+
+    private void visitNullishComparisonOpNode(OperatorNode node) {
+      ExprNode operand = getNullishComparisonOperand(node);
+      if (operand == null) {
+        visitChildren(node);
+        return;
+      }
+      // Comparisons to null or undefined may use SoyValueProvider.coerceToIs*Provider() without
+      // resolving the underlying SoyValueProvider when ExpressionToSoyValueProviderCompiler can
+      // compile the operand to a SoyValueProvider without boxing, so we cannot assume such an
+      // operand is resolved afterwards. However, any subexpressions of a DataAccessNode (such as
+      // the base expression and key expression) are evaluated, and the comparison expression itself
+      // (and any of its variants) is resolved.
+      if (ExpressionToSoyValueProviderCompiler
+          .canCompileToSoyValueProviderIfUsefulToPreserveStreaming(operand)) {
+        executeInBranch(operand);
+      } else if (operand instanceof DataAccessNode dataAccess) {
+        visitChildren(dataAccess);
+        Block prev = current;
+        Block branch = prev.addBranch();
+        branch.add(dataAccess);
+        current = Block.merge(prev, branch);
+      } else {
+        visit(operand);
+      }
+      current.add(node);
+    }
+
+    @Override
     protected void visitNullCoalescingOpNode(NullCoalescingOpNode node) {
       visit(node.getLeftChild());
       // The right side may or may not be evaluated
@@ -964,7 +1103,11 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
 
     @Override
     protected void visitConditionalOpNode(ConditionalOpNode node) {
-      visit(node.getChild(0));
+      ExprNode condition = node.getChild(0);
+      visit(condition);
+      if (!isBooleanCoercion(condition)) {
+        current.add(createBooleanFunctionNode(condition));
+      }
       current =
           Block.merge(
               eval(current.addBranch(), node.getChild(1)),
@@ -1064,8 +1207,8 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
    * <ul>
    *   <li>We aren't tracking 'back edges' (e.g. loops) accurately.
    *   <li>We are tracking a small subset of the operations performed while evaluating a template.
-   *       Currently only {@link VarRefNode variable references} and {@link DataAccessNode data
-   *       access} operations.
+   *       Currently only {@link VarRefNode variable references}, {@link DataAccessNode data access}
+   *       operations, and nullish comparison {@link OperatorNode}s.
    * </ul>
    *
    * Both of these limitations exist simply because we don't have usecases for tracking this data
@@ -1143,6 +1286,14 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
           ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(expr);
           if (!currentBlockSet.add(wrapped)) {
             resolvedExprs.add(expr);
+          } else {
+            ExprNode operand = getNullishComparisonOperand(expr);
+            if (operand == null) {
+              operand = getBooleanCoercionOperand(expr);
+            }
+            if (operand != null && currentBlockSet.contains(exprEquivalence.wrap(operand))) {
+              resolvedExprs.add(expr);
+            }
           }
         }
         // no need to store the result if we are in a dead end branch.
@@ -1292,18 +1443,14 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       return end;
     }
 
-    // This list will contain either DataAccessNode or VarRefNodes, eventually we may want to add
-    // all 'leaf' nodes.
+    // This list will contain DataAccessNode, VarRefNode, nullish comparison OperatorNodes, or
+    // boolean coercion nodes. Eventually we may want to add all 'leaf' nodes.
     final List<ExprNode> exprs = new ArrayList<>();
     final Set<Block> successors = new LinkedHashSet<>();
     final Set<Block> predecessors = new LinkedHashSet<>();
 
-    void add(VarRefNode var) {
-      exprs.add(var);
-    }
-
-    void add(DataAccessNode dataAccess) {
-      exprs.add(dataAccess);
+    void add(ExprNode expr) {
+      exprs.add(expr);
     }
 
     // Returns a new block that is a successor to this one
@@ -1360,6 +1507,23 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
       }
 
       @Override
+      protected Integer visit(ExprNode node) {
+        ExprNode nullishOperand = getNullishComparisonOperand(node);
+        if (nullishOperand != null) {
+          return 31 * ExprNode.Kind.EQUAL_OP_NODE.hashCode()
+              + Operator.EQUAL.hashCode() * 31
+              + recursion.hash(nullishOperand);
+        }
+        ExprNode booleanOperand = getBooleanCoercionOperand(node);
+        if (booleanOperand != null) {
+          return 31 * ExprNode.Kind.FUNCTION_NODE.hashCode()
+              + BuiltinFunction.BOOLEAN.getName().hashCode() * 31
+              + recursion.hash(booleanOperand);
+        }
+        return super.visit(node);
+      }
+
+      @Override
       protected Integer visitFieldAccessNode(FieldAccessNode node) {
         return Objects.hash(
             recursion.wrap(getBaseExpr(node)), node.getFieldName(), node.isNullSafe());
@@ -1392,6 +1556,25 @@ final class TemplateAnalysisImpl implements TemplateAnalysis {
         super(recursion, other);
         this.recursion = recursion;
         this.other = other;
+      }
+
+      @Override
+      protected Boolean visit(ExprNode node) {
+        ExprNode nullishOperand = getNullishComparisonOperand(node);
+        ExprNode otherNullishOperand = getNullishComparisonOperand(other);
+        if (nullishOperand != null || otherNullishOperand != null) {
+          return nullishOperand != null
+              && otherNullishOperand != null
+              && recursion.equivalent(nullishOperand, otherNullishOperand);
+        }
+        ExprNode booleanOperand = getBooleanCoercionOperand(node);
+        ExprNode otherBooleanOperand = getBooleanCoercionOperand(other);
+        if (booleanOperand != null || otherBooleanOperand != null) {
+          return booleanOperand != null
+              && otherBooleanOperand != null
+              && recursion.equivalent(booleanOperand, otherBooleanOperand);
+        }
+        return super.visit(node);
       }
 
       @Override

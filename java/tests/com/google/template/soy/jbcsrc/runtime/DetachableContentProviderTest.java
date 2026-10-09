@@ -262,4 +262,14 @@ public final class DetachableContentProviderTest {
     var booleanData = provider.coerceToBooleanProvider().resolve();
     assertThat(booleanData).isEqualTo(BooleanData.FALSE);
   }
+
+  @Test
+  public void testCoerceToIsNullishProviders_alwaysFalseWithoutResolving() {
+    DetachableContentProvider provider =
+        new TestDetachableContentProvider(SettableFuture.create(), SettableFuture.create());
+
+    assertThat(provider.coerceToIsNullProvider()).isEqualTo(BooleanData.FALSE);
+    assertThat(provider.coerceToIsNullishProvider()).isEqualTo(BooleanData.FALSE);
+    assertThat(provider.coerceToIsUndefinedProvider()).isEqualTo(BooleanData.FALSE);
+  }
 }

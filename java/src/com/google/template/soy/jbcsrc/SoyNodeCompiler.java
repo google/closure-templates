@@ -558,16 +558,20 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     var expressionDetacher = getDetachState().createExpressionDetacher(reattachPoint);
     if (DetachState.ifCondNodeDetachableContext(htmlContext)
         && exprCompiler.requiresDetach(node.getExpr())) {
+      ExpressionDetacher nodeDetacher =
+          analysis.isResolved(node.getExpr())
+              ? ExpressionDetacher.NullDetatcher.INSTANCE
+              : expressionDetacher;
       var asSoyValueProvider =
           expressionToSoyValueProviderCompiler.compileToSoyValueProviderIfUsefulToPreserveStreaming(
-              node.getExpr(), expressionDetacher);
+              node.getExpr(), nodeDetacher);
       if (asSoyValueProvider.isPresent()) {
         var booleanProviderExpression =
             MethodRefs.SOY_VALUE_PROVIDER_COERCE_TO_BOOLEAN_PROVIDER.invoke(
                 asSoyValueProvider.get());
         return SoyExpression.forSoyValue(
                 BoolType.getInstance(),
-                expressionDetacher.resolveSoyValueProvider(booleanProviderExpression))
+                nodeDetacher.resolveSoyValueProvider(booleanProviderExpression))
             .compileToBranch();
       }
     }

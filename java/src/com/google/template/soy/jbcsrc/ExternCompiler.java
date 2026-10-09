@@ -33,8 +33,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.TypeReference;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.exprtree.DataAccessNode;
-import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.ConstantsCompiler.ConstantVariables;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
@@ -85,12 +84,7 @@ public final class ExternCompiler {
   static final TemplateAnalysis EXTERN_CONTEXT =
       new TemplateAnalysis() {
         @Override
-        public boolean isResolved(VarRefNode ref) {
-          return true;
-        }
-
-        @Override
-        public boolean isResolved(DataAccessNode ref) {
+        public boolean isResolved(ExprNode ref) {
           return true;
         }
       };

@@ -818,13 +818,92 @@ final class ExpressionCompiler {
 
     // Comparison operators
 
+    private Optional<Branch> compileNullishCheckAsSoyValueProvider(
+        OperatorNode opNode, ExprNode node, MethodRef coerceMethod) {
+      if (!requiresDetach(analysis, node)) {
+        return Optional.empty();
+      }
+      ExpressionDetacher nodeDetacher =
+          analysis.isResolved(opNode) ? ExpressionDetacher.NullDetatcher.INSTANCE : detacher;
+      return svpCompiler
+          .compileToSoyValueProviderIfUsefulToPreserveStreaming(node, nodeDetacher)
+          .filter(svp -> !isDefinitelyAssignableFrom(SOY_VALUE_TYPE, svp.resultType()))
+          .map(
+              svp ->
+                  SoyExpression.forSoyValue(
+                          BoolType.getInstance(),
+                          nodeDetacher.resolveSoyValueProvider(coerceMethod.invoke(svp)))
+                      .compileToBranch());
+    }
+
+    private SoyExpression visitNullishComparisonOperand(OperatorNode opNode, ExprNode node) {
+      if (analysis.isResolved(opNode)) {
+        return new CompilerVisitor(
+                context,
+                analysis,
+                parameters,
+                varManager,
+                ExpressionDetacher.NullDetatcher.INSTANCE,
+                sourceFunctionCompiler,
+                fileSetMetadata,
+                isConstantContext)
+            .visit(node);
+      }
+      return visit(node);
+    }
+
+    private SoyExpression isSoyNullish(OperatorNode opNode, ExprNode node) {
+      return compileNullishCheckAsSoyValueProvider(
+              opNode, node, MethodRefs.SOY_VALUE_PROVIDER_COERCE_TO_IS_NULLISH_PROVIDER)
+          .map(branch -> SoyExpression.forBool(branch.asBoolean()))
+          .orElseGet(() -> BytecodeUtils.isSoyNullish(visitNullishComparisonOperand(opNode, node)));
+    }
+
+    private SoyExpression isNonSoyNullish(OperatorNode opNode, ExprNode node) {
+      return compileNullishCheckAsSoyValueProvider(
+              opNode, node, MethodRefs.SOY_VALUE_PROVIDER_COERCE_TO_IS_NULLISH_PROVIDER)
+          .map(branch -> SoyExpression.forBool(branch.negate().asBoolean()))
+          .orElseGet(
+              () -> BytecodeUtils.isNonSoyNullish(visitNullishComparisonOperand(opNode, node)));
+    }
+
+    private SoyExpression isSoyNull(OperatorNode opNode, ExprNode node) {
+      return compileNullishCheckAsSoyValueProvider(
+              opNode, node, MethodRefs.SOY_VALUE_PROVIDER_COERCE_TO_IS_NULL_PROVIDER)
+          .map(branch -> SoyExpression.forBool(branch.asBoolean()))
+          .orElseGet(() -> BytecodeUtils.isSoyNull(visitNullishComparisonOperand(opNode, node)));
+    }
+
+    private SoyExpression isNonSoyNull(OperatorNode opNode, ExprNode node) {
+      return compileNullishCheckAsSoyValueProvider(
+              opNode, node, MethodRefs.SOY_VALUE_PROVIDER_COERCE_TO_IS_NULL_PROVIDER)
+          .map(branch -> SoyExpression.forBool(branch.negate().asBoolean()))
+          .orElseGet(() -> BytecodeUtils.isNonSoyNull(visitNullishComparisonOperand(opNode, node)));
+    }
+
+    private SoyExpression isSoyUndefined(OperatorNode opNode, ExprNode node) {
+      return compileNullishCheckAsSoyValueProvider(
+              opNode, node, MethodRefs.SOY_VALUE_PROVIDER_COERCE_TO_IS_UNDEFINED_PROVIDER)
+          .map(branch -> SoyExpression.forBool(branch.asBoolean()))
+          .orElseGet(
+              () -> BytecodeUtils.isSoyUndefined(visitNullishComparisonOperand(opNode, node)));
+    }
+
+    private SoyExpression isNonSoyUndefined(OperatorNode opNode, ExprNode node) {
+      return compileNullishCheckAsSoyValueProvider(
+              opNode, node, MethodRefs.SOY_VALUE_PROVIDER_COERCE_TO_IS_UNDEFINED_PROVIDER)
+          .map(branch -> SoyExpression.forBool(branch.negate().asBoolean()))
+          .orElseGet(
+              () -> BytecodeUtils.isNonSoyUndefined(visitNullishComparisonOperand(opNode, node)));
+    }
+
     @Override
     protected SoyExpression visitEqualOpNode(EqualOpNode node) {
       if (ExprNodes.isNullishLiteral(node.getChild(0))) {
-        return BytecodeUtils.isSoyNullish(visit(node.getChild(1)));
+        return isSoyNullish(node, node.getChild(1));
       }
       if (ExprNodes.isNullishLiteral(node.getChild(1))) {
-        return BytecodeUtils.isSoyNullish(visit(node.getChild(0)));
+        return isSoyNullish(node, node.getChild(0));
       }
       return SoyExpression.forBool(
           BytecodeUtils.compareSoyEquals(visit(node.getChild(0)), visit(node.getChild(1))));
@@ -833,10 +912,10 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitNotEqualOpNode(NotEqualOpNode node) {
       if (ExprNodes.isNullishLiteral(node.getChild(0))) {
-        return BytecodeUtils.isNonSoyNullish(visit(node.getChild(1)));
+        return isNonSoyNullish(node, node.getChild(1));
       }
       if (ExprNodes.isNullishLiteral(node.getChild(1))) {
-        return BytecodeUtils.isNonSoyNullish(visit(node.getChild(0)));
+        return isNonSoyNullish(node, node.getChild(0));
       }
       return SoyExpression.forBool(
           Branch.ifTrue(
@@ -848,16 +927,16 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitTripleEqualOpNode(TripleEqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isSoyNull(visit(node.getChild(1)));
+        return isSoyNull(node, node.getChild(1));
       }
       if (node.getChild(0).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-        return BytecodeUtils.isSoyUndefined(visit(node.getChild(1)));
+        return isSoyUndefined(node, node.getChild(1));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isSoyNull(visit(node.getChild(0)));
+        return isSoyNull(node, node.getChild(0));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-        return BytecodeUtils.isSoyUndefined(visit(node.getChild(0)));
+        return isSoyUndefined(node, node.getChild(0));
       }
       return SoyExpression.forBool(
           BytecodeUtils.compareSoyTripleEquals(visit(node.getChild(0)), visit(node.getChild(1))));
@@ -866,16 +945,16 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitTripleNotEqualOpNode(TripleNotEqualOpNode node) {
       if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isNonSoyNull(visit(node.getChild(1)));
+        return isNonSoyNull(node, node.getChild(1));
       }
       if (node.getChild(0).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-        return BytecodeUtils.isNonSoyUndefined(visit(node.getChild(1)));
+        return isNonSoyUndefined(node, node.getChild(1));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        return BytecodeUtils.isNonSoyNull(visit(node.getChild(0)));
+        return isNonSoyNull(node, node.getChild(0));
       }
       if (node.getChild(1).getKind() == ExprNode.Kind.UNDEFINED_NODE) {
-        return BytecodeUtils.isNonSoyUndefined(visit(node.getChild(0)));
+        return isNonSoyUndefined(node, node.getChild(0));
       }
       return SoyExpression.forBool(
           Branch.ifTrue(
@@ -1182,7 +1261,16 @@ final class ExpressionCompiler {
     @Override
     protected SoyExpression visitNotOpNode(NotOpNode node) {
       // All values are convertible to boolean
-      return SoyExpression.forBool(visit(node.getChild(0)).compileToBranch().negate().asBoolean());
+      return compileNullishCheckAsSoyValueProvider(
+              node, node.getChild(0), MethodRefs.SOY_VALUE_PROVIDER_COERCE_TO_NOT_PROVIDER)
+          .map(branch -> SoyExpression.forBool(branch.asBoolean()))
+          .orElseGet(
+              () ->
+                  SoyExpression.forBool(
+                      visitNullishComparisonOperand(node, node.getChild(0))
+                          .compileToBranch()
+                          .negate()
+                          .asBoolean()));
     }
 
     private SoyExpression doSimpleAnd(AbstractOperatorNode node) {
@@ -2640,6 +2728,14 @@ final class ExpressionCompiler {
         }
       }
       return node.getParams().stream().anyMatch(this::visit);
+    }
+
+    @Override
+    protected Boolean visitOperatorNode(OperatorNode node) {
+      if (analysis.isResolved(node)) {
+        return false;
+      }
+      return anyChildMatches(node);
     }
 
     @Override

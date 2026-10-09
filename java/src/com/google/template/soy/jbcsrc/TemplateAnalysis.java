@@ -17,7 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.template.soy.exprtree.DataAccessNode;
-import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.ExprNode;
 
 /**
  * A static analyzer for how templates will access variables.
@@ -47,14 +47,8 @@ import com.google.template.soy.exprtree.VarRefNode;
 interface TemplateAnalysis {
 
   /**
-   * Returns true if this variable reference is definitely not the first reference to the variable
-   * within a given template.
+   * Returns true if this expression (e.g. a variable reference, data access, nullish comparison, or
+   * boolean coercion) has definitely already been resolved within a given template.
    */
-  boolean isResolved(VarRefNode ref);
-
-  /**
-   * Returns true if this data access is definitely not the first reference to the field or item
-   * within a given template.
-   */
-  boolean isResolved(DataAccessNode ref);
+  boolean isResolved(ExprNode ref);
 }

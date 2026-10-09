@@ -84,6 +84,26 @@ public abstract class SoyValue extends SoyValueProvider {
     return BooleanData.forValue(this.coerceToBoolean());
   }
 
+  @Override
+  public SoyValueProvider coerceToNotProvider() {
+    return BooleanData.forValue(!this.coerceToBoolean());
+  }
+
+  @Override
+  public SoyValueProvider coerceToIsNullProvider() {
+    return BooleanData.forValue(this.isNull());
+  }
+
+  @Override
+  public SoyValueProvider coerceToIsNullishProvider() {
+    return BooleanData.forValue(this.isNullish());
+  }
+
+  @Override
+  public SoyValueProvider coerceToIsUndefinedProvider() {
+    return BooleanData.forValue(this.isUndefined());
+  }
+
   /**
    * Performs a Java number to `long` coercion on the wrapped value. Compared with {@link
    * #longValue()} this method is expected to succeed for any {@link

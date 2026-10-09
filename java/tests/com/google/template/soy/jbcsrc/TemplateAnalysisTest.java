@@ -29,7 +29,6 @@ import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -45,7 +44,6 @@ import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -219,6 +217,59 @@ public final class TemplateAnalysisTest {
         "\">",
         "{notrefed($p)}",
         "</div>");
+  }
+
+  @Test
+  public void testNullishComparisons() {
+    runTest(
+        "{@param p1: ?}",
+        "{notrefed(notrefed($p1) == null)}",
+        "{refed(notrefed($p1) != null)}",
+        "{refed(null === notrefed($p1))}",
+        "{refed(notrefed($p1) !== null)}",
+        "{refed(notrefed($p1) === undefined)}",
+        "{refed(undefined !== notrefed($p1))}",
+        "{notrefed($p1)}",
+        "{refed($p1)}");
+    runTest(
+        "{@param p1: ?}",
+        "{if notrefed(notrefed($p1) == null)}A{/if}",
+        "{if refed(notrefed($p1) != null)}B{/if}",
+        "");
+    runTest("{@param p1: ?}", "{notrefed($p1)}", "{refed(refed($p1) == null)}");
+  }
+
+  @Test
+  public void testNullishComparisons_recordField() {
+    runTest(
+        "{@param rec: [key: ?]}",
+        "{notrefed(notrefed(notrefed($rec).key) == null)}",
+        "{refed(notrefed(refed($rec).key) != null)}",
+        "{refed(undefined === notrefed(refed($rec).key))}",
+        "{notrefed($rec.key)}",
+        "{refed($rec.key)}");
+    runTest(
+        "{@param rec: [key: ?]}",
+        "{notrefed($rec.key)}",
+        "{refed(refed(refed($rec).key) == null)}");
+  }
+
+  @Test
+  public void testImplicitBoolean() {
+    runTest("{@param p1: ?}", "{if notrefed($p1)}X{/if}", "{refed(Boolean($p1))}");
+    runTest("{@param p1: ?}", "{if !notrefed($p1)}X{/if}", "{refed(Boolean($p1))}");
+    runTest("{@param p1: ?}", "{if !!notrefed($p1)}X{/if}", "{refed(Boolean($p1))}");
+    runTest("{@param p1: ?}", "{$p1 ? 'true' : 'false'}", "{refed(Boolean($p1))}");
+    runTest("{@param p1: ?}", "{!$p1 ? 'true' : 'false'}", "{refed(Boolean($p1))}");
+    runTest("{@param p1: ?}", "{!!$p1 ? 'true' : 'false'}", "{refed(Boolean($p1))}");
+
+    // Complex boolean expressions defeat the analysis.
+    runTest(
+        "{@param p1: ?}",
+        "{@param p2: ?}",
+        "{$p1 && $p2 ? 'true' : 'false'}",
+        "{refed(Boolean(refed($p1)))}",
+        "{notrefed(Boolean(notrefed($p2)))}");
   }
 
   @Test
@@ -552,7 +603,7 @@ public final class TemplateAnalysisTest {
     // Unwrap all refed/notrefed FunctionNodes (bottom-up so nested ones unwrap cleanly) before
     // running analysis, so that expressions like `notrefed($p1) == null` look like `$p1 == null`
     // to TemplateAnalysisImpl.
-    Map<FunctionNode, ExprNode> targetExprs = new IdentityHashMap<>();
+    IdentityHashMap<FunctionNode, ExprNode> targetExprs = new IdentityHashMap<>();
     for (FunctionNode fn :
         Lists.reverse(SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class))) {
       if (fn.getSoyFunction() == NOT_REFED_FUNCTION || fn.getSoyFunction() == REFED_FUNCTION) {
@@ -606,16 +657,10 @@ public final class TemplateAnalysisTest {
 
   private static boolean hasDefinitelyAlreadyBeenAccessed(
       TemplateAnalysisImpl analysis, ExprNode child) {
-    if (child instanceof VarRefNode varRefNode) {
-      return analysis.isResolved(varRefNode);
-    }
-    if (child instanceof DataAccessNode dataAccessNode) {
-      return analysis.isResolved(dataAccessNode);
-    }
     if (child instanceof NullSafeAccessNode nullSafeAccessNode) {
       return hasDefinitelyAlreadyBeenAccessed(analysis, nullSafeAccessNode.getDataAccess());
     }
-    return false;
+    return analysis.isResolved(child);
   }
 
   private static String format(ExprNode child) {

@@ -56,7 +56,7 @@ public abstract class TemplateType extends SoyType {
           .build();
   private static final Parameter KEY_HIDDEN_ATTRIBUTE =
       Parameter.builder()
-          .setName("ssk")
+          .setName(KEY_HIDDEN_ATTRIBUTE_NAME)
           .setType(StringType.getInstance())
           .setKind(ParameterKind.ATTRIBUTE)
           .setRequired(false)

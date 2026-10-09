@@ -70,23 +70,26 @@ public class ExprEquivalence {
         new Equivalence<>() {
           @Override
           protected boolean doEquivalent(ExprNode a, ExprNode b) {
-            return a.getKind() == b.getKind()
-                && equalsBuilder.apply(ExprEquivalence.this, a).exec(b);
+            return equalsBuilder.apply(ExprEquivalence.this, a).exec(b);
           }
 
           @Override
           protected int doHash(ExprNode t) {
-            return 31 * t.getKind().hashCode() + hasher.exec(t);
+            return hasher.exec(t);
           }
         };
   }
 
-  /** Base hashing visitor. */
   protected static class DoHash extends AbstractReturningExprNodeVisitor<Integer> {
     private final ExprEquivalence recursion;
 
     public DoHash(ExprEquivalence recursion) {
       this.recursion = recursion;
+    }
+
+    @Override
+    protected Integer visit(ExprNode node) {
+      return 31 * node.getKind().hashCode() + super.visit(node);
     }
 
     @Override
@@ -242,7 +245,6 @@ public class ExprEquivalence {
     }
   }
 
-  /** Base equality visitor. */
   protected static class DoEquals extends AbstractReturningExprNodeVisitor<Boolean> {
 
     private final ExprEquivalence recursion;
@@ -251,6 +253,11 @@ public class ExprEquivalence {
     public DoEquals(ExprEquivalence recursion, ExprNode other) {
       this.recursion = recursion;
       this.other = other;
+    }
+
+    @Override
+    protected Boolean visit(ExprNode node) {
+      return node.getKind() == other.getKind() && super.visit(node);
     }
 
     @Override

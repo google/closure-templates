@@ -35,6 +35,7 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.MethodRefs;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Optional;
@@ -66,6 +67,68 @@ import org.objectweb.asm.Type;
  * {@link SoyValueProvider#renderAndResolve} so that we can render it incrementally.
  */
 final class ExpressionToSoyValueProviderCompiler {
+  /**
+   * Returns true if {@link #compileToSoyValueProviderIfUsefulToPreserveStreaming} will succeed for
+   * the given expression.
+   */
+  static boolean canCompileToSoyValueProviderIfUsefulToPreserveStreaming(ExprNode node) {
+    return CAN_COMPILE_TO_SVP_WITHOUT_BOXING_VISITOR.exec(node);
+  }
+
+  /**
+   * Visitor that determines whether an expression can be compiled to a {@link SoyValueProvider}
+   * without boxing. Should be kept in sync with {@link CompilerVisitor} (when {@code
+   * allowsBoxing()} is false and {@code allowsDetaches()} is true).
+   */
+  private static final EnhancedAbstractExprNodeVisitor<Boolean>
+      CAN_COMPILE_TO_SVP_WITHOUT_BOXING_VISITOR =
+          new EnhancedAbstractExprNodeVisitor<>() {
+            @Override
+            protected Boolean visitExprRootNode(ExprRootNode node) {
+              return visit(node.getRoot());
+            }
+
+            @Override
+            protected Boolean visitNullNode(NullNode node) {
+              return true;
+            }
+
+            @Override
+            protected Boolean visitUndefinedNode(UndefinedNode node) {
+              return true;
+            }
+
+            @Override
+            protected Boolean visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+              return visit(node.getLeftChild()) || visit(node.getRightChild());
+            }
+
+            @Override
+            protected Boolean visitConditionalOpNode(ConditionalOpNode node) {
+              return visit(node.getChild(1)) || visit(node.getChild(2));
+            }
+
+            @Override
+            Boolean visitForLoopVar(VarRefNode varRef, LocalVar local) {
+              return ((ForNonemptyNode) local.declaringNode()).getIndexVar() != local;
+            }
+
+            @Override
+            Boolean visitParam(VarRefNode varRef, TemplateParam param) {
+              return true;
+            }
+
+            @Override
+            Boolean visitLetNodeVar(VarRefNode varRef, LocalVar local) {
+              return true;
+            }
+
+            @Override
+            protected Boolean visitExprNode(ExprNode node) {
+              return false;
+            }
+          };
+
   /** Create an expression compiler that can implement complex detaching logic. */
   static ExpressionToSoyValueProviderCompiler create(
       TemplateAnalysis analysis,

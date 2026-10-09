@@ -577,6 +577,14 @@ public final class MethodRefs {
 
   public static final MethodRef SOY_VALUE_PROVIDER_COERCE_TO_BOOLEAN_PROVIDER =
       createNonPure(SoyValueProvider.class, "coerceToBooleanProvider");
+  public static final MethodRef SOY_VALUE_PROVIDER_COERCE_TO_NOT_PROVIDER =
+      createNonPure(SoyValueProvider.class, "coerceToNotProvider");
+  public static final MethodRef SOY_VALUE_PROVIDER_COERCE_TO_IS_NULL_PROVIDER =
+      createNonPure(SoyValueProvider.class, "coerceToIsNullProvider");
+  public static final MethodRef SOY_VALUE_PROVIDER_COERCE_TO_IS_NULLISH_PROVIDER =
+      createNonPure(SoyValueProvider.class, "coerceToIsNullishProvider");
+  public static final MethodRef SOY_VALUE_PROVIDER_COERCE_TO_IS_UNDEFINED_PROVIDER =
+      createNonPure(SoyValueProvider.class, "coerceToIsUndefinedProvider");
 
   public static final MethodRef STRING_CONCAT =
       createPure(String.class, "concat", String.class).asNonJavaNullable();

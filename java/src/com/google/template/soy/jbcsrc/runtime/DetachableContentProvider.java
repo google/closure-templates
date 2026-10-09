@@ -102,19 +102,28 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
   }
 
   @Override
+  public SoyValueProvider coerceToNotProvider() {
+    return coerceToBooleanProvider(true);
+  }
+
+  @Override
   public SoyValueProvider coerceToBooleanProvider() {
+    return coerceToBooleanProvider(false);
+  }
+
+  private SoyValueProvider coerceToBooleanProvider(boolean negate) {
     if (isDone) {
       // If already resolved, coerce to boolean.
-      return BooleanData.forValue(appendable.getAsSoyValue().coerceToBoolean());
+      return BooleanData.forValue(negate ^ appendable.getAsSoyValue().coerceToBoolean());
     }
 
     var kind = appendable.getSanitizedContentKind();
     if (kind != ContentKind.TEXT) {
       // SanitizedContent is always truthy.
-      return BooleanData.TRUE;
+      return BooleanData.forValue(!negate);
     }
     if (!appendable.isEmpty()) {
-      return BooleanData.TRUE;
+      return BooleanData.forValue(!negate);
     }
 
     var delegate = this;
@@ -137,11 +146,11 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
         var status = delegate.status();
 
         if (status.isDone()) {
-          resolvedValue = BooleanData.forValue(delegate.resolve().coerceToBoolean());
+          resolvedValue = BooleanData.forValue(negate ^ delegate.resolve().coerceToBoolean());
           return RenderResult.done();
         }
         if (!delegate.appendable.isEmpty()) {
-          resolvedValue = BooleanData.TRUE;
+          resolvedValue = BooleanData.forValue(!negate);
           return RenderResult.done();
         }
         return status;
@@ -157,6 +166,21 @@ public abstract class DetachableContentProvider extends SoyValueProvider {
         return result;
       }
     };
+  }
+
+  @Override
+  public SoyValueProvider coerceToIsNullProvider() {
+    return BooleanData.FALSE;
+  }
+
+  @Override
+  public SoyValueProvider coerceToIsNullishProvider() {
+    return BooleanData.FALSE;
+  }
+
+  @Override
+  public SoyValueProvider coerceToIsUndefinedProvider() {
+    return BooleanData.FALSE;
   }
 
   /** Overridden by generated subclasses to implement lazy detachable resolution. */
