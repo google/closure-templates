@@ -30,7 +30,10 @@ current template (the caller).
 
     This second form may be preferred because it is more concise. However, it
     does not allow passing block style parameters (those like `KEY2` above that
-    specify `kind=`).
+    specify `kind=`) inline. Instead, you can define them with [`{let}`](let.md)
+    or, for [HTML-tag templates](element-composition.md#html-tag-templates)
+    (`kind="html<...>"`), use [element composition](element-composition.md) to
+    pass `html` parameters via `<parameter>`.
 
 ### Passing values
 
