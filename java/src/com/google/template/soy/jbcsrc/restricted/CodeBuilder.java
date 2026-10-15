@@ -383,6 +383,34 @@ public final class CodeBuilder extends MethodVisitor {
     adapter.arrayStore(type);
   }
 
+  /**
+   * Marks a line number entry at the current position, skipping redundant entries that have the
+   * same line number as the preceding entry when that entry is unique at its bytecode offset.
+   * Avoiding redundant {@link #mark(Label)} calls prevents ASM's {@code ClassWriter} from splitting
+   * basic blocks at every AST expression boundary during stack map frame computation.
+   */
+  public void visitLineNumber(int lineNumber) {
+    int size = lineNumberTable.size();
+    if (size > 0) {
+      LineNumberTableEntry prev = lineNumberTable.get(size - 1);
+      if (prev.lineNumber() == lineNumber
+          && (size == 1 || !hasSameOffset(prev.label(), lineNumberTable.get(size - 2).label()))) {
+        return;
+      }
+    }
+    Label label = newLabel();
+    mark(label);
+    visitLineNumber(lineNumber, label);
+  }
+
+  private static boolean hasSameOffset(Label a, Label b) {
+    try {
+      return a.getOffset() == b.getOffset();
+    } catch (IllegalStateException e) {
+      return true;
+    }
+  }
+
   @Override
   public void visitLineNumber(int lineNumber, Label label) {
     // buffer all the entries so we can compress them in endMethod()

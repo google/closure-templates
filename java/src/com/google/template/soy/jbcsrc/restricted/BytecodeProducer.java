@@ -17,13 +17,11 @@
 package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.newLabel;
 
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.SourceLocation;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
@@ -80,17 +78,13 @@ public abstract class BytecodeProducer {
         // http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.12
         // It is used by the JVM to add source data to stack traces and by debuggers to highlight
         // source files.
-        Label start = newLabel();
-        adapter.mark(start);
-        adapter.visitLineNumber(location.getBeginLine(), start);
+        adapter.visitLineNumber(location.getBeginLine());
       }
 
       doGen(adapter);
 
       if (location.isKnown() && logEndLine()) {
-        Label end = newLabel();
-        adapter.mark(end);
-        adapter.visitLineNumber(location.getEndLine(), end);
+        adapter.visitLineNumber(location.getEndLine());
       }
     } finally {
       if (shouldClearIsGeneratingBit) {
