@@ -248,7 +248,7 @@ class TofuValueFactory extends JavaValueFactory {
     if (object instanceof SoyValue) {
       return TofuJavaValue.forSoyValue((SoyValue) object, fnSourceLocation);
     }
-    if (returnType != null && returnType.getKind() == SoyType.Kind.MAP && object instanceof Map) {
+    if (returnType != null && returnType.isOfKind(SoyType.Kind.MAP) && object instanceof Map) {
       // When Soy sees a map, it defaults to thinking it's a legacy_object_map, which only allow
       // string keys. We know that's not the case here (because the Soy return type of the extern
       // is "map") so mark this as a "map" and not a "legacy_object_map".
@@ -380,13 +380,13 @@ class TofuValueFactory extends JavaValueFactory {
               .map(
                   item ->
                       adaptCollectionValueToJava(
-                          item, ((AbstractIterableType) soyType).getElementType()))
+                          item, soyType.asType(AbstractIterableType.class).getElementType()))
               .collect(toImmutableList());
         } else {
           return value.asJavaList();
         }
       } else if (Map.class.isAssignableFrom(type) && isExternApi) {
-        if (soyType.getKind() == Kind.RECORD || !(value instanceof SoyMap)) {
+        if (soyType.isOfKind(Kind.RECORD) || !(value instanceof SoyMap)) {
           if (ImmutableMap.class.isAssignableFrom(type)) {
             return SharedExternRuntime.recordToImmutableMap(value);
           } else {
@@ -441,6 +441,7 @@ class TofuValueFactory extends JavaValueFactory {
 
   private static Object adaptCollectionValueToJava(SoyValueProvider item, SoyType elmType) {
     SoyValue val = item.resolve();
+    elmType = elmType.getEffectiveType();
     switch (elmType.getKind()) {
       case INT:
         return val.longValue();
