@@ -28,6 +28,8 @@ import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.SoyVisualElement;
+import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.OutputAppendable;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -120,6 +122,38 @@ public final class VeLoggingTest {
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div>");
     assertThat(testLogger.builder.toString())
         .isEqualTo("velog{id=1, data=soy.test.Foo{int_field: 123}}");
+  }
+
+  @Test
+  public void testLogging_withVeDataFromJava() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    SoyVisualElement ve = SoyVisualElement.create(1, "FooVe");
+    SoyVisualElementData veData =
+        SoyVisualElementData.create(ve, Foo.newBuilder().setIntField(123).build());
+    renderTemplate(
+        ImmutableMap.of("data", veData),
+        OutputAppendable.create(sb, testLogger),
+        "{@param data: ve_data}",
+        "{velog $data}<div>content</div>{/velog}");
+    assertThat(sb.toString()).isEqualTo("<div>content</div>");
+    assertThat(testLogger.builder.toString())
+        .isEqualTo("velog{id=1, data=soy.test.Foo{int_field: 123}}");
+  }
+
+  @Test
+  public void testLogging_withVeDataFromJava_noData() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    SoyVisualElement ve = SoyVisualElement.create(2, "Bar");
+    SoyVisualElementData veData = SoyVisualElementData.create(ve);
+    renderTemplate(
+        ImmutableMap.of("data", veData),
+        OutputAppendable.create(sb, testLogger),
+        "{@param data: ve_data}",
+        "{velog $data}<div>content</div>{/velog}");
+    assertThat(sb.toString()).isEqualTo("<div>content</div>");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=2}");
   }
 
   @Test

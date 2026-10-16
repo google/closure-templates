@@ -133,6 +133,12 @@ public class SimpleJavaType extends JavaType {
           /* asReference= */ castFunction("asProto"),
           /* asNullableReference= */ castFunction("asNullableProto"));
 
+  public static final SimpleJavaType VE_DATA =
+      new SimpleJavaType(
+          "com.google.template.soy.data.SoyVisualElementData",
+          /* asReference= */ castFunction("asVeData"),
+          /* asNullableReference= */ castFunction("asNullableVeData"));
+
   private final String javaTypeString;
   private final String genericsTypeArgumentString;
   final CodeGenUtils.Member asReference;

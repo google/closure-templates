@@ -453,6 +453,14 @@ public abstract class BaseSoyTemplateImpl extends SoyTemplate {
       return css == null ? NullData.INSTANCE : asCss(css);
     }
 
+    protected static SoyVisualElementData asVeData(SoyVisualElementData veData) {
+      return checkNotNull(veData);
+    }
+
+    protected static SoyValue asNullableVeData(@Nullable SoyVisualElementData veData) {
+      return veData == null ? NullData.INSTANCE : veData;
+    }
+
     protected static <K, V> SoyMapImpl asMap(
         Map<K, V> map,
         Function<? super K, ? extends SoyValue> keyMapper,
