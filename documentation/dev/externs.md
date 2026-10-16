@@ -274,11 +274,13 @@ functions:
 | `{assign $val = new val /}` | Reassigns a let or param.                     |
 | `{eval sideEffect($val)}`   | An arbitrary expression statement; typically  |
 :                             : for calling mutating methods on objects.      :
-| `{while $cond}...{/while}`  | A standard while statement.                   |
+| `{while $cond}...{/while}`  | A standard while statement. Supports optional |
+:                             : `label="name"`.                               :
 | `{break /}`                 | A break statement, for use within `for` or    |
-:                             : `while`.                                      :
-| `{continue /}`              | A continue statement, for use within `for` or |
-:                             : `while`.                                      :
+
+\: : `while`. Supports optional label: : : : `{break name /}`. : | `{continue
+/}` | A continue statement, for use within `for` or | : : `while`. Supports
+optional label: : : : `{continue name /}`. :
 
 Within auto externs lets are reassignable and certain mutable data types are
 available, for example [`mutable_list`](../reference/types.md#mutable_list).

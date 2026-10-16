@@ -20,11 +20,15 @@ import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Objects;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /** Represents a {@code for} statement. */
 @AutoValue
 @Immutable
 abstract class For extends Statement {
+
+  @Nullable
+  abstract String label();
 
   abstract Id localVar();
 
@@ -37,8 +41,18 @@ abstract class For extends Statement {
   abstract Statement body();
 
   static For create(
+      @Nullable String label,
+      Id localVar,
+      Expression initial,
+      Expression limit,
+      Expression increment,
+      Statement body) {
+    return new AutoValue_For(label, localVar, initial, limit, increment, body);
+  }
+
+  static For create(
       Id localVar, Expression initial, Expression limit, Expression increment, Statement body) {
-    return new AutoValue_For(localVar, initial, limit, increment, body);
+    return create(null, localVar, initial, limit, increment, body);
   }
 
   @Override
@@ -51,6 +65,10 @@ abstract class For extends Statement {
     ctx.appendInitialStatements(initial())
         .appendInitialStatements(limit())
         .appendInitialStatements(increment());
+
+    if (label() != null) {
+      ctx.append(label()).append(": ");
+    }
 
     ctx.append("for (let ")
         .appendOutputExpression(localVar())

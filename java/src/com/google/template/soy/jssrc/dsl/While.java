@@ -19,17 +19,25 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 @AutoValue
 @Immutable
 abstract class While extends Statement {
 
+  @Nullable
+  abstract String label();
+
   abstract Expression condition();
 
   abstract Statement body();
 
+  static While create(@Nullable String label, Expression condition, Statement body) {
+    return new AutoValue_While(label, condition, body);
+  }
+
   static While create(Expression condition, Statement body) {
-    return new AutoValue_While(condition, body);
+    return create(null, condition, body);
   }
 
   @Override
@@ -40,6 +48,10 @@ abstract class While extends Statement {
   @Override
   void doFormatStatement(FormattingContext ctx) {
     ctx.appendInitialStatements(condition());
+
+    if (label() != null) {
+      ctx.append(label()).append(": ");
+    }
 
     ctx.append("while (").appendOutputExpression(condition()).append(")");
     ctx.appendAllIntoBlock(body());

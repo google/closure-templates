@@ -133,6 +133,7 @@ public final class PassManagerTest {
             RewriteGenderMsgsPass.class,
             UnknownJsGlobalPass.class,
             ValidateAliasesPass.class,
+            ValidateControlFlowPass.class,
             VeLogRewritePass.class,
             VeLogValidationPass.class,
             VeRewritePass.class);

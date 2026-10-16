@@ -349,18 +349,22 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
 
   @Override
   protected Statement visitBreakNode(BreakNode node) {
-    return Statements.breakStatement();
+    return Statements.breakStatement(node.getLabel() == null ? null : node.getLabel().identifier());
   }
 
   @Override
   protected Statement visitContinueNode(ContinueNode node) {
-    return Statements.continueStatement();
+    return Statements.continueStatement(
+        node.getLabel() == null ? null : node.getLabel().identifier());
   }
 
   @Override
   protected Statement visitWhileNode(WhileNode node) {
     Statement body = Statements.of(visitChildren(node));
-    return Statements.whileLoop(translateExpr(node.getExpr()), body);
+    return Statements.whileLoop(
+        node.getLabel() == null ? null : node.getLabel().identifier(),
+        translateExpr(node.getExpr()),
+        body);
   }
 
   /**
@@ -658,7 +662,9 @@ public class GenJsTemplateBodyVisitor extends AbstractReturningSoyNodeVisitor<St
       Statement foreachBody = Statements.of(data, Statements.of(visitChildren(node)));
 
       // Create the entire for block.
-      return forLoop(loopIndexId, limit, foreachBody);
+      String label =
+          node.getParent().getLabel() == null ? null : node.getParent().getLabel().identifier();
+      return forLoop(label, loopIndexId, limit, foreachBody);
     }
   }
 
