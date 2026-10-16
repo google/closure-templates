@@ -585,8 +585,10 @@ Python     | not supported
 
 ### records: `[<prop-name>: <prop-type>,...]` {#record}
 
-Record types define an object with a given set of properties. The properties can
-be accessed using the [data access operators](expressions.md#data-access)
+Record types define an object with a given set of properties. Record values can
+be constructed using [record literals](expressions.md#record), and their
+properties can be accessed using the
+[data access operators](expressions.md#data-access).
 
 For example,
 
@@ -595,6 +597,12 @@ For example,
   {@param person: [age: int, name: string]}
   Name: {$person.name}
   Age: {$person.age}
+{/template}
+
+{template bar}
+  {call foo}
+    {param person: record(age: 25, name: 'alice') /}
+  {/call}
 {/template}
 ```
 
