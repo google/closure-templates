@@ -17,19 +17,39 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import javax.annotation.Nullable;
 
 /** Node representing a 'continue' statement. */
 public final class ContinueNode extends AbstractCommandNode implements StatementNode {
 
-  public ContinueNode(int id, SourceLocation location) {
+  @Nullable private final Identifier label;
+
+  public ContinueNode(int id, SourceLocation location, @Nullable Identifier label) {
     super(id, location, "continue");
+    this.label = label;
+  }
+
+  public ContinueNode(int id, SourceLocation location) {
+    this(id, location, null);
   }
 
   private ContinueNode(ContinueNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.label = orig.label;
+  }
+
+  @Nullable
+  public Identifier getLabel() {
+    return label;
+  }
+
+  @Override
+  public String getCommandText() {
+    return label != null ? label.identifier() : "";
   }
 
   @Override

@@ -827,6 +827,7 @@ public final class PassManager {
     return ImmutableList.of(
         new DesugarGroupNodesPass(),
         new BasicHtmlValidationPass(reporter),
-        new InsertMsgPlaceholderNodesPass(reporter));
+        new InsertMsgPlaceholderNodesPass(reporter),
+        new ValidateControlFlowPass(reporter));
   }
 }

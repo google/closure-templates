@@ -19,19 +19,34 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 @AutoValue
 @Immutable
 abstract class Continue extends Statement {
-  private static final Continue CONTINUE = new AutoValue_Continue();
+  private static final Continue CONTINUE = new AutoValue_Continue(/* label= */ null);
 
   public static Continue create() {
     return CONTINUE;
   }
 
+  public static Continue create(@Nullable String label) {
+    if (label == null) {
+      return CONTINUE;
+    }
+    return new AutoValue_Continue(label);
+  }
+
+  @Nullable
+  abstract String label();
+
   @Override
   void doFormatStatement(FormattingContext ctx) {
-    ctx.append("continue;");
+    if (label() != null) {
+      ctx.append("continue " + label() + ";");
+    } else {
+      ctx.append("continue;");
+    }
   }
 
   @Override
