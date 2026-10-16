@@ -432,7 +432,7 @@ public final class JsType implements CodeChunk.HasRequires {
           SoyType elmType = ((AbstractIterableType) soyType).getElementType();
           JsType jsElmType = forRecursion.get(elmType);
           return builder()
-              .addType(String.format("!Set<%s>", jsElmType.typeExpr()))
+              .addType(String.format("!ReadonlySet<%s>", jsElmType.typeExpr()))
               .addRequires(jsElmType.googRequires())
               .setPredicate(instanceofTypePredicate(id("Set")))
               .build();
