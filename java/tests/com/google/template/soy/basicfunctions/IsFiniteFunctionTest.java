@@ -19,6 +19,9 @@ package com.google.template.soy.basicfunctions;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,6 +49,15 @@ public class IsFiniteFunctionTest {
     assertThat(result).isEqualTo(false);
 
     result = factory.callFunction(FloatData.forValue(Double.NEGATIVE_INFINITY));
+    assertThat(result).isEqualTo(false);
+
+    result = factory.callFunction(NullData.INSTANCE);
+    assertThat(result).isEqualTo(false);
+
+    result = factory.callFunction(UndefinedData.INSTANCE);
+    assertThat(result).isEqualTo(false);
+
+    result = factory.callFunction(StringData.forValue("1"));
     assertThat(result).isEqualTo(false);
   }
 }
