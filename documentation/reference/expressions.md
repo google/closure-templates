@@ -154,9 +154,9 @@ documentation.
 
 ### record {#record}
 
-Record literals are delimited by `record()` and contain a comma-delimited
-sequence of key-value pairs separated by `:` characters. Each key must be an
-identifier. For example,
+[Record](types.md#record) literals are delimited by `record()` and contain a
+comma-delimited sequence of key-value pairs separated by `:` characters. Each
+key must be an identifier. For example,
 
 *   `record(aaa: 'blah', bbb: 123, ccc: $foo)`
 
