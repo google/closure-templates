@@ -5,11 +5,11 @@
 
 import './skiphandler';
 
-import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import {
-  assert,
-  assertExists,
-} from 'google3/third_party/javascript/closure/asserts/asserts';
+  assertTruthy,
+  castExists,
+} from 'google3/javascript/common/asserts/asserts';
+import {Logger} from 'google3/javascript/template/soy/soyutils_velog';
 import {IDisposable} from 'google3/third_party/javascript/closure/disposable/idisposable';
 import {SanitizedContentKind} from 'google3/third_party/javascript/closure/soy/data';
 import {SafeHtml} from 'safevalues';
@@ -123,7 +123,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
   render(
     renderer: IncrementalDomRendererImpl = new IncrementalDomRendererImpl(),
   ): void {
-    assert(this.node);
+    assertTruthy(this.node);
     if (this.loggerPrivate && !renderer.getLogger()) {
       renderer.setLogger(this.loggerPrivate);
     }
@@ -177,7 +177,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
     }
     this.node = node;
 
-    assert(
+    assertTruthy(
       node.__soy === undefined ||
         node.__soy === (this as unknown as SoyElement<{}, {}>),
       `Cannot assign ${this.constructor.name} because the element already has a Soy Element ${node.__soy?.constructor.name} assigned to it`,
@@ -198,7 +198,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
       // cases.
       const oldData = this.data;
       if (maybeSkipHandler) {
-        assert(
+        assertTruthy(
           !this.skipHandler || !getSkipHandler(node),
           'Do not set skip handlers twice.',
         );
@@ -240,7 +240,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
   unsetLifecycleHooks(): void {
     this.skipHandler = null;
     this.patchHandler = null;
-    const node = assertExists(this.node);
+    const node = castExists(this.node);
     node.__soy_skip_handler = undefined;
     node.__soy_patch_handler = undefined;
   }
@@ -257,7 +257,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
   setSkipHandler(
     skipHandler: (prev: TInterface, next: TInterface) => boolean,
   ): void {
-    assert(!this.skipHandler, 'Only one skip handler is allowed.');
+    assertTruthy(!this.skipHandler, 'Only one skip handler is allowed.');
     this.skipHandler = skipHandler;
   }
 
@@ -277,7 +277,7 @@ export abstract class SoyElement<TData extends {} | null, TInterface extends {}>
    * anymore of the template executes.
    */
   setAfterPatch(handler: (prev: TInterface, next: TInterface) => void): void {
-    assert(!this.patchHandler, 'Only one patch handler is allowed');
+    assertTruthy(!this.patchHandler, 'Only one patch handler is allowed');
     this.patchHandler = handler;
   }
 

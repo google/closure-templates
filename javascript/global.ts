@@ -7,10 +7,8 @@
 
 import './skiphandler';
 
-import {
-  assert,
-  assertInstanceof,
-} from 'google3/third_party/javascript/closure/asserts/asserts';
+import {assertTruthy, cast} from 'google3/javascript/common/asserts/asserts';
+import {isInstanceOf} from 'google3/javascript/common/asserts/guards';
 import {IjData} from 'google3/third_party/javascript/closure/soy/soy';
 import {isDataInitialized} from 'incrementaldom'; // from //third_party/javascript/incremental_dom:incrementaldom
 
@@ -40,7 +38,7 @@ export function getSoy<TElement extends SoyElement<{} | null, {}>>(
   elementCtor: ElementCtor<TElement>,
   message = '',
 ): TElement {
-  assert(
+  assertTruthy(
     isDataInitialized(node),
     `${message}
 
@@ -60,9 +58,9 @@ is at the root of the Soy {element}.
       `.trim(),
     );
   }
-  const soyEl = assertInstanceof(
+  const soyEl = cast(
     untypedEl,
-    elementCtor,
+    isInstanceOf(elementCtor),
     `${message}
 
 The DOM node has a Soy {element} of type ${untypedEl.constructor.name} that
