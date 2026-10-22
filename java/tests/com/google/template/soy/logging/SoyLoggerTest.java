@@ -40,6 +40,12 @@ public final class SoyLoggerTest {
   }
 
   @Test
+  public void loggingAttr_jslog() {
+    var loggingAttrs = LoggingAttrs.builder().addJslogAttribute("bar").build();
+    assertThat(loggingAttrs.toString()).isEqualTo("jslog=\"bar\"");
+  }
+
+  @Test
   public void loggingAttr_testBadDataAttr() {
     var e =
         assertThrows(
