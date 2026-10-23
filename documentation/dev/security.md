@@ -1,3 +1,5 @@
+<!-- disableFinding(LINK_RELATIVE_G3DOC) -->
+
 # Security
 
 Many web applications suffer from
@@ -185,15 +187,41 @@ escape it again. This prevents "double-escaping" of the text.
 
 The different kinds of content are:
 
-Content kind         | Description                                                                                                                             | Example                                   | Notes
--------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -----
-html                 | HTML markup                                                                                                                             | `<div>Hello!</div>`                       |
-attributes           | HTML attribute-value pairs                                                                                                              | `class="foo" width="100%"`                | Represents the combination of both attribute names and attribute values, and must include the quotation marks around the attribute value. If the template output is intended to be just an attribute value alone (the part inside the quotes) then use either the text or html content kind.
-text                 | Plain text, not yet escaped                                                                                                             | `Hello!`                                  |
-uri                  | URIs                                                                                                                                    | `http://www.google.com/search?q=android`  |
-css                  | Stylesheet text                                                                                                                         | `.myClass{ color: red; display: block; }` |
-js                   | JavaScript or JSON                                                                                                                      | `{"a": 1, "b": 2}`                        |
-trusted_resource_uri | A URL which is under application control and from which script, CSS, and other resources that represent executable code can be fetched. | `https://www.google.com/test.js`          | Currently Soy requires trusted_resource_uri for script srcs. In the future, this may apply to other kinds of resources, such as stylesheets.
+| Content kind         | Description     | Example                                  | Notes                                              |
+| -------------------- | --------------- | ---------------------------------------- | -------------------------------------------------- |
+| html                 | HTML markup     | `<div>Hello!</div>`                      | On a `{template}`, this can be further restricted  |
+:                      :                 :                                          : to a single root element with `html<tag>` or       :
+:                      :                 :                                          : `html<?>` (see [HTML-tag                           :
+:                      :                 :                                          : templates](#html_tag_templates) below).            :
+| `html<tag>` /        | A single root   | `<button>Click me</button>`              | Valid only on `{template}`. Restricts the output   |
+: `html<?>`            : HTML element    :                                          : to a single top-level HTML element (matching       :
+:                      :                 :                                          : `<tag>`, or any single element for `html<?>`). See :
+:                      :                 :                                          : [Element                                           :
+:                      :                 :                                          : Composition](../reference/element-composition.md). :
+| attributes           | HTML            | `class="foo" width="100%"`               | Represents the combination of both attribute names |
+:                      : attribute-value :                                          : and attribute values, and must include the         :
+:                      : pairs           :                                          : quotation marks around the attribute value. If the :
+:                      :                 :                                          : template output is intended to be just an          :
+:                      :                 :                                          : attribute value alone (the part inside the quotes) :
+:                      :                 :                                          : then use either the text or html content kind.     :
+| text                 | Plain text, not | `Hello!`                                 |                                                    |
+:                      : yet escaped     :                                          :                                                    :
+| uri                  | URIs            | `http://www.google.com/search?q=android` |                                                    |
+| css                  | Stylesheet text | `.myClass{ color: red; display: block;   |                                                    |
+:                      :                 : }`                                       :                                                    :
+| js                   | JavaScript or   | `{"a": 1, "b": 2}`                       |                                                    |
+:                      : JSON            :                                          :                                                    :
+| trusted_resource_uri | A URL which is  | `https://www.google.com/test.js`         | Currently Soy requires trusted_resource_uri for    |
+:                      : under           :                                          : script srcs. In the future, this may apply to      :
+:                      : application     :                                          : other kinds of resources, such as stylesheets.     :
+:                      : control and     :                                          :                                                    :
+:                      : from which      :                                          :                                                    :
+:                      : script, CSS,    :                                          :                                                    :
+:                      : and other       :                                          :                                                    :
+:                      : resources that  :                                          :                                                    :
+:                      : represent       :                                          :                                                    :
+:                      : executable code :                                          :                                                    :
+:                      : can be fetched. :                                          :                                                    :
 
 The content kind isn't a compiler type; you won't get an error or warning if you
 use a `text` kind in a `css` context or vice versa. Rather, the content kind is
@@ -223,13 +251,51 @@ The `kind` attribute can be added to the following Soy commands:
 
 | Command     | Notes                                                     |
 | ----------- | --------------------------------------------------------- |
-| template    | Optional. Assumed to be kind="html" if omitted.           |
-| deltemplate | Optional. Assumed to be kind="html" if omitted. All       |
-:             : matching delegates must have the same kind.               :
+| template    | Optional. Assumed to be `kind="html"` if omitted.         |
+:             : Supports `kind="html<tag>"` and `kind="html<?>"`.         :
+| deltemplate | Optional. Assumed to be `kind="html"` if omitted. All     |
+:             : matching delegates must have the same kind. Does not      :
+:             : support `html<...>`.                                      :
 | let         | Required only for [block form let                         |
-:             : statements](../reference/let).                            :
+:             : statements](../reference/let). Does not support           :
+:             : `html<...>`.                                              :
 | param       | Required only for [block form param                       |
 :             : statements](../reference/calls#construct-values-to-pass). :
+:             : Does not support `html<...>`.                             :
+
+#### Restricting `html` to an HTML tag {#html_tag_templates}
+
+In a `{template}`, the `html` content kind can be further restricted to a single
+root HTML element by specifying a tag name in angle brackets, such as
+`kind="html<div>"` or `kind="html<button>"`, or by using the wildcard
+`kind="html<?>"` to allow any single root HTML element:
+
+```soy
+{template customButton kind="html<button>"}
+  {@param label: string}
+  {@attribute disabled: bool}
+  <button {disabled}>{$label}</button>
+{/template}
+
+{template caller}
+  <{customButton(label: 'Save')} disabled=true />
+{/template}
+```
+
+At runtime, the rendered output still has the `html` content kind
+(`SanitizedHtml`), but at compile time Soy enforces that the template contains
+exactly one top-level HTML element with the specified tag.
+
+Use `kind="html<tag>"` (or `kind="html<?>"`) when:
+
+*   Your template produces a single root HTML element and you want the compiler
+    to verify that it always renders a single element of that tag type.
+*   You want to call the template using
+    [element composition](../reference/element-composition.md) syntax (for
+    example, `<{customButton(label: 'Save')} />`).
+*   You want to declare `{@attribute}` (or `{@attribute *}`) parameters on the
+    template so callers can pass or concatenate HTML attributes directly onto
+    the root element.
 
 The following example illustrates the usage of the `kind` attribute:
 

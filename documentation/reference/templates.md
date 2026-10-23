@@ -37,6 +37,16 @@ These are the `template` tag's attributes:
 *   `kind`: Optional. Default `html`. See the security guide for other
     [content kinds](../dev/security.md#content_kinds).
 
+    When the kind is `html`, it can be further restricted to a single root HTML
+    element by specifying a tag in angle brackets: `kind="html<tag>"` (for
+    example, `kind="html<div>"` or `kind="html<button>"`) or `kind="html<?>"`
+    (for any single HTML element). Use this when your template is expected to
+    always render a single root element, when you want compile-time validation
+    of the root tag, or when you want to use
+    [element composition](element-composition.md) features such as calling the
+    template with `<{templateName()} />` syntax and declaring `{@attribute}`
+    parameters.
+
 *   `requirecss`: Deprecated. Use the `requirecsspath` attribute on
     [`{namespace}`](file-declarations.md#namespace) instead.
 
