@@ -78,10 +78,12 @@ Syntax:
 
 where:
 
-*   `<js_namespace>` is the JavaScript namespace containing the implementation.
+*   `<js_namespace>` is the Closure module ID or namespace containing the
+    implementation. In JavaScript, this is the identifier passed to
+    `goog.module` or `goog.provide`.
 
-*   `<function_name>` is the name of the function in `<js_namespace>` containing
-    the implementation.
+*   `<function_name>` is the name of the exported function in `<js_namespace>`
+    containing the implementation.
 
 ### Python implementation
 
