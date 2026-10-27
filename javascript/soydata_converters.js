@@ -50,11 +50,22 @@ const {unwrapHtml, unwrapResourceUrl, unwrapScript, unwrapStyleSheet, unwrapUrl}
 
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Proto.
- * @param {!SanitizedCss|string} sanitizedCss
- * @return {!SafeStyleProto}
+ * @param {T} sanitizedCss
+ * @return {R}
+ * @template T
+ * @template R :=
+ *     cond(isUnknown(T), unknown(),
+ *       mapunion(T, (X) =>
+ *         cond(eq(X, 'null'), 'null',
+ *           cond(eq(X, 'undefined'), 'undefined',
+ *             typeExpr('proto.webutil.html.types.SafeStyleProto')))))
+ * =:
  */
 exports.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly = function(
     sanitizedCss) {
+  if (sanitizedCss == null) {
+    return sanitizedCss;
+  }
   if (sanitizedCss !== '' && !(sanitizedCss instanceof SanitizedCss)) {
     throw new Error(
         'expected SanitizedCss, got ' + googDebug.runtimeType(sanitizedCss));
@@ -82,11 +93,22 @@ exports.packSanitizedCssToSafeStyleProtoSoyRuntimeOnly = function(
 /**
  * Converts a CSS Sanitized Content object to a corresponding Safe Style Sheet
  * Proto.
- * @param {!SanitizedCss|string} sanitizedCss
- * @return {!SafeStyleSheetProto}
+ * @param {T} sanitizedCss
+ * @return {R}
+ * @template T
+ * @template R :=
+ *     cond(isUnknown(T), unknown(),
+ *       mapunion(T, (X) =>
+ *         cond(eq(X, 'null'), 'null',
+ *           cond(eq(X, 'undefined'), 'undefined',
+ *             typeExpr('proto.webutil.html.types.SafeStyleSheetProto')))))
+ * =:
  */
 exports.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
     sanitizedCss) {
+  if (sanitizedCss == null) {
+    return sanitizedCss;
+  }
   if (sanitizedCss !== '' && !(sanitizedCss instanceof SanitizedCss)) {
     throw new Error(
         'expected SanitizedCss, got ' + googDebug.runtimeType(sanitizedCss));
@@ -117,11 +139,21 @@ exports.packSanitizedCssToSafeStyleSheetProtoSoyRuntimeOnly = function(
 /**
  * Converts an HTML Sanitized Content object to a corresponding
  * Safe String Proto.
- * @param {!SanitizedHtml|string|!soy.IdomFunction|!Function}
- *     sanitizedHtml
- * @return {!SafeHtmlProto}
+ * @param {T} sanitizedHtml
+ * @return {R}
+ * @template T
+ * @template R :=
+ *     cond(isUnknown(T), unknown(),
+ *       mapunion(T, (X) =>
+ *         cond(eq(X, 'null'), 'null',
+ *           cond(eq(X, 'undefined'), 'undefined',
+ *             typeExpr('proto.webutil.html.types.SafeHtmlProto')))))
+ * =:
  */
 exports.packSanitizedHtmlToProtoSoyRuntimeOnly = function(sanitizedHtml) {
+  if (sanitizedHtml == null) {
+    return sanitizedHtml;
+  }
   if (sanitizedHtml !== '' && !(sanitizedHtml instanceof SanitizedHtml)) {
     throw new Error(
         'expected SanitizedHtml, got ' + googDebug.runtimeType(sanitizedHtml));
@@ -137,10 +169,21 @@ exports.packSanitizedHtmlToProtoSoyRuntimeOnly = function(sanitizedHtml) {
 
 /**
  * Converts a JS Sanitized Content object to a corresponding Safe Script Proto.
- * @param {!SanitizedJs|string} sanitizedJs
- * @return {!SafeScriptProto}
+ * @param {T} sanitizedJs
+ * @return {R}
+ * @template T
+ * @template R :=
+ *     cond(isUnknown(T), unknown(),
+ *       mapunion(T, (X) =>
+ *         cond(eq(X, 'null'), 'null',
+ *           cond(eq(X, 'undefined'), 'undefined',
+ *             typeExpr('proto.webutil.html.types.SafeScriptProto')))))
+ * =:
  */
 exports.packSanitizedJsToProtoSoyRuntimeOnly = function(sanitizedJs) {
+  if (sanitizedJs == null) {
+    return sanitizedJs;
+  }
   if (sanitizedJs !== '' && !(sanitizedJs instanceof SanitizedJs)) {
     throw new Error(
         'expected SanitizedJs, got ' + googDebug.runtimeType(sanitizedJs));
@@ -155,12 +198,22 @@ exports.packSanitizedJsToProtoSoyRuntimeOnly = function(sanitizedJs) {
 /**
  * Converts a Trusted Resource URI Sanitized Content object to a corresponding
  * Trusted Resource URL Proto.
- * @param {!SanitizedTrustedResourceUri|string}
- *     sanitizedTrustedResourceUri
- * @return {!TrustedResourceUrlProto}
+ * @param {T} sanitizedTrustedResourceUri
+ * @return {R}
+ * @template T
+ * @template R :=
+ *     cond(isUnknown(T), unknown(),
+ *       mapunion(T, (X) =>
+ *         cond(eq(X, 'null'), 'null',
+ *           cond(eq(X, 'undefined'), 'undefined',
+ *             typeExpr('proto.webutil.html.types.TrustedResourceUrlProto')))))
+ * =:
  */
 exports.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly = function(
     sanitizedTrustedResourceUri) {
+  if (sanitizedTrustedResourceUri == null) {
+    return sanitizedTrustedResourceUri;
+  }
   if (sanitizedTrustedResourceUri !== '' &&
       !(sanitizedTrustedResourceUri instanceof SanitizedTrustedResourceUri)) {
     throw new Error(
@@ -180,10 +233,21 @@ exports.packSanitizedTrustedResourceUriToProtoSoyRuntimeOnly = function(
 
 /**
  * Converts a URI Sanitized Content object to a corresponding Safe URL Proto.
- * @param {!SanitizedUri|string|!Uri} sanitizedUri
- * @return {!SafeUrlProto}
+ * @param {T} sanitizedUri
+ * @return {R}
+ * @template T
+ * @template R :=
+ *     cond(isUnknown(T), unknown(),
+ *       mapunion(T, (X) =>
+ *         cond(eq(X, 'null'), 'null',
+ *           cond(eq(X, 'undefined'), 'undefined',
+ *             typeExpr('proto.webutil.html.types.SafeUrlProto')))))
+ * =:
  */
 exports.packSanitizedUriToProtoSoyRuntimeOnly = function(sanitizedUri) {
+  if (sanitizedUri == null) {
+    return sanitizedUri;
+  }
   if (sanitizedUri !== '' && !(sanitizedUri instanceof SanitizedUri) &&
       !(sanitizedUri instanceof Uri)) {
     throw new Error(
@@ -310,8 +374,20 @@ exports.unpackByteStringToBase64String = function(
  * Processes the return value of a proto bytes field so that it is consistently
  * formatted as base64 text.
  *
- * @return {!ByteString}
+ * @param {T} bytes
+ * @return {R}
+ * @template T
+ * @template R :=
+ *     cond(isUnknown(T), unknown(),
+ *       mapunion(T, (X) =>
+ *         cond(eq(X, 'null'), 'null',
+ *           cond(eq(X, 'undefined'), 'undefined',
+ *             typeExpr('jspb.bytestring.ByteString')))))
+ * =:
  */
-exports.packBase64StringToByteString = function(/** string*/ bytes) {
+exports.packBase64StringToByteString = function(bytes) {
+  if (bytes == null) {
+    return bytes;
+  }
   return ByteString.fromBase64(bytes);
 };
