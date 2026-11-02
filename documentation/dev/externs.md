@@ -268,8 +268,9 @@ functions:
 
 | Command                     | Description                                   |
 | --------------------------- | --------------------------------------------- |
-| `{return $val /}`           | Returns a value from the extern. Auto externs |
-:                             : must end with a return statement. The Soy     :
+| `{return $val /}`           | Returns a value from the extern. Every path   |
+:                             : through an auto extern must end with a return :
+:                             : statement, unless it loops forever. The Soy   :
 :                             : compiler fails if dead code is detected.      :
 | `{assign $val = new val /}` | Reassigns a let or param.                     |
 | `{eval sideEffect($val)}`   | An arbitrary expression statement; typically  |

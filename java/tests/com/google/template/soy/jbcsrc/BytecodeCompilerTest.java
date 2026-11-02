@@ -764,6 +764,30 @@ public class BytecodeCompilerTest {
         .rendersAs(" blah aablahbl<wbr>ahblah");
   }
 
+  // A loop whose body always returns may still run zero times, so it is not terminal and the
+  // return after it is not dead code. (JSCompiler flags the loop increment in the JS backend's
+  // C-style `for` lowering as unreachable code, so this cannot be an integration test.)
+  @Test
+  public void testAutoImplLoopWhoseBodyAlwaysReturns() {
+    assertThatFile(
+            "{namespace ns}",
+            "{extern firstOrDefault: (l: list<int>, d: int) => int}",
+            "  {autoimpl}",
+            "    {for $i in $l}",
+            "      {return $i /}",
+            "    {/for}",
+            "    {return $d /}",
+            "  {/autoimpl}",
+            "{/extern}",
+            "{template foo}",
+            "  {@param l: list<int>}",
+            "  {firstOrDefault($l, 7)}",
+            "{/template}",
+            "")
+        .rendersAs("4", ImmutableMap.of("l", ImmutableList.of(4, 5)))
+        .rendersAs("7", ImmutableMap.of("l", ImmutableList.of()));
+  }
+
   @Test
   public void testParam() {
     assertThatTemplateBody("{@param foo : int }", "{$foo + 1}")

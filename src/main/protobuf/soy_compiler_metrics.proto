@@ -33,7 +33,7 @@ message Metrics {
 // Convention: Error impressions begin with "ERROR_", warning impressions, begin
 // with "WARNING_", feature impressions begin with "FEATURE_".
 enum Impression {
-  // Next ID: 574
+  // Next ID: 575
   UNKNOWN_IMPRESSION = 0;
 
   // Unexpected diagnostic caught in the main module of the app.
@@ -767,6 +767,7 @@ enum Impression {
   ERROR_VALIDATE_AUTO_JAVA_EXTERN_PASS_DEAD_CODE = 537;
   ERROR_VALIDATE_AUTO_JAVA_EXTERN_PASS_BAD_ASSIGNMENT = 538;
   ERROR_VALIDATE_AUTO_JAVA_EXTERN_PASS_MISSING_RETURN = 539;
+  ERROR_VALIDATE_AUTO_JAVA_EXTERN_PASS_JUMP_OUTSIDE_LOOP = 574;
 
   // java_src/soy/java/com/google/template/soy/passes/FileDependencyOrderPass.java
   ERROR_FILE_DEPENDENCY_ORDER_PASS_CYCLE = 540;

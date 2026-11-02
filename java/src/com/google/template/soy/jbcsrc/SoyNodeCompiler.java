@@ -678,6 +678,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private static class LoopContext {
     private final Label continueToLabel;
     private final Label breakToLabel;
+    private boolean hasBreak;
 
     LoopContext(Label continueToLabel, Label breakToLabel) {
       this.continueToLabel = continueToLabel;
@@ -692,6 +693,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     /** Gets the label to jump to for a 'break' statement within a loop. */
     Label getBreakToLabel() {
       return breakToLabel;
+    }
+
+    /** Records that a 'break' statement within the loop jumps to {@link #getBreakToLabel}. */
+    void markBreak() {
+      hasBreak = true;
+    }
+
+    /** Whether a 'break' statement within the loop jumps to {@link #getBreakToLabel}. */
+    boolean hasBreak() {
+      return hasBreak;
     }
   }
 
@@ -971,8 +982,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     var exitScope = scope.exitScopeMarker();
 
-    return new Statement(
-        loopBody.isTerminal() ? Statement.Kind.TERMINAL : Statement.Kind.NON_TERMINAL) {
+    // The list may be empty, so the loop may complete normally even if its body never does.
+    return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
         iteratorVar.initializer().gen(adapter); // Iterator it = ...;
@@ -1000,7 +1011,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitWhileNode(WhileNode node) {
     Scope scope = variables.enterScope();
-    Expression boolExpr = compileRootExpression(node.getExpr()).coerceToBoolean();
+    // A loop whose condition is the literal `true` is only left by a 'break' or a 'return'.
+    boolean isInfinite = node.hasLiteralTrueCondition();
+    Expression boolExpr =
+        isInfinite ? null : compileRootExpression(node.getExpr()).coerceToBoolean();
 
     Label loopStart = newLabel();
     Label loopEnd = newLabel();
@@ -1014,14 +1028,19 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
     var exitScope = scope.exitScopeMarker();
 
+    // Only an infinite loop without a 'break' cannot complete normally. The exit test must not be
+    // generated for such a loop, since the verifier would otherwise consider the code after the
+    // loop to be reachable (and to fall off the end of the method).
     return new Statement(
-        loopBody.isTerminal() ? Statement.Kind.TERMINAL : Statement.Kind.NON_TERMINAL) {
+        isInfinite && !context.hasBreak() ? Statement.Kind.TERMINAL : Statement.Kind.NON_TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {
         adapter.mark(loopStart);
 
-        boolExpr.gen(adapter);
-        adapter.ifZCmp(Opcodes.IFEQ, loopEnd); // while (booleanProvider == true) {
+        if (boolExpr != null) {
+          boolExpr.gen(adapter);
+          adapter.ifZCmp(Opcodes.IFEQ, loopEnd); // while (booleanProvider == true) {
+        }
         loopBody.gen(adapter);
 
         adapter.goTo(loopStart);
@@ -1036,7 +1055,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (loopStack.isEmpty()) {
       throw new IllegalStateException("{break /} found outside of a loop structure.");
     }
-    Label breakToLabel = loopStack.peek().getBreakToLabel();
+    LoopContext loop = loopStack.peek();
+    loop.markBreak();
+    Label breakToLabel = loop.getBreakToLabel();
     return new Statement(Statement.Kind.TERMINAL) {
       @Override
       protected void doGen(CodeBuilder adapter) {

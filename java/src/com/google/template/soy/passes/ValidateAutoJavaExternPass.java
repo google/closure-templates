@@ -17,8 +17,6 @@
 package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
@@ -29,7 +27,11 @@ import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.AssignmentNode;
 import com.google.template.soy.soytree.AutoImplNode;
+import com.google.template.soy.soytree.BreakNode;
+import com.google.template.soy.soytree.ContinueNode;
 import com.google.template.soy.soytree.ExternNode;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
@@ -37,11 +39,15 @@ import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.ReturnNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.CommandNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
+import com.google.template.soy.soytree.WhileNode;
 import com.google.template.soy.types.SoyType;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -69,6 +75,11 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
           "Function lacks ending return statement.",
           Impression.ERROR_VALIDATE_AUTO_JAVA_EXTERN_PASS_MISSING_RETURN);
 
+  private static final SoyErrorKind JUMP_OUTSIDE_LOOP =
+      SoyErrorKind.of(
+          "'{'{0}'}' is only allowed inside a loop.",
+          Impression.ERROR_VALIDATE_AUTO_JAVA_EXTERN_PASS_JUMP_OUTSIDE_LOOP);
+
   private final ErrorReporter errorReporter;
 
   public ValidateAutoJavaExternPass(ErrorReporter errorReporter) {
@@ -87,17 +98,7 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
     new ReturnTypeChecker(impl.getParent().getType().getReturnType()).exec(impl);
     boolean returns = new FlowChecker().exec(impl);
     if (!returns) {
-      SourceLocation loc = impl.getSourceLocation();
-      if (impl.numChildren() > 0) {
-        SoyNode lastChild = Iterables.getLast(impl.getChildren());
-        loc = lastChild.getSourceLocation();
-        if (lastChild instanceof IfNode ifNode) {
-          loc = ifNode.getCloseTagLocation();
-        } else if (lastChild instanceof SwitchNode switchNode) {
-          loc = Iterables.getLast(switchNode.getChildren()).getSourceLocation();
-        }
-      }
-      errorReporter.report(loc, MISSING_RETURN);
+      errorReporter.report(impl.getOpenTagLocation(), MISSING_RETURN);
     }
     new AssignmentChecker().exec(impl);
   }
@@ -127,11 +128,49 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
     }
   }
 
+  /** Records whether a loop is left by a {@code {break}}. */
+  private static final class Loop {
+    boolean hasBreak;
+  }
+
+  /**
+   * Determines whether a node completes abruptly, that is whether every path through it ends in a
+   * {@code {return}}, {@code {break}} or {@code {continue}}, or loops forever. This is the notion
+   * of a terminal statement that the bytecode compiler relies on. Neither {@code {break}} nor
+   * {@code {continue}} can leave an {@code {autoimpl}}, so its body completes abruptly only if
+   * every path through it returns. Statements that follow one that completes abruptly are
+   * unreachable and reported as dead code.
+   */
   private final class FlowChecker extends AbstractReturningSoyNodeVisitor<Boolean> {
+
+    /** The loops that enclose the node being visited, innermost first. */
+    private final Deque<Loop> loops = new ArrayDeque<>();
 
     @Override
     protected Boolean visitReturnNode(ReturnNode node) {
       return true;
+    }
+
+    @Override
+    protected Boolean visitBreakNode(BreakNode node) {
+      if (loops.isEmpty()) {
+        return reportJumpOutsideLoop(node);
+      }
+      loops.peek().hasBreak = true;
+      return true;
+    }
+
+    @Override
+    protected Boolean visitContinueNode(ContinueNode node) {
+      if (loops.isEmpty()) {
+        return reportJumpOutsideLoop(node);
+      }
+      return true;
+    }
+
+    private Boolean reportJumpOutsideLoop(CommandNode node) {
+      errorReporter.report(node.getSourceLocation(), JUMP_OUTSIDE_LOOP, node.getCommandName());
+      return false;
     }
 
     @Override
@@ -171,6 +210,30 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
       return visitBlock(node);
     }
 
+    @Override
+    protected Boolean visitForNode(ForNode node) {
+      boolean unused = visitLoopBody((ForNonemptyNode) node.getChild(0));
+      // The list may be empty, in which case the body never runs.
+      return false;
+    }
+
+    @Override
+    protected Boolean visitWhileNode(WhileNode node) {
+      boolean hasBreak = visitLoopBody(node);
+      // The loop may not run at all, unless its condition is the literal `true`. Such a loop runs
+      // forever unless a {break} leaves it.
+      return node.hasLiteralTrueCondition() && !hasBreak;
+    }
+
+    /** Visits the body of a loop and returns whether a {@code {break}} leaves the loop. */
+    private boolean visitLoopBody(ParentSoyNode<?> node) {
+      Loop loop = new Loop();
+      loops.push(loop);
+      boolean unused = visitBlock(node);
+      loops.pop();
+      return loop.hasBreak;
+    }
+
     private Boolean visitBlock(ParentSoyNode<?> node) {
       boolean returns = false;
       for (int i = 0; i < node.numChildren(); i++) {
@@ -189,9 +252,6 @@ class ValidateAutoJavaExternPass implements CompilerFilePass {
 
     @Override
     protected Boolean visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode<?> parentSoyNode) {
-        return Iterables.getLast(visitChildren(parentSoyNode));
-      }
       return false;
     }
   }

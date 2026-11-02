@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
@@ -51,6 +52,14 @@ public final class WhileNode extends AbstractBlockCommandNode
   /** Returns the condition expression. */
   public ExprRootNode getExpr() {
     return expr;
+  }
+
+  /**
+   * Whether the condition is the literal {@code true}, in which case the loop can only be left by a
+   * {@code {break}} or a {@code {return}}.
+   */
+  public boolean hasLiteralTrueCondition() {
+    return expr.getRoot() instanceof BooleanNode booleanNode && booleanNode.getValue();
   }
 
   @Override
