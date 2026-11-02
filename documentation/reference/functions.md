@@ -874,28 +874,6 @@ JavaScript but all common HTML entities are supported.
 This function expects `kind="html"` values. If passed a string, it returns it
 unmodified.
 
-### `ve_def(name, id[, dataProtoType[, staticMetadata]])` {#ve_def}
-
-Declares a visual element. Returns a VE object that can be passed to `ve_data()`
-and `{velog}`. This can only be used within a `{const}` definition.
-
-`dataProtoType` should be a reference to an imported proto type, or `null`.
-
-`staticMetadata` should be a `soy.LoggableElementMetadata` proto
-instance.
-
-```soy
-{export const VeWithMetadata = ve_def(
-    'VeWithMetadata',
-    238,
-    DataProto,
-    LoggableElementMetadata(clickTrackType: ClickTrackType.CLICK_TRACK_REDIRECTED)) /}
-```
-
-### `ve_data(ve, data)` {#ve_data}
-
-See the documentation for the [ve_data literal](expressions.md#ve_data).
-
 ### `template.bind(parameterRecord)` {#bind}
 
 Binds one or more parameters to the given template-type expression. The
@@ -953,8 +931,6 @@ Binds one or more parameters to an extern reference.
 ```
 
 </section>
-
-### `ve.hasSameId(anotherVe)` {#ve-any_hasSameId}
 
 ### `uniqueAttribute(attributeName[, idHolder])` and `idHolder()` {#uniqueAttribute}
 
