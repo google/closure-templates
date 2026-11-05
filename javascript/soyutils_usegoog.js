@@ -1880,11 +1880,38 @@ const $$buildAttrValue = function(...values) {
 /**
  * Joins items with a space, filtering out falsey values.
  * @param {...(string|SanitizedCss!|boolean|null|undefined|!ReadonlyArray<?>)}
- *     values The values to join.
+ *     var_args The values to join.
  * @return {string} The joined string.
  */
-const $$buildClassValue = function(...values) {
-  return values.flat().filter((s) => s).join(' ');
+const $$buildClassValue = function(var_args) {
+  // Use `var_args` and `arguments` instead of ES6 rest parameters (`...values`)
+  // so Closure Compiler does not emit `$jscomp.getRestArguments.apply(0,
+  // arguments)` and allocate a rest array on every call. The imperative loop
+  // also avoids intermediate `.flat()` and `.filter()` array allocations while
+  // keeping direct indexed traversal on large arrays (cf. cl/894221079 and
+  // cl/897217932).
+  let res = '';
+  // Track `hasItem` separately from `res !== ''` so a truthy `SanitizedCss`
+  // object with empty string content (`ordainSanitizedCss('')`) still
+  // contributes a leading `' '` delimiter to subsequent items, matching
+  // `.filter((s) => s).join(' ')`.
+  let hasItem = false;
+  for (let i = 0; i < arguments.length; i++) {
+    const arg = arguments[i];
+    if (Array.isArray(arg)) {
+      for (let j = 0; j < arg.length; j++) {
+        const item = arg[j];
+        if (item) {
+          res = hasItem ? res + ' ' + item : '' + item;
+          hasItem = true;
+        }
+      }
+    } else if (arg) {
+      res = hasItem ? res + ' ' + arg : '' + arg;
+      hasItem = true;
+    }
+  }
+  return res;
 };
 
 
