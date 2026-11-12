@@ -80,6 +80,9 @@ public abstract class DataAccessNode extends AbstractParentExprNode
 
   @Override
   public String toSourceString() {
+    if (SoyPrecedence.shouldGuard(this, getBaseExprChild())) {
+      return "(" + getBaseExprChild().toSourceString() + ")" + getSourceStringSuffix();
+    }
     return getBaseExprChild().toSourceString() + getSourceStringSuffix();
   }
 }
