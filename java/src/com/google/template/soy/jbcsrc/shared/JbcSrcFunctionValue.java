@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.FunctionalInterfaceUtil;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.SoyList;
+import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import java.lang.invoke.MethodHandle;
@@ -31,6 +33,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.List;
+import java.util.Map;
 
 /** Runtime type for function pointers. */
 @AutoValue
@@ -92,7 +96,56 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
       // Ignore extra arguments.
       args = args.subList(0, paramCount);
     }
-    return getHandle().invokeWithArguments(args);
+
+    Object[] adaptedArgs = new Object[args.size()];
+    for (int i = 0; i < args.size(); i++) {
+      Object arg = args.get(i);
+      Class<?> paramType = getHandle().type().parameterType(i);
+      // The incoming args are boxed SoyValues, but the underlying Java method might
+      // expect raw primitives or standard Java types. We unbox them if needed to
+      // match the exact signature of the target method before invoking it.
+      adaptedArgs[i] = unboxSoyValueIfNecessary(arg, paramType);
+    }
+    return getHandle().invokeWithArguments(adaptedArgs);
+  }
+
+  /**
+   * Unboxes a generic SoyValue argument into a specific Java type required by the underlying Java
+   * method signature (e.g., extracting the primitive `long` from an `IntegerData` box). If the
+   * method simply expects a SoyValue or Object, it returns the argument unchanged.
+   */
+  private static Object unboxSoyValueIfNecessary(Object arg, Class<?> expectedType) {
+    if (!(arg instanceof SoyValue soyValue)) {
+      return arg;
+    }
+    if (expectedType == long.class || expectedType == Long.class) {
+      return soyValue.longValue();
+    }
+    if (expectedType == int.class || expectedType == Integer.class) {
+      return soyValue.integerValue();
+    }
+    if (expectedType == double.class || expectedType == Double.class) {
+      return soyValue.floatValue();
+    }
+    if (expectedType == float.class || expectedType == Float.class) {
+      return (float) soyValue.floatValue();
+    }
+    if (expectedType == boolean.class || expectedType == Boolean.class) {
+      return soyValue.booleanValue();
+    }
+    if (expectedType == String.class) {
+      return soyValue.stringValue();
+    }
+    if (expectedType == Number.class) {
+      return soyValue.numberValue();
+    }
+    if (List.class.isAssignableFrom(expectedType) && soyValue instanceof SoyList soyList) {
+      return soyList.asJavaList();
+    }
+    if (Map.class.isAssignableFrom(expectedType) && soyValue instanceof SoyMap soyMap) {
+      return soyMap.asJavaMap();
+    }
+    return arg;
   }
 
   public <T> T asInstance(Class<T> iface) {
