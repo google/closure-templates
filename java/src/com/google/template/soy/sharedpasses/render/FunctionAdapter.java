@@ -91,7 +91,7 @@ class FunctionAdapter {
     }
 
     // The number of arguments we expect callers to pass.
-    int paramCount = functionPtr.getParamCount() - functionPtr.getBoundArgsCount();
+    int paramCount = functionalMethod.getParameterCount();
 
     MethodHandle handle = VISIT_EXTERN.bindTo(evalVisitor);
     // handle = TofuJavaValue(TofuJavaValue.class, Extern.class, ImmutableList.class,

@@ -2722,6 +2722,17 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
           externTypes.stream()
               .filter(t -> paramsMatchFunctionType(params, t.getSignature()))
               .collect(Collectors.toList());
+      if (matching.size() > 1) {
+        List<Extern> exactArityMatches =
+            matching.stream()
+                .filter(t ->
+                    !t.getSignature().isVarArgs()
+                        && t.getSignature().getParameters().size() == params.size())
+                .collect(Collectors.toList());
+        if (!exactArityMatches.isEmpty()) {
+          matching = exactArityMatches;
+        }
+      }
       if (matching.size() == 1) {
         Extern ref = matching.get(0);
         SoyType returnType = null;
@@ -2733,9 +2744,13 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
                   () ->
                       node.getParams().stream().map(ExprNode::getType).collect(toImmutableList()));
           if (resolvedExternNode != null) {
-            returnType = ((FunctionType) varRefNode.getType()).getReturnType();
+            FunctionType resolvedSignature = (FunctionType) varRefNode.getType();
+            returnType = resolvedSignature.getReturnType();
+            node.setIsVarArgs(resolvedSignature.isVarArgs());
             node.setAllowedParamTypes(
-                node.getParams().stream().map(ExprNode::getType).collect(toImmutableList()));
+                resolvedSignature.getParameters().stream()
+                    .map(Parameter::getType)
+                    .collect(toImmutableList()));
             ref = Metadata.forAst(resolvedExternNode);
           }
         }
@@ -2771,8 +2786,15 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     private boolean paramsMatchFunctionType(
         List<ExprNode> providedParams, FunctionType functionType) {
       ImmutableList<Parameter> functParams = functionType.getParameters();
-      if (!functionType.isVarArgs() && functParams.size() != providedParams.size()) {
-        return false;
+      if (functionType.isVarArgs()) {
+        if (providedParams.size() < functParams.size() - 1) {
+          return false;
+        }
+      } else {
+        int minParams = functionType.getFirstTrailingUndefinableParamIndex();
+        if (providedParams.size() < minParams || providedParams.size() > functParams.size()) {
+          return false;
+        }
       }
 
       for (int i = 0; i < providedParams.size(); ++i) {

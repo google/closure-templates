@@ -1100,7 +1100,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     List<ExprNode> passedInParams = node.getParams();
     for (int i = 0; i < node.getAllowedParamTypes().size(); i++) {
       if (node.isVarArgs() && i == node.getAllowedParamTypes().size() - 1) {
-        if (!passedInParams.isEmpty() && passedInParams.get(i) instanceof SpreadOpNode) {
+        if (i < passedInParams.size() && passedInParams.get(i) instanceof SpreadOpNode) {
           builder.add(visit(((SpreadOpNode) passedInParams.get(i)).getChild(0)));
         } else {
           SoyListData varArgsParamList = new SoyListData();
@@ -1109,8 +1109,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           }
           builder.add(varArgsParamList);
         }
-      } else {
+      } else if (i < passedInParams.size()) {
         builder.add(visit(passedInParams.get(i)));
+      } else {
+        builder.add(UndefinedData.INSTANCE);
       }
     }
     return builder.build();
@@ -1228,6 +1230,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         javaValues[i] = context.getULocale();
       } else if (implicitType == RenderCssHelper.class) {
         javaValues[i] = TofuJavaValue.forRaw(getRenderCssHelper());
+      }
+    }
+    for (int i = 0; i < numJavaParams; i++) {
+      if (javaValues[i] == null) {
+        javaValues[i] = TofuJavaValue.forSoyValue(UndefinedData.INSTANCE, SourceLocation.UNKNOWN);
       }
     }
     return javaValues;

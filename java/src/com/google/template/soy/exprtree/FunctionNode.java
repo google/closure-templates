@@ -33,6 +33,7 @@ import com.google.template.soy.shared.restricted.SoyFunctions;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.soytree.FileMetadata.Extern;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -297,11 +298,20 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   public void setAllowedParamTypes(List<SoyType> allowedParamTypes) {
     checkState(paramsStyle == ParamsStyle.POSITIONAL || numParams() == 0);
     checkState(
-        state.isVarArgs || allowedParamTypes.size() == numParams(),
-        "function does not accept variable arguments and allowedParamTypes.size (%s) != numParams"
+        state.isVarArgs || allowedParamTypes.size() >= numParams(),
+        "function does not accept variable arguments and allowedParamTypes.size (%s) < numParams"
             + " (%s)",
         allowedParamTypes.size(),
         numParams());
+    if (!state.isVarArgs) {
+      for (int i = numParams(); i < allowedParamTypes.size(); i++) {
+        checkState(
+            SoyTypes.isUndefinable(allowedParamTypes.get(i)),
+            "missing argument at index %s has non-undefinable type %s",
+            i,
+            allowedParamTypes.get(i));
+      }
+    }
     this.state.allowedParamTypes = ImmutableList.copyOf(allowedParamTypes);
   }
 

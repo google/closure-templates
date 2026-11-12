@@ -642,6 +642,19 @@ public class SoyTypesTest {
 
     // param name doesn't matter
     assertThatSoyType("(p: int) => string").isAssignableFromStrict("(v: int) => string");
+
+    // trailing undefinable parameters are optional
+    assertThatSoyType("() => string").isAssignableFromStrict("(p: int | undefined) => string");
+    assertThatSoyType("(p: int) => string")
+        .isAssignableFromStrict("(p: int, q: string | undefined, r: undefined) => string");
+    assertThatSoyType("() => string")
+        .isNotAssignableFromStrict("(p: int, q: string | undefined) => string");
+    assertThatSoyType("(p: string) => string")
+        .isNotAssignableFromStrict("(p: int | undefined) => string");
+    assertThatSoyType("() => string")
+        .isNotAssignableFromStrict("(p: int | undefined, q: string) => string");
+    assertThatSoyType("() => string")
+        .isNotAssignableFromStrict("(p: int | undefined, ...rest: list<int>) => string");
   }
 
   @Test
@@ -1170,6 +1183,56 @@ public class SoyTypesTest {
 
     assertThat(SoyTypes.excludeUndefined(UnionType.of(UNDEFINED_TYPE, NUMBER_TYPE)))
         .isEqualTo(NUMBER_TYPE);
+  }
+
+  @Test
+  public void testGetFirstTrailingUndefinableParamIndex() {
+    TestTypeRegistry registry =
+        new TestTypeRegistry().addNamed("MaybeString", "string | undefined");
+
+    assertThat(
+            ((FunctionType) parseType("() => string", registry))
+                .getFirstTrailingUndefinableParamIndex())
+        .isEqualTo(0);
+    assertThat(
+            ((FunctionType) parseType("(a: string, b: int) => string", registry))
+                .getFirstTrailingUndefinableParamIndex())
+        .isEqualTo(2);
+    assertThat(
+            ((FunctionType)
+                    parseType(
+                        "(a: string, b: string | undefined, c: int | undefined) => string",
+                        registry))
+                .getFirstTrailingUndefinableParamIndex())
+        .isEqualTo(1);
+    assertThat(
+            ((FunctionType)
+                    parseType(
+                        "(a: string | undefined, b: int, c: string | undefined) => string",
+                        registry))
+                .getFirstTrailingUndefinableParamIndex())
+        .isEqualTo(2);
+    assertThat(
+            ((FunctionType) parseType("(a: string | undefined, b: int) => string", registry))
+                .getFirstTrailingUndefinableParamIndex())
+        .isEqualTo(2);
+    assertThat(
+            ((FunctionType) parseType("(a: undefined) => string", registry))
+                .getFirstTrailingUndefinableParamIndex())
+        .isEqualTo(0);
+    assertThat(
+            ((FunctionType) parseType("(a: ?, b: any) => string", registry))
+                .getFirstTrailingUndefinableParamIndex())
+        .isEqualTo(2);
+    assertThat(
+            ((FunctionType) parseType("(a: MaybeString) => string", registry))
+                .getFirstTrailingUndefinableParamIndex())
+        .isEqualTo(0);
+    assertThat(
+            ((FunctionType)
+                    parseType("(a: string | undefined, ...rest: list<string>) => string", registry))
+                .getFirstTrailingUndefinableParamIndex())
+        .isEqualTo(2);
   }
 
   static SoyTypeSubject assertThatSoyType(String typeString, SoyTypeRegistry registry) {

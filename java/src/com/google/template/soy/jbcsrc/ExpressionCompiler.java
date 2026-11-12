@@ -2153,7 +2153,7 @@ final class ExpressionCompiler {
       List<ExprNode> params = node.getParams();
       for (int i = 0; i < node.getAllowedParamTypes().size(); i++) {
         if (node.isVarArgs() && i == node.getAllowedParamTypes().size() - 1) {
-          if (!params.isEmpty() && params.get(i) instanceof SpreadOpNode) {
+          if (i < params.size() && params.get(i) instanceof SpreadOpNode) {
             builder.add(visit(((SpreadOpNode) params.get(i)).getChild(0)));
           } else {
             int varArgParamIndex = node.getAllowedParamTypes().size() - 1;
@@ -2166,8 +2166,10 @@ final class ExpressionCompiler {
                     ListType.of(node.getAllowedParamTypes().get(varArgParamIndex)),
                     SoyExpression.asBoxedValueProviderList(varArgsParamList)));
           }
-        } else {
+        } else if (i < params.size()) {
           builder.add(visit(params.get(i)));
+        } else {
+          builder.add(SoyExpression.SOY_UNDEFINED);
         }
       }
       return builder.build();

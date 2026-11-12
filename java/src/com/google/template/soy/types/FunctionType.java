@@ -52,6 +52,22 @@ public abstract class FunctionType extends SoyType {
   }
 
   /**
+   * Returns the lowest index in {@link #getParameters()} where all parameters from that index
+   * onward are non-varargs and undefinable (as determined by {@link SoyTypes#isUndefinable}).
+   */
+  @Memoized
+  public int getFirstTrailingUndefinableParamIndex() {
+    ImmutableList<Parameter> parameters = getParameters();
+    int index = parameters.size();
+    while (index > 0
+        && !parameters.get(index - 1).isVarArgs()
+        && SoyTypes.isUndefinable(parameters.get(index - 1).getType())) {
+      index--;
+    }
+    return index;
+  }
+
+  /**
    * Represents minimal information about a template parameter.
    *
    * <p>This only represents normal parameters. Information about injected params or state variables
@@ -88,7 +104,7 @@ public abstract class FunctionType extends SoyType {
 
     FunctionType srcFunction = (FunctionType) srcType;
     int paramsInCommon = Math.min(getParameters().size(), srcFunction.getParameters().size());
-    if (srcFunction.getParameters().size() > paramsInCommon) {
+    if (srcFunction.getFirstTrailingUndefinableParamIndex() > paramsInCommon) {
       return false;
     }
 

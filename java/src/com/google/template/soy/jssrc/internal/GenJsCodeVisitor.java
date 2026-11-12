@@ -1631,7 +1631,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       ByteSpan imputesSpan = SoyTreeUtils.getByteSpan(node, node.getIdentifier().location());
 
       JsDoc.Builder jsDocBuilder = JsDoc.builder();
-      for (FunctionType.Parameter param : node.getType().getParameters()) {
+      ImmutableList<FunctionType.Parameter> params = node.getType().getParameters();
+      int firstOptionalParamIndex = node.getType().getFirstTrailingUndefinableParamIndex();
+      for (int i = 0; i < params.size(); i++) {
+        FunctionType.Parameter param = params.get(i);
         if (param.isVarArgs() && param.getType() instanceof AbstractIterableType) {
           JsType jsType =
               getJsTypeForParamForDeclaration(
@@ -1641,7 +1644,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               .addGoogRequires(jsType);
         } else {
           JsType jsType = getJsTypeForParamForDeclaration(param.getType());
-          jsDocBuilder.addParam("p$" + param.getName(), jsType.typeExpr()).addGoogRequires(jsType);
+          String typeExpr = jsType.typeExpr() + (i >= firstOptionalParamIndex ? "=" : "");
+          jsDocBuilder.addParam("p$" + param.getName(), typeExpr).addGoogRequires(jsType);
         }
       }
       JsType returnType = getJsTypeForParamForDeclaration(node.getType().getReturnType());

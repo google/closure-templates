@@ -282,11 +282,17 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   public SoyValue execAutoJavaExtern(AutoImplNode java, ImmutableList<SoyValue> args) {
     env = Environment.create();
     buildFileEnvironment(env, java.getNearestAncestor(SoyFileNode.class));
-    boolean isVarArgs = java.getParent().isVarArgs();
-    ImmutableList<TemplateParam> externParams = java.getParent().getParamVars();
-    Preconditions.checkArgument(isVarArgs || externParams.size() == args.size());
+    ExternNode extern = java.getParent();
+    boolean isVarArgs = extern.isVarArgs();
+    ImmutableList<TemplateParam> externParams = extern.getParamVars();
+    int minParams =
+        isVarArgs ? externParams.size() : extern.getType().getFirstTrailingUndefinableParamIndex();
+    Preconditions.checkArgument(
+        isVarArgs
+            ? args.size() == externParams.size()
+            : args.size() >= minParams && args.size() <= externParams.size());
     for (int i = 0; i < externParams.size(); i++) {
-      this.env.bind(externParams.get(i), args.get(i));
+      this.env.bind(externParams.get(i), i < args.size() ? args.get(i) : UndefinedData.INSTANCE);
     }
     try {
       visit(java);

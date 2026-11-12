@@ -1821,6 +1821,123 @@ public final class ResolveExpressionTypesPassTest {
         "{assertType('regexp', /[a-z]/)}");
   }
 
+  @Test
+  public void testExternTrailingUndefinableParamsOptional() {
+    String soy =
+        "{namespace ns}\n"
+            + "{type MaybeInt = int | undefined /}\n"
+            + "{extern optAll: (a: int | undefined, b: undefined) => string}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"optAll\" /}\n"
+            + "{/extern}\n"
+            + "{extern optTrail: (a: string, b: MaybeInt, c: bool | undefined) => int}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"optTrail\" /}\n"
+            + "{/extern}\n"
+            + "{extern optMid: (a: int | undefined, b: string, c: bool | undefined) => int}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"optMid\" /}\n"
+            + "{/extern}\n"
+            + "{extern optVarArgs: (a: string | undefined, ...rest: list<int>) => int}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"optVarArgs\" /}\n"
+            + "{/extern}\n"
+            + "{extern optImplicit: (a: implicit, b: string | undefined) => implicit}\n"
+            + "  {autoimpl}\n"
+            + "    {return $a /}\n"
+            + "  {/autoimpl}\n"
+            + "{/extern}\n"
+            + "{template aaa}\n"
+            + "  {assertType('string', optAll())}\n"
+            + "  {assertType('string', optAll(1))}\n"
+            + "  {assertType('string', optAll(1, undefined))}\n"
+            + "  {assertType('int', optTrail('x'))}\n"
+            + "  {assertType('int', optTrail('x', 2))}\n"
+            + "  {assertType('int', optTrail('x', 2, true))}\n"
+            + "  {assertType('int', optMid(undefined, 'y'))}\n"
+            + "  {assertType('int', optVarArgs('z'))}\n"
+            + "  {assertType('int', optImplicit(42))}\n"
+            + "{/template}\n";
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(soy)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
+
+  @Test
+  public void testExternTrailingUndefinableParamsErrors() {
+    assertResolveExpressionTypesFails(
+        "Parameter types, '', do not satisfy the function signature, 'int|undefined, string,"
+            + " bool|undefined'.",
+        "{namespace ns}\n"
+            + "{extern optMid: (a: int | undefined, b: string, c: bool | undefined) => int}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"optMid\" /}\n"
+            + "{/extern}\n"
+            + "{template aaa}\n"
+            + "  {optMid()}\n"
+            + "{/template}\n");
+
+    assertResolveExpressionTypesFails(
+        "Parameter types, 'undefined', do not satisfy the function signature,"
+            + " 'int|undefined, string, bool|undefined'.",
+        "{namespace ns}\n"
+            + "{extern optMid: (a: int | undefined, b: string, c: bool | undefined) => int}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"optMid\" /}\n"
+            + "{/extern}\n"
+            + "{template aaa}\n"
+            + "  {optMid(undefined)}\n"
+            + "{/template}\n");
+
+    assertResolveExpressionTypesFails(
+        "Parameter types, '', do not satisfy the function signature,"
+            + " 'string|undefined, list<int>'.",
+        "{namespace ns}\n"
+            + "{extern optVarArgs: (a: string | undefined, ...rest: list<int>) => int}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"optVarArgs\" /}\n"
+            + "{/extern}\n"
+            + "{template aaa}\n"
+            + "  {optVarArgs()}\n"
+            + "{/template}\n");
+  }
+
+  @Test
+  public void testExternOverloadPrefersExactArity() {
+    String soy =
+        "{namespace ns}\n"
+            + "{extern f: (a: int) => int}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"f\" /}\n"
+            + "{/extern}\n"
+            + "{extern f: (a: int, b: string | undefined) => int}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"f\" /}\n"
+            + "{/extern}\n"
+            + "{template aaa}\n"
+            + "  {assertType('int', f(1))}\n"
+            + "  {assertType('int', f(1, 's'))}\n"
+            + "  {assertType('int', f(1, undefined))}\n"
+            + "{/template}\n";
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(soy)
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .typeRegistry(typeRegistry)
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+
+    // Omitting optional args that match multiple inexact overloads remains ambiguous.
+    assertResolveExpressionTypesFails(
+        "Parameter types, 'int', do not uniquely satisfy one of the function signatures"
+            + " ['int, string|undefined', 'int, int|undefined, bool|undefined'].",
+        "{namespace ns}\n"
+            + "{extern g: (a: int, b: string | undefined) => int}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"g\" /}\n"
+            + "{/extern}\n"
+            + "{extern g: (a: int, b: int | undefined, c: bool | undefined) => int}\n"
+            + "  {jsimpl namespace=\"ns\" function=\"g\" /}\n"
+            + "{/extern}\n"
+            + "{template aaa}\n"
+            + "  {g(1)}\n"
+            + "{/template}\n");
+  }
+
   private void assertTypes(String... lines) {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(constructFileSource(lines))

@@ -25,12 +25,16 @@ import com.google.template.soy.base.internal.FunctionalInterfaceUtil;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.restricted.UndefinedData;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleProxies;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /** Runtime type for function pointers. */
 @AutoValue
@@ -91,6 +95,20 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
     if (args.size() > paramCount) {
       // Ignore extra arguments.
       args = args.subList(0, paramCount);
+    } else if (args.size() < paramCount) {
+      List<Object> paddedArgs = new ArrayList<>(paramCount);
+      paddedArgs.addAll(args);
+      for (int i = args.size(); i < paramCount; i++) {
+        Class<?> paramType = getHandle().type().parameterType(i);
+        if (SoyValue.class.isAssignableFrom(paramType)) {
+          paddedArgs.add(UndefinedData.INSTANCE);
+        } else if (!paramType.isPrimitive()) {
+          paddedArgs.add(null);
+        } else {
+          break;
+        }
+      }
+      return getHandle().invokeWithArguments(paddedArgs);
     }
     return getHandle().invokeWithArguments(args);
   }
@@ -107,8 +125,29 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
     //   (int, List, SoyValue): SoyValue
 
     int paramCount = functionalMethod.getParameterCount();
-    MethodHandle[] argFilters = new MethodHandle[paramCount];
-    for (int i = 0; i < paramCount; i++) {
+    int handleParamCount = handle.type().parameterCount();
+    if (handleParamCount > paramCount) {
+      Object[] omittedArgs = new Object[handleParamCount - paramCount];
+      boolean canBind = true;
+      for (int i = paramCount; i < handleParamCount; i++) {
+        Class<?> paramType = handle.type().parameterType(i);
+        if (SoyValue.class.isAssignableFrom(paramType)) {
+          omittedArgs[i - paramCount] = UndefinedData.INSTANCE;
+        } else if (!paramType.isPrimitive()) {
+          omittedArgs[i - paramCount] = null;
+        } else {
+          canBind = false;
+          break;
+        }
+      }
+      if (canBind) {
+        handle = MethodHandles.insertArguments(handle, paramCount, omittedArgs);
+        handleParamCount = paramCount;
+      }
+    }
+    int adaptCount = Math.min(paramCount, handleParamCount);
+    MethodHandle[] argFilters = new MethodHandle[adaptCount];
+    for (int i = 0; i < adaptCount; i++) {
       argFilters[i] = null;
       Class<?> expected = handle.type().parameterType(i);
       Class<?> provided = functionalMethod.getParameterTypes()[i];
@@ -117,6 +156,14 @@ public abstract class JbcSrcFunctionValue extends SoyValue {
       }
     }
     handle = MethodHandles.filterArguments(handle, 0, argFilters);
+    if (handleParamCount < paramCount) {
+      handle =
+          MethodHandles.dropArguments(
+              handle,
+              handleParamCount,
+              Arrays.copyOfRange(
+                  functionalMethod.getParameterTypes(), handleParamCount, paramCount));
+    }
     // If the handle previously had SoyValue parameters, now the parameters match the functional
     // interface params.
     //   (int, List, String): SoyValue
