@@ -22,13 +22,19 @@ With all optional attributes:
 
 These are the `template` tag's attributes:
 
-*   `visibility`: Optional. Default `public`. Set this to `private` if you want
-    this to be a private template. A private template can be called by other
-    templates in the same file. The various backends also take efforts to
-    prevent direct calls to that template from the host language.
+*   `visibility`: Optional. Default `public`.
+
+    *   `public`: The template can be called from any other template.
+    *   `private`: The template can only be called by other templates in the
+        same file.
+    *   `package`: The template can only be called by other templates in the
+        same directory.
+
+    The various backends also take efforts to prevent direct calls to that
+    template from the host language.
 
     *   In Java (SoySauce and Tofu), a runtime exception will be thrown if you
-        try to render a private template.
+        try to render a private or package-private template.
     *   In Javascript, private templates will be annotated with `@private` which
         will be enforced by the JsCompiler.
     *   In Python, private templates will generate Python functions that start
