@@ -262,15 +262,22 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     return new PrintNode(this, copyState);
   }
 
+  /**
+   * Whether this print may be rendering html.
+   *
+   * <p>This includes the untyped cases. A value of type {@code ?} or {@code any} can be holding
+   * deferred html content at runtime, so anything that would coerce the value to a string, or
+   * decide that a block does not need buffered output, has to assume it might be html.
+   */
   public boolean isHtml() {
     SoyType type = getExpr().getRoot().getType();
     return type != null && isHtmlType(type);
   }
 
   private boolean isHtmlType(SoyType type) {
-    return !isUnknownOrAny(type)
-        && (type.isAssignableFromStrict(HtmlType.getInstance())
-            || type.isAssignableFromStrict(ElementType.UNKNOWN_ELEMENT));
+    return isUnknownOrAny(type)
+        || type.isAssignableFromStrict(HtmlType.getInstance())
+        || type.isAssignableFromStrict(ElementType.UNKNOWN_ELEMENT);
   }
 
   /**
