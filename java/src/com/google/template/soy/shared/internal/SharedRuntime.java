@@ -307,13 +307,15 @@ public final class SharedRuntime {
     while (iterator.hasNext()) {
       SoyValueProvider item = iterator.next();
       SoyValue recordEntry = item.resolve();
-      checkMapFromListConstructorCondition(recordEntry instanceof SoyRecord, recordEntry, i);
-      SoyRecord record = (SoyRecord) recordEntry;
-      SoyValue key = record.getField(RecordProperty.KEY);
-      SoyValueProvider valueProvider = record.getFieldProvider(RecordProperty.VALUE);
-      checkMapFromListConstructorCondition(
-          SoyMap.isAllowedKeyType(key) && valueProvider != null, recordEntry, i);
-      putFn.accept(key, valueProvider);
+      if (recordEntry instanceof SoyRecord record) {
+        SoyValue key = record.getField(RecordProperty.KEY);
+        SoyValueProvider valueProvider = record.getFieldProvider(RecordProperty.VALUE);
+        checkMapFromListConstructorCondition(
+            SoyMap.isAllowedKeyType(key) && valueProvider != null, recordEntry, i);
+        putFn.accept(key, valueProvider);
+      } else {
+        checkMapFromListConstructorCondition(false, recordEntry, i);
+      }
       i++;
     }
   }

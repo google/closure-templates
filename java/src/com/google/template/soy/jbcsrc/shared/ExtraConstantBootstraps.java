@@ -95,15 +95,23 @@ public final class ExtraConstantBootstraps {
     // If there are an odd number of kvps it is because the first one is actually a 'base'
     // paramstore that we are extending.
     if (keyValuePairs.length % 2 == 1) {
-      params = new ParamStore((ParamStore) keyValuePairs[0], (keyValuePairs.length - 1) / 2);
+      if (keyValuePairs[0] instanceof ParamStore baseParams) {
+        params = new ParamStore(baseParams, (keyValuePairs.length - 1) / 2);
+      } else {
+        throw new IllegalArgumentException("Expected ParamStore as first argument");
+      }
       i = 1;
     } else {
       params = new ParamStore(keyValuePairs.length / 2);
     }
     for (; i < keyValuePairs.length; i += 2) {
-      params.setField(
-          RecordProperty.get((String) keyValuePairs[i]),
-          SoyValueConverter.INSTANCE.convert(keyValuePairs[i + 1]).resolve());
+      if (keyValuePairs[i] instanceof String key) {
+        params.setField(
+            RecordProperty.get(key),
+            SoyValueConverter.INSTANCE.convert(keyValuePairs[i + 1]).resolve());
+      } else {
+        throw new IllegalArgumentException("Expected String as key");
+      }
     }
     return params.freeze();
   }
