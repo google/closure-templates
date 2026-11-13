@@ -497,24 +497,24 @@ final class LazyClosureCompiler {
         new Statement(Statement.Kind.TERMINAL) {
           @Override
           protected void doGen(CodeBuilder cb) {
-            cb.visitVarInsn(Opcodes.ILOAD, 0); // load the optimistic parameter
-            Label end = newLabel();
-            cb.ifZCmp(Opcodes.IFEQ, end); // if (optimistic) {
             var methodParameters = cb.getArgumentTypes();
-            // Load all the arguments except the first one (the optimistic
-            // parameter)
-            var argTypes = copyOfRange(methodParameters, 1, methodParameters.length);
-            int index = Type.BOOLEAN_TYPE.getSize();
-            for (var argType : argTypes) {
-              cb.visitVarInsn(argType.getOpcode(Opcodes.ILOAD), index);
-              index += argType.getSize();
+            if (methodParameters.length > 0) {
+              cb.visitVarInsn(Opcodes.ILOAD, 0); // load the optimistic parameter
+              Label end = newLabel();
+              cb.ifZCmp(Opcodes.IFEQ, end); // if (optimistic) {
+              var argTypes = copyOfRange(methodParameters, 1, methodParameters.length);
+              int index = Type.BOOLEAN_TYPE.getSize();
+              for (var argType : argTypes) {
+                cb.visitVarInsn(argType.getOpcode(Opcodes.ILOAD), index);
+                index += argType.getSize();
+              }
+              cb.visitInvokeDynamicInsn(
+                  cb.getThisMethodName(),
+                  Type.getMethodDescriptor(providerSubclassType, argTypes),
+                  bootstrapHandle);
+              cb.returnValue();
+              cb.mark(end);
             }
-            cb.visitInvokeDynamicInsn(
-                cb.getThisMethodName(),
-                Type.getMethodDescriptor(providerSubclassType, argTypes),
-                bootstrapHandle);
-            cb.returnValue();
-            cb.mark(end);
           }
         };
     return new ExpressionDetacher.BasicDetacher(Suppliers.ofInstance(optimisticDetacher));
