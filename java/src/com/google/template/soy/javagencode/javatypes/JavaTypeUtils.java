@@ -162,7 +162,7 @@ public final class JavaTypeUtils {
         types = ImmutableList.of(new VeJavaType());
         break;
       case VE_DATA:
-        types = ImmutableList.of(new VeDataJavaType());
+        types = ImmutableList.of(SimpleJavaType.VE_DATA);
         break;
       case LITERAL:
       case NAMESPACE:
@@ -217,8 +217,7 @@ public final class JavaTypeUtils {
    * against whether a template is fully handled by this generated API.
    */
   public static boolean isJavaIncompatible(SoyType type) {
-    return SoyTypes.allConcreteTypes(type, null)
-        .anyMatch(t -> t.isOfKind(Kind.VE) || t.isOfKind(Kind.VE_DATA));
+    return SoyTypes.allConcreteTypes(type, null).anyMatch(t -> t.isOfKind(Kind.VE));
   }
 
   public static Optional<SoyType> upcastTypesForIndirectParams(Set<SoyType> allTypes) {
