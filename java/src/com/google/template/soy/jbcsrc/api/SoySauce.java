@@ -178,6 +178,15 @@ public interface SoySauce {
     @CanIgnoreReturnValue
     Renderer setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo);
 
+    /**
+     * Whether lazy calls should use a faster invocation path. Temporary, for measuring the change
+     * in an experiment before making it the default.
+     */
+    @CanIgnoreReturnValue
+    default Renderer setFastLazyCalls(boolean fastLazyCalls) {
+      return this;
+    }
+
     /** Configures the {@link SoyLogger} to use. */
     @CanIgnoreReturnValue
     Renderer setSoyLogger(SoyLogger logger);
