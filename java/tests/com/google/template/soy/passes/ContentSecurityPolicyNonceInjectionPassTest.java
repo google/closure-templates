@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSet;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
@@ -368,6 +369,232 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join("{template foo}\n", "<link rel='preload' as='css' href='foo.js'>\n", "{/template}"),
         join("{template foo}\n", "<link rel='preload' as='css' href='foo.js'>\n", "{/template}"));
+  }
+
+  @Test
+  public void testModulePreload_default() {
+    assertInjected(
+        join(
+            "{template foo}\n",
+            DEFN,
+            "<link rel='modulepreload' href='foo.js'" + NONCE + ">",
+            "<link rel='ModulePreload' href='foo.js'" + NONCE + ">\n",
+            "{/template}"),
+        join(
+            "{template foo}\n",
+            "<link rel='modulepreload' href='foo.js'>",
+            "<link rel='ModulePreload' href='foo.js'>\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testModulePreload_as_empty() {
+    assertInjected(
+        join(
+            "{template foo}\n",
+            DEFN,
+            "<link rel='modulepreload' as='' href='foo.js'" + NONCE + ">\n",
+            "{/template}"),
+        join(
+            "{template foo}\n", "<link rel='modulepreload' as='' href='foo.js'>\n", "{/template}"));
+  }
+
+  @Test
+  public void testModulePreload_as_script() {
+    assertInjected(
+        join(
+            "{template foo}\n",
+            DEFN,
+            "<link rel='modulepreload' as='script' href='foo.js'" + NONCE + ">",
+            "<link rel='modulepreload' as='SCRIPT' href='foo.js'" + NONCE + ">\n",
+            "{/template}"),
+        join(
+            "{template foo}\n",
+            "<link rel='modulepreload' as='script' href='foo.js'>",
+            "<link rel='modulepreload' as='SCRIPT' href='foo.js'>\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testModulePreload_as_style() {
+    assertInjected(
+        join(
+            "{template foo}\n",
+            DEFN_STYLE,
+            "<link rel='modulepreload' as='style' href='foo.css'" + NONCE_STYLE + ">",
+            "<link rel='modulepreload' as='STYLE' href='foo.css'" + NONCE_STYLE + ">\n",
+            "{/template}"),
+        join(
+            "{template foo}\n",
+            "<link rel='modulepreload' as='style' href='foo.css'>",
+            "<link rel='modulepreload' as='STYLE' href='foo.css'>\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testModulePreload_as_nonNonceable() {
+    assertInjected(
+        join(
+            "{template foo}\n",
+            "<link rel='modulepreload' as='json' href='foo.json'>",
+            "<link rel='modulepreload' as='css' href='foo.css'>\n",
+            "{/template}"),
+        join(
+            "{template foo}\n",
+            "<link rel='modulepreload' as='json' href='foo.json'>",
+            "<link rel='modulepreload' as='css' href='foo.css'>\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testModulePreload_as_dynamicAndValueless() {
+    assertInjected(
+        join(
+            "{template foo}\n",
+            "  {@param dest: string}\n",
+            "<link rel='modulepreload' as='{$dest |escapeHtmlAttribute}' href='foo.js'>",
+            "<link rel='modulepreload' as href='foo.js'>\n",
+            "{/template}"),
+        join(
+            "{template foo}\n",
+            "  {@param dest: string}\n",
+            "<link rel='modulepreload' as='{$dest}' href='foo.js'>",
+            "<link rel='modulepreload' as href='foo.js'>\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testModulePreload_conditionalUnrelatedAttribute() {
+    assertInjected(
+        join(
+            "{template foo}\n",
+            "  {@param c: bool}\n",
+            DEFN,
+            "<link rel='modulepreload' href='foo.js'{if $c} crossorigin='use-credentials'{/if}"
+                + NONCE
+                + ">\n",
+            "{/template}"),
+        join(
+            "{template foo}\n",
+            "  {@param c: bool}\n",
+            "<link rel='modulepreload' href='foo.js' {if $c}crossorigin='use-credentials'{/if}>\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testModulePreload_as_conditionalOrDynamic() {
+    assertInjected(
+        join(
+            "{template foo}\n",
+            "  {@param c: bool}\n",
+            "  {@param x: int}\n",
+            "  {@param xs: list<string>}\n",
+            "  {@param attrs: attributes}\n",
+            "<link rel='modulepreload' href='foo.js'{if $c} as='style'{/if}>",
+            "<link rel='modulepreload' href='foo.js'{if $c} as='script'{else} as='style'{/if}>",
+            "<link rel='modulepreload' href='foo.js'{switch $x}{case 1} as='style'{/switch}>",
+            "<link rel='modulepreload' href='foo.js'{for $item in $xs} as='json'"
+                + " data-i='{$item |escapeHtmlAttribute}'{/for}>",
+            "<link rel='modulepreload' href='foo.js'{$attrs |filterHtmlAttributes"
+                + " |whitespaceHtmlAttributes}>",
+            "<link rel='modulepreload' href='foo.js'{if $c}{$attrs |filterHtmlAttributes"
+                + " |whitespaceHtmlAttributes}{/if}>",
+            "<link rel='modulepreload' href='foo.js'{call myAttrs /}>\n",
+            "{/template}\n\n",
+            "{template myAttrs kind=\"attributes\"}\n",
+            "as='style'\n",
+            "{/template}"),
+        join(
+            "{template foo}\n",
+            "  {@param c: bool}\n",
+            "  {@param x: int}\n",
+            "  {@param xs: list<string>}\n",
+            "  {@param attrs: attributes}\n",
+            "<link rel='modulepreload' href='foo.js' {if $c}as='style'{/if}>",
+            "<link rel='modulepreload' href='foo.js' {if $c}as='script'{else}as='style'{/if}>",
+            "<link rel='modulepreload' href='foo.js' {switch $x}{case 1}as='style'{/switch}>",
+            "<link rel='modulepreload' href='foo.js' {for $item in $xs}as='json'"
+                + " data-i='{$item}'{/for}>",
+            "<link rel='modulepreload' href='foo.js' {$attrs}>",
+            "<link rel='modulepreload' href='foo.js' {if $c}{$attrs}{/if}>",
+            "<link rel='modulepreload' href='foo.js' {call myAttrs /}>\n",
+            "{/template}\n\n",
+            "{template myAttrs kind=\"attributes\"}\n",
+            "as='style'\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testModulePreload_as_elementAttributes() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                join(
+                    "{namespace ns}\n\n",
+                    "{template extraAttrs kind=\"html<link>\"}\n",
+                    "  {@attribute *}\n",
+                    "<link rel='modulepreload' href='foo.js'>\n",
+                    "{/template}\n\n",
+                    "{template attrParam kind=\"html<link>\"}\n",
+                    "  {@attribute? as: string}\n",
+                    "<link rel='modulepreload' @as href='foo.js'>\n",
+                    "{/template}"))
+            .runAutoescaper(true)
+            .parse()
+            .fileSet();
+
+    String output = soyTree.getChild(0).toSourceString();
+    assertThat(output).doesNotContain("csp_nonce");
+    assertThat(output).doesNotContain("nonce=");
+  }
+
+  @Test
+  public void testPreload_as_withDynamicAttributes() {
+    assertInjected(
+        join(
+            "{template foo}\n",
+            "  {@param attrs: attributes}\n",
+            DEFN_STYLE,
+            "<link rel='preload' as='style' href='foo.css'{$attrs |filterHtmlAttributes"
+                + " |whitespaceHtmlAttributes}"
+                + NONCE_STYLE
+                + ">",
+            "<link rel='modulepreload' as='style' href='foo.css'{$attrs |filterHtmlAttributes"
+                + " |whitespaceHtmlAttributes}"
+                + NONCE_STYLE
+                + ">\n",
+            "{/template}"),
+        join(
+            "{template foo}\n",
+            "  {@param attrs: attributes}\n",
+            "<link rel='preload' as='style' href='foo.css' {$attrs}>",
+            "<link rel='modulepreload' as='style' href='foo.css' {$attrs}>\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testModulePreload_manualNonceError() {
+    ErrorReporter errorReporter = ErrorReporter.create();
+    SoyFileSetParserBuilder.forFileContents(
+            join(
+                "{namespace ns}\n\n",
+                "{template foo}\n",
+                "<link rel='modulepreload' href='foo.js' nonce='abc'>",
+                "<link rel='modulepreload' as='script' href='foo.js' nonce='abc'>",
+                "<link rel='modulepreload' as='' href='foo.js' nonce='abc'>",
+                "<link rel='modulepreload' as='style' href='foo.css' nonce='abc'>\n",
+                "{/template}"))
+        .errorReporter(errorReporter)
+        .runAutoescaper(true)
+        .parse();
+
+    assertThat(errorReporter.getErrors()).hasSize(4);
+    errorReporter
+        .getErrors()
+        .forEach(error ->
+            assertThat(error.message())
+                .contains(
+                    "Found a 'nonce' attribute on a tag that is supported by Soy auto-nonce"
+                        + " support."));
   }
 
   private static String join(String... lines) {

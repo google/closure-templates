@@ -1942,6 +1942,38 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
   }
 
+  @Test
+  public void testLinkModulePreload() {
+    String source =
+        rewrite(
+                join(
+                    "{namespace ns}\n\n",
+                    "{template main}\n",
+                    "  {@param x: ?}\n",
+                    "<link rel='modulepreload' href='{$x}'>",
+                    "<link rel='modulepreload' as='style' href='{$x}'>\n",
+                    "{/template}"))
+            .toSourceString()
+            .trim();
+    assertThat(source)
+        .isEqualTo(
+            join(
+                "{namespace ns}\n\n",
+                "{template main}\n",
+                "  {@param x: ?}\n",
+                NONCE_DECLARATION,
+                NONCE_DECLARATION_STYLE,
+                "<link rel='modulepreload'"
+                    + " href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'"
+                    + NONCE
+                    + ">",
+                "<link rel='modulepreload' as='style'"
+                    + " href='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'"
+                    + NONCE_STYLE
+                    + ">\n",
+                "{/template}"));
+  }
+
   private static String join(String... lines) {
     return Joiner.on("").join(lines);
   }

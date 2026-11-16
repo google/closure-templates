@@ -25,15 +25,20 @@ import com.google.template.soy.compilermetrics.Impression;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
@@ -192,23 +197,89 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
     if (relAttrValue == null) {
       return NonceType.NONE;
     }
-    if (Ascii.equalsIgnoreCase("import", relAttrValue)) {
-      return NonceType.OTHER;
-    }
-    if (Ascii.equalsIgnoreCase("stylesheet", relAttrValue)) {
-      return NonceType.STYLE;
-    }
-    if (Ascii.equalsIgnoreCase("preload", relAttrValue)) {
-      String asAttrValue = getStaticDirectAttributeValue(tag, "as");
-      if (asAttrValue == null) {
+    return switch (Ascii.toLowerCase(relAttrValue)) {
+      case "import" -> NonceType.OTHER;
+      case "stylesheet" -> NonceType.STYLE;
+      case "preload" -> getPreloadNonceType(tag, NonceType.NONE);
+      case "modulepreload" -> getPreloadNonceType(tag, NonceType.OTHER);
+      default -> NonceType.NONE;
+    };
+  }
+
+  /**
+   * Returns the nonce type for a {@code <link rel="preload">} or {@code <link rel="modulepreload">}
+   * tag based on its {@code as} attribute.
+   *
+   * <p>When no direct {@code as} attribute is present, {@code defaultType} is used ({@link
+   * NonceType#NONE} for {@code preload}, which requires an explicit {@code as}, and {@link
+   * NonceType#OTHER} for {@code modulepreload}, which defaults to {@code script}), unless the tag
+   * could emit an {@code as} attribute conditionally or dynamically. A present but dynamic or
+   * valueless {@code as} attribute ({@code asAttr.getStaticContent() == null}) always fails closed
+   * as {@link NonceType#NONE}.
+   */
+  private static NonceType getPreloadNonceType(HtmlOpenTagNode tag, NonceType defaultType) {
+    HtmlAttributeNode asAttr = tag.getDirectAttributeNamed("as");
+    if (asAttr == null) {
+      if (defaultType == NonceType.NONE || hasConditionalOrDynamicAsAttribute(tag)) {
         return NonceType.NONE;
-      } else if (Ascii.equalsIgnoreCase(asAttrValue, "style")) {
-        return NonceType.STYLE;
-      } else if (Ascii.equalsIgnoreCase(asAttrValue, "script")) {
-        return NonceType.OTHER;
+      }
+      return defaultType;
+    }
+    String asAttrValue = asAttr.getStaticContent();
+    if (asAttrValue == null) {
+      return NonceType.NONE;
+    }
+    if (asAttrValue.isEmpty()) {
+      return defaultType;
+    }
+    return switch (Ascii.toLowerCase(asAttrValue)) {
+      case "style" -> NonceType.STYLE;
+      case "script" -> NonceType.OTHER;
+      default -> NonceType.NONE;
+    };
+  }
+
+  /**
+   * Returns whether {@code tag} could emit an {@code as} attribute via control flow or dynamic
+   * attribute nodes (while ignoring conditional unrelated attributes such as {@code crossorigin}).
+   */
+  private static boolean hasConditionalOrDynamicAsAttribute(HtmlOpenTagNode tag) {
+    if (tag.getParent() instanceof TemplateNode template && template.getAllowExtraAttributes()) {
+      return true;
+    }
+    // Child 0 is the tag name; remaining children are in attribute context.
+    for (int i = 1; i < tag.numChildren(); i++) {
+      if (nodeMayEmitAsAttribute(tag.getChild(i))) {
+        return true;
       }
     }
-    return NonceType.NONE;
+    return false;
+  }
+
+  private static boolean nodeMayEmitAsAttribute(SoyNode node) {
+    if (node instanceof HtmlAttributeNode attr) {
+      String staticKey = attr.getStaticKey();
+      if (staticKey == null) {
+        // Dynamic attribute node (e.g. {$attrs}, {call ... /}, or dynamic attribute name).
+        return true;
+      }
+      String attrName = attr.isSoyAttr() ? staticKey.substring(1) : staticKey;
+      return Ascii.equalsIgnoreCase("as", attrName);
+    }
+    if (node instanceof LetContentNode || node instanceof LogNode) {
+      return false;
+    }
+    if (node instanceof PrintNode || node instanceof CallNode) {
+      return true;
+    }
+    if (node instanceof ParentSoyNode<?> parent) {
+      for (SoyNode child : parent.getChildren()) {
+        if (nodeMayEmitAsAttribute(child)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**
