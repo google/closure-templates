@@ -122,6 +122,28 @@ public final class JsType implements CodeChunk.HasRequires {
   private static final JsType RAW_OBJECT_TYPE =
       builder().addType("!Object").setPredicate(GOOG_IS_OBJECT).build();
 
+  private static final JsType UNKNOWN_ARRAY_TYPE =
+      builder().addType("!ReadonlyArray<?>").setPredicate(ARRAY_IS_ARRAY).build();
+
+  private static final JsType UNKNOWN_ITERABLE_TYPE =
+      builder().addType("!Iterable<?>").setPredicate(JsRuntime.SOY_IS_ITERABLE).build();
+
+  private static final JsType UNKNOWN_MAP_TYPE =
+      builder()
+          .addType("!ReadonlyMap<?,?>")
+          .addRequire(GoogRequire.create("soy.map"))
+          .setPredicate(instanceofTypePredicate(id("Map")))
+          .build();
+
+  private static final JsType UNKNOWN_SET_TYPE =
+      builder().addType("!ReadonlySet<?>").setPredicate(instanceofTypePredicate(id("Set"))).build();
+
+  private static final JsType UNKNOWN_OBJECT_TYPE =
+      builder().addType("?").setPredicate(GOOG_IS_OBJECT).build();
+
+  private static final JsType UNKNOWN_FUNCTION_TYPE =
+      builder().addType("?").setPredicate(GOOG_IS_FUNCTION).build();
+
   private static final JsType NULL_OR_UNDEFINED_TYPE =
       builder()
           .addType("null")
@@ -238,6 +260,12 @@ public final class JsType implements CodeChunk.HasRequires {
         JsTypeKind.JSSRC, /* isStrict= */ true, ArrayTypeMode.ARRAY_OR_READONLY_ARRAY);
   }
 
+  /** Returns a JS type for Soy constant declarations ({@code {const}}). */
+  public static RecursiveJsTypeProducer forJsSrcConstant() {
+    return new RecursiveJsTypeProducerImpl(
+        JsTypeKind.JSSRC, /* isStrict= */ false, ArrayTypeMode.READONLY_ARRAY);
+  }
+
   /** Returns a JS type for idom with looser rules, allowing 1/0 for bools. */
   public static RecursiveJsTypeProducer forIdomSrc() {
     return new RecursiveJsTypeProducerImpl(
@@ -270,6 +298,12 @@ public final class JsType implements CodeChunk.HasRequires {
 
   /** Returns a JS type for idom with strict rules. */
   public static RecursiveJsTypeProducer forIdomSrcState() {
+    return new RecursiveJsTypeProducerImpl(
+        JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
+  }
+
+  /** Returns a JS type for idom Soy constant declarations ({@code {const}}). */
+  public static RecursiveJsTypeProducer forIdomSrcConstant() {
     return new RecursiveJsTypeProducerImpl(
         JsTypeKind.IDOMSRC, /* isStrict= */ true, ArrayTypeMode.READONLY_ARRAY);
   }
@@ -325,9 +359,18 @@ public final class JsType implements CodeChunk.HasRequires {
   }
 
   static final class RecursiveJsTypeProducerImpl implements RecursiveJsTypeProducer {
+    // Cap nested (!Array<T>|!ReadonlyArray<T>) expansions along any path so deeply nested list
+    // types do not blow up exponentially (2^depth).
+    static final int MAX_ARRAY_OR_READONLY_DEPTH = 2;
+    // Cap visited nodes per top-level conversion to bound DAG blowup (e.g. repeated record refs).
+    static final int MAX_TYPE_NODES = 2_000;
+
     private final JsTypeKind kind;
     private final JsTypeProducer sanitizedProducer;
     private ArrayTypeMode arrayTypeMode;
+    private int recursionDepth = 0;
+    private int visitedNodes = 0;
+    private int arrayOrReadonlyDepth = 0;
 
     /**
      * @param kind JS backend type
@@ -351,6 +394,21 @@ public final class JsType implements CodeChunk.HasRequires {
      */
     @Override
     public JsType get(SoyType soyType, JsTypeProducer forRecursion) {
+      recursionDepth++;
+      visitedNodes++;
+      try {
+        return getInternal(soyType, forRecursion, visitedNodes > MAX_TYPE_NODES);
+      } finally {
+        recursionDepth--;
+        if (recursionDepth == 0) {
+          visitedNodes = 0;
+          arrayOrReadonlyDepth = 0;
+        }
+      }
+    }
+
+    private JsType getInternal(
+        SoyType soyType, JsTypeProducer forRecursion, boolean budgetExceeded) {
       switch (soyType.getKind()) {
         case NULL:
           return NULL_TYPE;
@@ -407,6 +465,9 @@ public final class JsType implements CodeChunk.HasRequires {
           return sanitizedProducer.get(soyType);
 
         case ITERABLE:
+          if (budgetExceeded) {
+            return UNKNOWN_ITERABLE_TYPE;
+          }
           SoyType itElmType = ((AbstractIterableType) soyType).getElementType();
           JsType jsItElmType = forRecursion.get(itElmType);
           return builder()
@@ -420,15 +481,38 @@ public final class JsType implements CodeChunk.HasRequires {
           if (listType.isEmpty() || listType.getElementType().getKind() == SoyType.Kind.ANY) {
             return RAW_ARRAY_TYPE;
           }
-          JsType element = forRecursion.get(listType.getElementType());
+          if (budgetExceeded) {
+            return arrayTypeMode == ArrayTypeMode.MUTABLE_ARRAY
+                ? RAW_ARRAY_TYPE
+                : UNKNOWN_ARRAY_TYPE;
+          }
+          ArrayTypeMode effectiveMode =
+              arrayTypeMode == ArrayTypeMode.ARRAY_OR_READONLY_ARRAY
+                      && arrayOrReadonlyDepth >= MAX_ARRAY_OR_READONLY_DEPTH
+                  ? ArrayTypeMode.READONLY_ARRAY
+                  : arrayTypeMode;
+          if (effectiveMode == ArrayTypeMode.ARRAY_OR_READONLY_ARRAY) {
+            arrayOrReadonlyDepth++;
+          }
+          JsType element;
+          try {
+            element = forRecursion.get(listType.getElementType());
+          } finally {
+            if (effectiveMode == ArrayTypeMode.ARRAY_OR_READONLY_ARRAY) {
+              arrayOrReadonlyDepth--;
+            }
+          }
 
           return builder()
-              .addType(ArrayTypeMode.formatArrayType(arrayTypeMode, element.typeExpr()))
+              .addType(ArrayTypeMode.formatArrayType(effectiveMode, element.typeExpr()))
               .addRequires(element.googRequires())
               .setPredicate(ARRAY_IS_ARRAY)
               .build();
 
         case SET:
+          if (budgetExceeded) {
+            return UNKNOWN_SET_TYPE;
+          }
           SoyType elmType = ((AbstractIterableType) soyType).getElementType();
           JsType jsElmType = forRecursion.get(elmType);
           return builder()
@@ -444,6 +528,9 @@ public final class JsType implements CodeChunk.HasRequires {
                 && mapType.getValueType().getKind() == SoyType.Kind.ANY) {
               return RAW_OBJECT_TYPE;
             }
+            if (budgetExceeded) {
+              return UNKNOWN_OBJECT_TYPE;
+            }
             JsType keyTypeName = forRecursion.get(mapType.getKeyType());
             JsType valueTypeName = forRecursion.get(mapType.getValueType());
             return builder()
@@ -457,6 +544,9 @@ public final class JsType implements CodeChunk.HasRequires {
           }
         case MAP:
           {
+            if (budgetExceeded) {
+              return UNKNOWN_MAP_TYPE;
+            }
             MapType mapType = (MapType) soyType;
             SoyType keyType = mapType.getKeyType();
             SoyType.Kind keyKind = keyType.getKind();
@@ -491,6 +581,9 @@ public final class JsType implements CodeChunk.HasRequires {
 
         case RECORD:
           {
+            if (budgetExceeded) {
+              return UNKNOWN_OBJECT_TYPE;
+            }
             RecordType recordType = (RecordType) soyType;
             Builder builder = builder();
             Map<String, String> members = new LinkedHashMap<>();
@@ -511,6 +604,9 @@ public final class JsType implements CodeChunk.HasRequires {
 
         case UNION:
           {
+            if (budgetExceeded) {
+              return UNKNOWN_TYPE;
+            }
             UnionType unionType = (UnionType) soyType;
             Builder builder = builder();
             Set<JsType> types = new LinkedHashSet<>();
@@ -529,14 +625,23 @@ public final class JsType implements CodeChunk.HasRequires {
               builder.addTypes(UNDEFINED_TYPE.typeExpressions);
               types.add(UNDEFINED_TYPE);
             }
+            boolean hasUnknownMember = false;
             for (SoyType member : unionType.getMembers()) {
               if (SoyTypes.isNullOrUndefined(member)) {
                 continue; // handled above
               }
               JsType memberType = forRecursion.get(member);
-              builder.addRequires(memberType.extraRequires);
-              builder.addTypes(memberType.typeExpressions);
+              if (memberType.typeExpressions.contains("?")) {
+                hasUnknownMember = true;
+              }
+              if (!hasUnknownMember) {
+                builder.addRequires(memberType.extraRequires);
+                builder.addTypes(memberType.typeExpressions);
+              }
               types.add(memberType);
+            }
+            if (hasUnknownMember) {
+              builder = builder().addType("?");
             }
             return builder
                 .setPredicate(
@@ -567,12 +672,16 @@ public final class JsType implements CodeChunk.HasRequires {
           return VE_DATA_TYPE;
         case TEMPLATE:
           {
+            if (budgetExceeded) {
+              return UNKNOWN_FUNCTION_TYPE;
+            }
             TemplateType templateType = (TemplateType) soyType;
             Builder builder = builder();
             Map<String, String> parameters = new LinkedHashMap<>();
             for (TemplateType.Parameter parameter : templateType.getParameters()) {
               JsType forSoyType =
-                  getWithArrayMode(ArrayTypeMode.ARRAY_OR_READONLY_ARRAY, parameter.getType());
+                  getWithArrayMode(
+                      ArrayTypeMode.ARRAY_OR_READONLY_ARRAY, parameter.getType(), forRecursion);
               builder.addRequires(forSoyType.googRequires());
               parameters.put(
                   parameter.getName(),
@@ -607,16 +716,20 @@ public final class JsType implements CodeChunk.HasRequires {
           }
         case FUNCTION:
           {
+            if (budgetExceeded) {
+              return UNKNOWN_FUNCTION_TYPE;
+            }
             FunctionType functionType = (FunctionType) soyType;
             Builder builder = builder();
             List<String> parameters = new ArrayList<>();
             for (FunctionType.Parameter parameter : functionType.getParameters()) {
               JsType forSoyType =
-                  getWithArrayMode(ArrayTypeMode.ARRAY_OR_READONLY_ARRAY, parameter.getType());
+                  getWithArrayMode(
+                      ArrayTypeMode.ARRAY_OR_READONLY_ARRAY, parameter.getType(), forRecursion);
               builder.addRequires(forSoyType.googRequires());
               parameters.add(forSoyType.typeExpr());
             }
-            JsType forReturnType = get(functionType.getReturnType());
+            JsType forReturnType = forRecursion.get(functionType.getReturnType());
             builder.addRequires(forReturnType.googRequires());
             builder.addType(
                 String.format(
@@ -639,6 +752,9 @@ public final class JsType implements CodeChunk.HasRequires {
                 .setPredicate(TypePredicate.NO_OP)
                 .build();
           } else if (soyType instanceof IndexedType) {
+            if (budgetExceeded) {
+              return UNKNOWN_TYPE;
+            }
             IndexedType indexedType = (IndexedType) soyType;
             SoyType baseType = indexedType.getType();
 
@@ -720,12 +836,14 @@ public final class JsType implements CodeChunk.HasRequires {
       throw new AssertionError("unhandled soytype: " + soyType);
     }
 
-    private JsType getWithArrayMode(ArrayTypeMode mode, SoyType type) {
+    private JsType getWithArrayMode(ArrayTypeMode mode, SoyType type, JsTypeProducer forRecursion) {
       ArrayTypeMode oldMode = arrayTypeMode;
       arrayTypeMode = mode;
-      JsType rv = get(type); // This breaks the recursion contract.
-      arrayTypeMode = oldMode;
-      return rv;
+      try {
+        return forRecursion.get(type);
+      } finally {
+        arrayTypeMode = oldMode;
+      }
     }
   }
 

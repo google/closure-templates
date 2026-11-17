@@ -137,6 +137,11 @@ public final class GenIdomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
+  protected JsType getJsTypeForConstant(SoyType constType) {
+    return jsTypeRegistry.getWithDelegate(JsType.forIdomSrcConstant(), constType);
+  }
+
+  @Override
   protected void visit(SoyNode node) {
     try {
       super.visit(node);

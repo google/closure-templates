@@ -773,7 +773,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     SymbolVar var = node.getVar();
     ByteSpan imputesSpan = SoyTreeUtils.getByteSpan(node, var.nameLocation());
 
-    JsType varType = getJsTypeForParamForDeclaration(var.authoredType());
+    JsType varType = getJsTypeForConstant(var.authoredType());
 
     JsDoc.Builder jsDoc =
         JsDoc.builder()
@@ -1878,6 +1878,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   /** Gets the type to use for a parameter in runtime assertions. */
   protected JsType getJsTypeForParamTypeCheck(SoyType paramType) {
     return jsTypeRegistry.getWithDelegate(JsType.forJsTypeCheck(), paramType);
+  }
+
+  /** Gets the type to use for a constant declaration. */
+  protected JsType getJsTypeForConstant(SoyType constType) {
+    return jsTypeRegistry.getWithDelegate(JsType.forJsSrcConstant(), constType);
   }
 
   /**

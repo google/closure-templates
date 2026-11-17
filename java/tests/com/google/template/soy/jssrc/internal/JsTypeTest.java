@@ -25,6 +25,7 @@ import static com.google.template.soy.types.SoyTypes.unionWithNull;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
+import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
@@ -213,6 +214,95 @@ public final class JsTypeTest {
         .get()
         .assertExprAndCollectRequires(r -> {})
         .getText();
+  }
+
+  @Test
+  public void testConstantTypesUseReadonlyArray() {
+    assertThat(JsType.forJsSrcConstant().get(ListType.of(IntType.getInstance())).typeExpr())
+        .isEqualTo("!ReadonlyArray<number>");
+    assertThat(
+            JsType.forJsSrcConstant()
+                .get(ListType.of(ListType.of(StringType.getInstance())))
+                .typeExpr())
+        .isEqualTo("!ReadonlyArray<!ReadonlyArray<string>>");
+    assertThat(JsType.forIdomSrcConstant().get(ListType.of(HtmlType.getInstance())).typeExpr())
+        .isEqualTo(
+            "!ReadonlyArray<!element_lib_idom.IdomFunction|!goog.soy.data.SanitizedHtml"
+                + "|!safevalues.SafeHtml"
+                + "|function(!incrementaldomlib.IncrementalDomRenderer): undefined>");
+  }
+
+  @Test
+  public void testNestedArrayTypeDepthIsCapped() {
+    SoyType depth1 = ListType.of(IntType.getInstance());
+    SoyType depth2 = ListType.of(depth1);
+    SoyType depth3 = ListType.of(depth2);
+
+    assertThatTypeExpr(depth1).isEqualTo("(!Array<number>|!ReadonlyArray<number>)");
+    assertThatTypeExpr(depth2)
+        .isEqualTo(
+            "(!Array<(!Array<number>|!ReadonlyArray<number>)>"
+                + "|!ReadonlyArray<(!Array<number>|!ReadonlyArray<number>)>)");
+    assertThatTypeExpr(depth3)
+        .isEqualTo(
+            "(!Array<(!Array<!ReadonlyArray<number>>|!ReadonlyArray<!ReadonlyArray<number>>)>"
+                + "|!ReadonlyArray<(!Array<!ReadonlyArray<number>>"
+                + "|!ReadonlyArray<!ReadonlyArray<number>>)>)");
+
+    SoyType depth20 = IntType.getInstance();
+    for (int i = 0; i < 20; i++) {
+      depth20 = ListType.of(depth20);
+    }
+    String depth20TypeExpr = forJsSrc().get(depth20).typeExpr();
+    assertThat(depth20TypeExpr.length()).isLessThan(2_000);
+    assertThat(depth20TypeExpr).contains("!ReadonlyArray<number>");
+  }
+
+  @Test
+  public void testTypeNodeBudgetBoundsDagExplosion() {
+    SoyType dag = IntType.getInstance();
+    for (int i = 0; i < 20; i++) {
+      dag = RecordType.of(ImmutableMap.of("left", dag, "right", dag));
+    }
+    JsType.RecursiveJsTypeProducer producer = forJsSrc();
+    JsType dagJsType = producer.get(dag);
+    assertThat(dagJsType.typeExpr()).contains("?");
+    assertThat(dagJsType.typeExpr().length()).isLessThan(200_000);
+
+    // State resets after each top-level conversion on the same producer instance.
+    assertThat(producer.get(ListType.of(IntType.getInstance())).typeExpr())
+        .isEqualTo("(!Array<number>|!ReadonlyArray<number>)");
+
+    // Runtime predicate is preserved even for unions containing a truncated record.
+    JsType nullableDag = producer.get(unionWithNull(dag));
+    assertThat(nullableDag.typeExpr()).startsWith("null|{");
+    assertThat(nullableDag.typeExpr()).contains("?");
+    assertThat(nullableDag.typeExpr().length()).isLessThan(200_000);
+    assertThat(getTypeAssertion(unionWithNull(dag), "x"))
+        .isEqualTo("x === null || goog.isObject(x)");
+    assertThat(
+            nullableDag
+                .getTypeAssertion(
+                    id("x"), CodeChunk.Generator.create(JsSrcNameGenerators.forLocalVariables()))
+                .get()
+                .getCode(FormatOptions.JSSRC))
+        .contains("x === null || goog.isObject(x)");
+
+    // When a direct member of a union itself hits the node budget and falls back to `?`, the
+    // union collapses its type expression to `?` while keeping member predicates intact.
+    SoyType unionWithTruncatedTail =
+        UnionType.of(
+            RecordType.of(ImmutableMap.of("head", dag)),
+            RecordType.of(ImmutableMap.of("tail", dag)));
+    JsType unionJsType = producer.get(unionWithTruncatedTail);
+    assertThat(unionJsType.typeExpr()).isEqualTo("?");
+    assertThat(
+            unionJsType
+                .getTypeAssertion(
+                    id("x"), CodeChunk.Generator.create(JsSrcNameGenerators.forLocalVariables()))
+                .get()
+                .getCode(FormatOptions.JSSRC))
+        .contains("goog.isObject(x)");
   }
 
   private StringSubject assertThatTypeExpr(SoyType soyType) {

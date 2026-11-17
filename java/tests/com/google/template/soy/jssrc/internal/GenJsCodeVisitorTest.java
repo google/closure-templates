@@ -1044,6 +1044,22 @@ public final class GenJsCodeVisitorTest {
     assertThat(generated).contains("localFoo + ' ' + localBar");
   }
 
+  @Test
+  public void testConstDeeplyNestedList() {
+    StringBuilder expr = new StringBuilder("1");
+    for (int i = 0; i < 20; i++) {
+      expr.insert(0, "[").append("]");
+    }
+    String testFileContent =
+        "{namespace boo.foo}\n" + "{export const DEEP_LIST = " + expr + " /}\n";
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
+    String generated =
+        genJsCodeVisitor.gen(parseResult.fileSet(), parseResult.registry(), exploding()).get(0);
+    assertThat(generated).contains("@const {function(!Object):!ReadonlyArray<!ReadonlyArray<");
+    assertThat(generated).doesNotContain("!Array<");
+    assertThat(generated.length()).isLessThan(4_000);
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
