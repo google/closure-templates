@@ -66,7 +66,8 @@ import javax.annotation.Nullable;
  * A collection of contextual rendering data. Each top level rendering operation will obtain a
  * single instance of this object and it will be propagated throughout the render tree.
  */
-public final class RenderContext implements ContextStore, NodeBuilder.SoftLimitOverrider {
+public final class RenderContext
+    implements ContextStore, NodeBuilder.SoftLimitOverrider, NodeBuilder.Options {
   // TODO(lukes):  within this object most of these fields are constant across all renders while
   // some are expected to change frequently (the renaming maps, msgBundle and activeModSelector).
   // Consider splitting this into two objects to represent the changing lifetimes.  We are kind of
@@ -98,6 +99,8 @@ public final class RenderContext implements ContextStore, NodeBuilder.SoftLimitO
 
   private final boolean debugSoyTemplateInfo;
 
+  private final boolean fastLazyCalls;
+
   private List<ThrowingSoyValueProvider> deferredErrors;
 
   @Keep private GrammaticalGender viewerGrammaticalGender = GrammaticalGender.UNSPECIFIED;
@@ -117,7 +120,8 @@ public final class RenderContext implements ContextStore, NodeBuilder.SoftLimitO
       @Nullable SoyCssTracker cssTracker,
       @Nullable SoyJsIdTracker jsIdTracker,
       GrammaticalGender viewerGrammaticalGender,
-      ContextNode initialContext) {
+      ContextNode initialContext,
+      boolean fastLazyCalls) {
     this.templates = templates;
     this.soyJavaDirectivesMap = soyJavaDirectivesMap;
     this.pluginInstances = pluginInstances;
@@ -131,6 +135,7 @@ public final class RenderContext implements ContextStore, NodeBuilder.SoftLimitO
     this.jsIdTracker = jsIdTracker;
     this.viewerGrammaticalGender = viewerGrammaticalGender;
     this.currentContext = initialContext;
+    this.fastLazyCalls = fastLazyCalls;
     verify(viewerGrammaticalGender != null);
   }
 
@@ -246,6 +251,11 @@ public final class RenderContext implements ContextStore, NodeBuilder.SoftLimitO
    */
   public boolean getDebugSoyTemplateInfo() {
     return debugSoyTemplateInfo;
+  }
+
+  @Override
+  public boolean useFastLazyCalls() {
+    return fastLazyCalls;
   }
 
   public CompiledTemplate getTemplate(String calleeName) {
@@ -609,6 +619,7 @@ public final class RenderContext implements ContextStore, NodeBuilder.SoftLimitO
     private SoyJsIdTracker jsIdTracker;
     private SoyInjector ijData;
     private GrammaticalGender viewerGrammaticalGender = GrammaticalGender.UNSPECIFIED;
+    private boolean fastLazyCalls;
 
     public Builder(
         CompiledTemplates templates,
@@ -679,6 +690,12 @@ public final class RenderContext implements ContextStore, NodeBuilder.SoftLimitO
       return this;
     }
 
+    @CanIgnoreReturnValue
+    public Builder withFastLazyCalls(boolean fastLazyCalls) {
+      this.fastLazyCalls = fastLazyCalls;
+      return this;
+    }
+
     public RenderContext build() {
       return new RenderContext(
           templates,
@@ -693,7 +710,8 @@ public final class RenderContext implements ContextStore, NodeBuilder.SoftLimitO
           cssTracker,
           jsIdTracker,
           viewerGrammaticalGender,
-          ContextNode.createRoot());
+          ContextNode.createRoot(),
+          fastLazyCalls);
     }
   }
 }
