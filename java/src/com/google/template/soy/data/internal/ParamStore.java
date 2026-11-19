@@ -93,7 +93,11 @@ public final class ParamStore extends IdentityHashMap<RecordProperty, SoyValuePr
 
   @CanIgnoreReturnValue
   public ParamStore freeze() {
-    frozen = true;
+    // Avoid redundant writes when re-freezing a shared constant ParamStore across concurrent
+    // renders (e.g., wrapped by SoyRecordImpl), which otherwise triggers TSAN data races.
+    if (!frozen) {
+      frozen = true;
+    }
     return this;
   }
 
