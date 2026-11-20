@@ -278,6 +278,11 @@ class Metadata {
  */
 const WRAPPER_ELEMENT_TAG_NAME = 'VELOG';
 
+/**
+ * Tag name used for wrapping logging function attributes.
+ */
+const ATTR_WRAPPER_ELEMENT_TAG_NAME = 'VEATTR';
+
 /** Sets up the global metadata object before rendering any templates. */
 function setUpLogging() {
   assert(
@@ -525,7 +530,7 @@ function visit(element, logger) {
     const next = child.nextElementSibling;
     const newChildren = visit(child, logger);
     // VEATTR nodes only have one children and are a direct replacement.
-    if (child.tagName === 'VEATTR') {
+    if (child.tagName === ATTR_WRAPPER_ELEMENT_TAG_NAME) {
       replaceChild(element, child, visit(/** @type {!Element} */ (child.firstElementChild), logger));
     } else {
       replaceChild(element, child, newChildren);
@@ -589,7 +594,7 @@ function replaceFunctionAttributes(element, logger) {
   // Iterates through the attribute names. Safe to remove in place because
   // attributeNames is a static array.
   let elementToAddTo = element;
-  if (element.tagName === 'VEATTR') {
+  if (element.tagName === ATTR_WRAPPER_ELEMENT_TAG_NAME) {
     // The attribute being replaced belongs on the direct child.
     elementToAddTo = /** @type {!Element} */ (element.firstElementChild);
   }
@@ -599,7 +604,7 @@ function replaceFunctionAttributes(element, logger) {
           /** @type {string} */ (element.getAttribute(attributeName));
       // Delay evaluation of the attributes until we reach the element itself.
       if (elementToAddTo.hasAttribute(ELEMENT_ATTR) &&
-          element.tagName === 'VEATTR') {
+          element.tagName === ATTR_WRAPPER_ELEMENT_TAG_NAME) {
         elementToAddTo.setAttribute(
             attributeName, attrValue);
         continue;
@@ -870,6 +875,7 @@ exports = {
   $$getLoggingFunctionAttribute,
   getLoggingAttributeEntry,
   WRAPPER_ELEMENT_TAG_NAME,
+  ATTR_WRAPPER_ELEMENT_TAG_NAME,
   ELEMENT_ATTR,
   FUNCTION_ATTR,
   ElementMetadata,
