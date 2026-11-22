@@ -92,6 +92,7 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
         template.setTemplateCallMetadata(
             TemplateCallMetadata.Template.newBuilder()
                 .setName(getTemplateName(template))
+                .setLegacyDeltemplateNamespace(getLegacyDeltemplateNamespace(template))
                 .setModname(nullToEmpty(template.getModName()))
                 .addAllCalls(
                     SoyTreeUtils.getAllNodesOfType(template, CallNode.class).stream()
@@ -102,6 +103,13 @@ final class TemplateCallMetadataPass implements CompilerFileSetPass {
       }
     }
     return Result.CONTINUE;
+  }
+
+  private String getLegacyDeltemplateNamespace(TemplateNode template) {
+    if (!(template instanceof TemplateBasicNode)) {
+      return "";
+    }
+    return ((TemplateBasicNode) template).getLegacyDeltemplateNamespace();
   }
 
   private String getTemplateName(TemplateNode template) {
