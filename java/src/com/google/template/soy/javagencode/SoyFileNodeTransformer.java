@@ -72,7 +72,7 @@ public class SoyFileNodeTransformer {
 
   // Soy types that are not supported for invocation builders.
   private static final ImmutableSet<SoyType.Kind> UNSUPPORTED_SOY_TYPES =
-      ImmutableSet.of(SoyType.Kind.VE, SoyType.Kind.VE_DATA);
+      ImmutableSet.of(SoyType.Kind.VE);
 
   /** The transformed {@link SoyFileNode}. */
   @AutoValue

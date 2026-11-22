@@ -48,6 +48,7 @@ public final class SoyValueUnconverter {
     CONVERTERS.put(FloatData.class, FloatData::getValue);
     CONVERTERS.put(StringData.class, StringData::getValue);
     CONVERTERS.put(GbigintData.class, GbigintData::getValue);
+    CONVERTERS.put(SoyVisualElementData.class, v -> v);
     CONVERTERS.put(
         SoyList.class,
         v ->

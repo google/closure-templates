@@ -95,6 +95,10 @@ public class SoyValueUnconverterTest {
 
     SafeUrl url = ordainAsSafe("https://google.com/a", ContentKind.URI).toSafeUrl();
     assertThat(unconvert(CONVERTER.convert(url))).isEqualTo(url);
+
+    SoyVisualElement ve = SoyVisualElement.create(12345, "TestVe");
+    SoyVisualElementData veData = SoyVisualElementData.create(ve, message);
+    assertThat(unconvert(veData)).isEqualTo(veData);
   }
 
   @Test
