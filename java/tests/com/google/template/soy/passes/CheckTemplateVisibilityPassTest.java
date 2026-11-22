@@ -192,4 +192,56 @@ public final class CheckTemplateVisibilityPassTest {
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo("ns.foo has private access in foo/bar.soy.");
   }
+
+  @Test
+  public void testCallPackageTemplateFromSameDirectory() {
+    SoyFileSetParserBuilder.forSuppliers(
+            SoyFileSupplier.Factory.create(
+                """
+                {namespace ns}
+                /** Package template. */
+                {template foo visibility="package"}
+                oops!
+                {/template}\
+                """,
+                SourceFilePath.forTest("foo/bar.soy")),
+            SoyFileSupplier.Factory.create(
+                "{namespace ns2}\n"
+                    + "import {foo} from 'foo/bar.soy';"
+                    + "/** Public template. */\n"
+                    + "{template bar}\n"
+                    + "{call foo /}\n"
+                    + "{/template}",
+                SourceFilePath.forTest("foo/baz.soy")))
+        .errorReporter(ErrorReporter.exploding())
+        .parse();
+  }
+
+  @Test
+  public void testCallPackageTemplateFromDifferentDirectory() {
+    ErrorReporter errorReporter = ErrorReporter.create();
+    SoyFileSetParserBuilder.forSuppliers(
+            SoyFileSupplier.Factory.create(
+                """
+                {namespace ns}
+                /** Package template. */
+                {template foo visibility="package"}
+                oops!
+                {/template}\
+                """,
+                SourceFilePath.forTest("foo/bar.soy")),
+            SoyFileSupplier.Factory.create(
+                "{namespace ns2}\n"
+                    + "import {foo} from 'foo/bar.soy';"
+                    + "/** Public template. */\n"
+                    + "{template bar}\n"
+                    + "{call foo /}\n"
+                    + "{/template}",
+                SourceFilePath.forTest("baz/bar.soy")))
+        .errorReporter(errorReporter)
+        .parse();
+    assertThat(errorReporter.getErrors()).hasSize(1);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("ns.foo has package access in foo/bar.soy.");
+  }
 }
