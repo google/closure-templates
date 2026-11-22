@@ -126,7 +126,7 @@ public final class SoySauceImpl implements SoySauce {
   @Override
   public RendererImpl renderTemplate(String template) {
     CompiledTemplates.TemplateData data = templates.getTemplateData(template);
-    return new RendererImpl(template, data.template(), data.kind(), /* data=*/ null);
+    return new RendererImpl(template, data.template(), data.kind(), /* data= */ null);
   }
 
   @Override
@@ -148,6 +148,7 @@ public final class SoySauceImpl implements SoySauce {
     private PluginInstances pluginInstances = SoySauceImpl.this.pluginInstances;
     private SoyMsgBundle msgBundle;
     private boolean debugSoyTemplateInfo;
+    private boolean fastLazyCalls;
     private SoyLogger logger;
     private SoyCssTracker cssTracker;
     private SoyJsIdTracker jsIdTracker;
@@ -187,7 +188,8 @@ public final class SoySauceImpl implements SoySauce {
           cssTracker,
           jsIdTracker,
           viewerGrammaticalGender,
-          initialContextNode);
+          initialContextNode,
+          fastLazyCalls);
     }
 
     private ParamStore mapAsParamStore(Map<String, ?> source) {
@@ -271,6 +273,13 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public RendererImpl setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
       this.debugSoyTemplateInfo = debugSoyTemplateInfo;
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    @Override
+    public RendererImpl setFastLazyCalls(boolean fastLazyCalls) {
+      this.fastLazyCalls = fastLazyCalls;
       return this;
     }
 
