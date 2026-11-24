@@ -323,6 +323,43 @@ public final class VeLoggingTest {
   }
 
   @Test
+  public void testLoggingAttributes_withLet_voidElement() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        "{let $img kind='html'}<img src=\"./img.png\">{/let}",
+        "{velog FooVe}{$img}{/velog}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<img src=\"./img.png\" data-foo=\"bar\">");
+  }
+
+  @Test
+  public void testLoggingAttributes_withLet_voidElementWithSiblings_notFlushed() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        "{let $frag kind='html'}<img src=\"./img.png\"><span>hello</span>{/let}",
+        "{velog FooVe}{$frag}{/velog}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<img src=\"./img.png\"><span>hello</span>");
+  }
+
+  @Test
+  public void testLoggingAttributes_withCall_voidElement() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    testLogger.attrsMap.put(1L, LoggingAttrs.builder().addDataAttribute("data-foo", "bar").build());
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger), "{velog FooVe}{call anotherImg /}{/velog}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<img src=\"./img.png\" data-foo=\"bar\">");
+  }
+
+  @Test
   public void testLoggingAttributes_withIf() throws Exception {
     StringBuilder sb = new StringBuilder();
     TestLogger testLogger = new TestLogger();
@@ -405,7 +442,8 @@ public final class VeLoggingTest {
                     + "{template foo}\n"
                     + Joiner.on("\n").join(templateBodyLines)
                     + "\n{/template}"
-                    + "{template another}<div>called</div>{/template}\n",
+                    + "{template another}<div>called</div>{/template}\n"
+                    + "{template anotherImg}<img src=\"./img.png\">{/template}\n",
                 Foo.getDescriptor())
             .addSoySourceFunction(new DepthFunction())
             .addHtmlAttributesForLogging(true)
