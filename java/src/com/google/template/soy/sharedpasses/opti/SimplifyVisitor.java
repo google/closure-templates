@@ -55,9 +55,11 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AutoImplNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -215,6 +217,21 @@ public final class SimplifyVisitor {
     // Implementations for specific nodes.
 
     @Override
+    protected void visitConstNode(ConstNode node) {
+      simplifyExprVisitor.exec(node.getExpr());
+    }
+
+    @Override
+    protected void visitAutoImplNode(AutoImplNode node) {
+      varDefnReplacements.clear();
+      SoyTreeUtils.execOnAllV2Exprs(node, simplifyExprVisitor);
+      visitSoyNode(node);
+      if (!varDefnReplacements.isEmpty()) {
+        applyVarDefnReplacements(getAllRefs(node));
+      }
+    }
+
+    @Override
     protected void visitTemplateNode(TemplateNode node) {
       boolean simplifiedAnyLet;
       List<RefAndHolder> allRefs;
@@ -233,14 +250,7 @@ public final class SimplifyVisitor {
         allRefs = getAllRefs(node);
 
         // Update definitions if we modified let nodes
-        if (!varDefnReplacements.isEmpty()) {
-          for (RefAndHolder refAndHolder : allRefs) {
-            LocalVar newDefn = varDefnReplacements.get(refAndHolder.ref.getDefnDecl());
-            if (newDefn != null) {
-              refAndHolder.ref.setDefn(newDefn);
-            }
-          }
-        }
+        applyVarDefnReplacements(allRefs);
         Map<LetValueNode, RefAndHolder> possiblyInlinableRefs =
             new TreeMap<>(
                 comparing(LetValueNode::getSourceLocation).thenComparing(LetValueNode::getId));
@@ -389,18 +399,29 @@ public final class SimplifyVisitor {
       }
     }
 
+    private void applyVarDefnReplacements(List<RefAndHolder> allRefs) {
+      if (varDefnReplacements.isEmpty()) {
+        return;
+      }
+      for (RefAndHolder refAndHolder : allRefs) {
+        LocalVar newDefn = varDefnReplacements.get(refAndHolder.ref.getDefnDecl());
+        if (newDefn != null) {
+          refAndHolder.ref.setDefn(newDefn);
+        }
+      }
+    }
+
     /**
      * Returns a collection of all VarRefs and the ExprHolderNodes that own them in the given
-     * Template
+     * subtree.
      */
-    private List<RefAndHolder> getAllRefs(TemplateNode template) {
+    private List<RefAndHolder> getAllRefs(ParentSoyNode<?> root) {
       List<RefAndHolder> refs = new ArrayList<>();
-      SoyTreeUtils.allNodesOfType(template, ExprHolderNode.class)
-          .forEach(
-              holder ->
-                  holder.getExprList().stream()
-                      .flatMap(root -> SoyTreeUtils.allNodesOfType(root, VarRefNode.class))
-                      .forEach(ref -> refs.add(new RefAndHolder(ref, holder))));
+      SoyTreeUtils.allNodesOfType(root, ExprHolderNode.class)
+          .forEach(holder ->
+              holder.getExprList().stream()
+                  .flatMap(expr -> SoyTreeUtils.allNodesOfType(expr, VarRefNode.class))
+                  .forEach(ref -> refs.add(new RefAndHolder(ref, holder))));
       return refs;
     }
 

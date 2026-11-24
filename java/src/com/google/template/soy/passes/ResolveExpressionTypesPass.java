@@ -163,6 +163,7 @@ import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.internal.ResolvedSignature;
+import com.google.template.soy.shared.internal.SoyCompileTimeFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFieldSignature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
@@ -3777,6 +3778,7 @@ final class ResolveExpressionTypesPass extends AbstractTopologicallyOrderedPass 
     protected void visitFunctionNode(FunctionNode node) {
       if (node.isResolved()
           && !(node.getSoyFunction() instanceof Extern)
+          && !(node.getSoyFunction() instanceof SoyCompileTimeFunction)
           && node.getSoyFunction() != BuiltinFunction.NEW_SET
           && node.getSoyFunction() != BuiltinFunction.PROTO_INIT
           && node.getSoyFunction() != BuiltinFunction.CSS

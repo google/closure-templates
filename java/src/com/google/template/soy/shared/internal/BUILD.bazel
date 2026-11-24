@@ -49,6 +49,11 @@ BUILTIN_FUNCTION_SRCS = [
     "BuiltinFunction.java",
 ]
 
+COMPILE_TIME_FUNCTION_SRCS = [
+    "SoyCompileTimeFunction.java",
+    "SoyCompilerContext.java",
+]
+
 BUILTIN_METHOD_SRCS = [
     "BuiltinMethod.java",
 ]
@@ -63,7 +68,8 @@ java_library(
                   SHORT_CIRCUITABLE_SRCS +
                   SHARED_RUNTIME_SRCS +
                   BUILTIN_FUNCTION_SRCS +
-                  BUILTIN_METHOD_SRCS,
+                  BUILTIN_METHOD_SRCS +
+                  COMPILE_TIME_FUNCTION_SRCS,
     ),
     deps = [
         ":builtin_function",
@@ -160,6 +166,16 @@ java_library(
         "//java/src/com/google/template/soy/types",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "compile_time_function",
+    srcs = COMPILE_TIME_FUNCTION_SRCS,
+    deps = [
+        "//:auto_value",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/plugin/restricted",
     ],
 )
 

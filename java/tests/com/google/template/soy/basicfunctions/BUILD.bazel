@@ -28,6 +28,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/basicfunctions",
         "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/shared/internal:compile_time_function",
         "//java/tests/com/google/template/soy/data:soy_value_converter_utility",
         "//java/tests/com/google/template/soy/plugin/java/restricted/testing",
         "@maven//:com_google_guava_guava",

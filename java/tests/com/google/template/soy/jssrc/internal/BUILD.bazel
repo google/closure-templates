@@ -44,6 +44,7 @@ java_library(
         "//java/src/com/google/template/soy/logging:public",
         "//java/src/com/google/template/soy/plugin/javascript/restricted",
         "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/internal:compile_time_function",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/soytree",
         "//java/src/com/google/template/soy/soytree:metadata_impl",

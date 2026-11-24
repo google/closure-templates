@@ -98,6 +98,7 @@ public class BasicFunctions {
         new SignFunction(),
         new SinFunction(),
         new SortMethod(),
+        new SoyDefineIsSsrFunction(),
         new SqrtFunction(),
         new StrAtMethod(),
         new StrEndsWithMethod(),

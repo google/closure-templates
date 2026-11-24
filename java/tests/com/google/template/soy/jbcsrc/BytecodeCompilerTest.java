@@ -789,6 +789,28 @@ public class BytecodeCompilerTest {
   }
 
   @Test
+  public void testAutoImplEmptyLetContent() {
+    assertThatFile(
+            "{namespace ns}",
+            "{extern maybeHello: (cond: bool) => string}",
+            "  {autoimpl}",
+            "    {let $s kind=\"text\"}{/let}",
+            "    {if $cond}",
+            "      {assign $s = 'hello' /}",
+            "    {/if}",
+            "    {return $s /}",
+            "  {/autoimpl}",
+            "{/extern}",
+            "{template foo}",
+            "  {@param cond: bool}",
+            "  {maybeHello($cond)}",
+            "{/template}",
+            "")
+        .rendersAs("hello", ImmutableMap.of("cond", true))
+        .rendersAs("", ImmutableMap.of("cond", false));
+  }
+
+  @Test
   public void testParam() {
     assertThatTemplateBody("{@param foo : int }", "{$foo + 1}")
         .rendersAs("2", ImmutableMap.of("foo", 1))

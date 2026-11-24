@@ -59,6 +59,9 @@ public final class InternalPluginsTest {
   public void testFunctionsSupportAllBackends() {
     for (SoySourceFunction function : InternalPlugins.internalFunctions()) {
       assertThat(function.getClass().isAnnotationPresent(SoyFunctionSignature.class)).isTrue();
+      if (function instanceof SoyCompileTimeFunction) {
+        continue;
+      }
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
       assertThat(
               function instanceof SoyJavaSourceFunction

@@ -48,6 +48,7 @@ import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.ToggleRegistry;
 import com.google.template.soy.shared.internal.InternalPlugins;
+import com.google.template.soy.shared.internal.SoyCompilerContext.OutputTarget;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -93,6 +94,7 @@ public final class SoyFileSetParserBuilder {
   // the order of the nodes in the AST.
   private boolean addHtmlAttributesForDebugging = false;
   private boolean addHtmlAttributesForLogging = false;
+  private OutputTarget outputTarget = OutputTarget.NONE;
   private final PassManager.Builder passManager = new PassManager.Builder();
   private boolean disableAllTypeChecking = false;
 
@@ -201,6 +203,12 @@ public final class SoyFileSetParserBuilder {
   @CanIgnoreReturnValue
   public SoyFileSetParserBuilder errorReporter(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
+    return this;
+  }
+
+  @CanIgnoreReturnValue
+  public SoyFileSetParserBuilder outputTarget(OutputTarget outputTarget) {
+    this.outputTarget = outputTarget;
     return this;
   }
 
@@ -425,6 +433,7 @@ public final class SoyFileSetParserBuilder {
         .desugarHtmlNodes(desugarHtmlNodes)
         .desugarIdomFeatures(desugarIdomFeatures)
         .setGeneralOptions(options)
+        .setOutputTarget(outputTarget)
         .setConformanceConfig(conformanceConfig)
         .setCssRegistry(cssRegistry)
         .setToggleRegistry(toggleRegistry)

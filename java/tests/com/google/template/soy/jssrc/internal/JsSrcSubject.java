@@ -43,6 +43,7 @@ import com.google.template.soy.jssrc.dsl.FormatOptions;
 import com.google.template.soy.jssrc.dsl.Precedence;
 import com.google.template.soy.jssrc.dsl.SourceMapHelper;
 import com.google.template.soy.jssrc.internal.GenJsCodeVisitor.ScopedJsTypeRegistry;
+import com.google.template.soy.shared.internal.SoyCompilerContext.OutputTarget;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -155,6 +156,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
   private ParseResult parse() {
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forTemplateAndImports(actual, protoDescriptors)
+            .outputTarget(OutputTarget.JSSRC)
             .allowUnboundGlobals(true)
             .allowUnknownJsGlobals(true)
             .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
