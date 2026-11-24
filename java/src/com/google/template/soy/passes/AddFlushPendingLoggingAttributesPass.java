@@ -80,22 +80,23 @@ final class AddFlushPendingLoggingAttributesPass implements CompilerFilePass {
                 .filter(l -> !l.isImplicitContentKind() && l.getContentKind().isHtml()),
             SoyTreeUtils.allNodesOfType(file, ConditionalBlockNode.class)
                 .filter(b -> !(b instanceof ForNonemptyNode)))
-        .forEach(
-            block -> {
-              var contentTags =
-                  block.getChildren().stream()
-                      .filter(StandaloneNode::isRendered)
-                      .collect(toImmutableList());
-              if (contentTags.isEmpty()
-                  || !(contentTags.get(0) instanceof HtmlOpenTagNode openTag)) {
-                return;
-              }
-              if ((openTag.isSelfClosing() && contentTags.size() == 1)
-                  || (openTag.getTaggedPairs().size() == 1
-                      && openTag.getTaggedPairs().get(0).equals(Iterables.getLast(contentTags)))) {
-                instrumentNode(nodeIdGen, openTag);
-              }
-            });
+        .forEach(block -> {
+          var contentTags =
+              block.getChildren().stream()
+                  .filter(StandaloneNode::isRendered)
+                  .collect(toImmutableList());
+          if (contentTags.isEmpty() || !(contentTags.get(0) instanceof HtmlOpenTagNode openTag)) {
+            return;
+          }
+          // Void elements (e.g. <img>) have no closing tag, so like self-closing tags
+          // they are a well-formed single root when they are the only content.
+          if (((openTag.isSelfClosing() || openTag.getTagName().isDefinitelyVoid())
+                  && contentTags.size() == 1)
+              || (openTag.getTaggedPairs().size() == 1
+                  && openTag.getTaggedPairs().get(0).equals(Iterables.getLast(contentTags)))) {
+            instrumentNode(nodeIdGen, openTag);
+          }
+        });
   }
 
   /**
