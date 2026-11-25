@@ -17,6 +17,7 @@
 package com.google.template.soy.shared.restricted;
 
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.internal.SoyCompileTimeFunction;
 
 /**
  * Utility methods related to Soy functions and their two class hierarchies, {@link SoyFunction} and
@@ -35,6 +36,8 @@ public final class SoyFunctions {
   public static boolean isPure(Object function) {
     if (function instanceof SoyFunction) {
       return ((SoyFunction) function).isPure();
+    } else if (function instanceof SoyCompileTimeFunction) {
+      return true;
     } else if (function instanceof SoySourceFunction) {
       return function.getClass().isAnnotationPresent(SoyPureFunction.class);
     } else {

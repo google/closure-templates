@@ -36,6 +36,8 @@ import com.google.template.soy.passes.CompilerFileSetPass.TopologicallyOrdered;
 import com.google.template.soy.plugin.java.MethodChecker;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.ToggleRegistry;
+import com.google.template.soy.shared.internal.SoyCompilerContext;
+import com.google.template.soy.shared.internal.SoyCompilerContext.OutputTarget;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.FileSetMetadata;
 import com.google.template.soy.soytree.Metadata;
@@ -295,6 +297,7 @@ public final class PassManager {
     private ImmutableList<? extends SoyPrintDirective> soyPrintDirectives;
     private ErrorReporter errorReporter;
     private SoyGeneralOptions options;
+    private OutputTarget outputTarget = OutputTarget.NONE;
     private CssRegistry cssRegistry = CssRegistry.EMPTY;
     private ToggleRegistry toggleRegistry = ToggleRegistry.EMPTY;
     private boolean allowUnknownGlobals;
@@ -363,6 +366,12 @@ public final class PassManager {
     @CanIgnoreReturnValue
     public Builder setGeneralOptions(SoyGeneralOptions options) {
       this.options = options;
+      return this;
+    }
+
+    @CanIgnoreReturnValue
+    public Builder setOutputTarget(OutputTarget outputTarget) {
+      this.outputTarget = checkNotNull(outputTarget);
       return this;
     }
 
@@ -764,6 +773,12 @@ public final class PassManager {
         // always desugar before the end since the backends (besides incremental dom) cannot handle
         // the nodes.
         passes.add(new DesugarHtmlNodesPass());
+      }
+      if (outputTarget != OutputTarget.NONE) {
+        // Inlining these must happen unconditionally before OptimizationPass so compile-time
+        // functions inside expressions OptimizationPass does not recurse into are still evaluated,
+        // and so OptimizationPass can fold constants and prune dead branches.
+        passes.add(new EvaluateCompileTimeFunctionsPass(SoyCompilerContext.create(outputTarget)));
       }
       if (optimize) {
         passes.add(new OptimizationPass(errorReporter));

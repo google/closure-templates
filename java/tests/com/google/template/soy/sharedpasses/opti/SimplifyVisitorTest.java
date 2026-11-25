@@ -22,14 +22,21 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.logging.LoggingFunction;
+import com.google.template.soy.shared.internal.SoyCompilerContext;
+import com.google.template.soy.shared.internal.SoyCompilerContext.OutputTarget;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.soytree.AutoImplNode;
+import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ExternNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -38,6 +45,7 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -519,6 +527,109 @@ public class SimplifyVisitorTest {
     PrintNode print = (PrintNode) template.getChild(1);
     assertThat(SimplifyVisitor.evaluationOrder(let, print))
         .containsExactly(attributeNode.getChild(1));
+  }
+
+  @Test
+  public void testSoyDefineIsSsrDce() {
+    String template = "{if soyDefineIsSsr()}server{else}client{/if}";
+    assertThat(simplifyForTarget(template, OutputTarget.JBCSRC)).isEqualTo("server");
+    assertThat(simplifyForTarget(template, OutputTarget.TOFU)).isEqualTo("server");
+    assertThat(simplifyForTarget(template, OutputTarget.JSSRC)).isEqualTo("client");
+    assertThat(simplifyForTarget(template, OutputTarget.IDOM)).isEqualTo("client");
+    assertThat(simplifyForTarget(template, OutputTarget.PYSRC)).isEqualTo("client");
+  }
+
+  @Test
+  public void testWholeFileSimplificationAcrossConstAndAutoImpl() {
+    String soyFile =
+        join(
+            "{namespace ns}",
+            "{const C = soyDefineIsSsr() ? 'server_const' : 'client_const' /}",
+            "{extern e: () => string}",
+            "  {autoimpl}",
+            "    {if soyDefineIsSsr()}",
+            "      {return 'server_auto' /}",
+            "    {else}",
+            "      {return 'client_auto' /}",
+            "    {/if}",
+            "  {/autoimpl}",
+            "{/extern}",
+            "{template t}",
+            "  {C}",
+            "{/template}");
+
+    SoyFileSetNode ssrTree = simplifyFileForTarget(soyFile, OutputTarget.JBCSRC);
+    SoyFileNode ssrFile = ssrTree.getChild(0);
+    ConstNode ssrConst = ssrFile.getConstants().get(0);
+    assertThat(ssrConst.getExpr().toSourceString()).isEqualTo("'server_const'");
+    ExternNode ssrExtern = ssrFile.getExterns().get(0);
+    assertThat(ssrExtern.getAutoImpl().get().toSourceString())
+        .isEqualTo("{autoimpl}{return 'server_auto' /}{/autoimpl}");
+
+    SoyFileSetNode clientTree = simplifyFileForTarget(soyFile, OutputTarget.JSSRC);
+    SoyFileNode clientFile = clientTree.getChild(0);
+    ConstNode clientConst = clientFile.getConstants().get(0);
+    assertThat(clientConst.getExpr().toSourceString()).isEqualTo("'client_const'");
+    ExternNode clientExtern = clientFile.getExterns().get(0);
+    assertThat(clientExtern.getAutoImpl().get().toSourceString())
+        .isEqualTo("{autoimpl}{return 'client_auto' /}{/autoimpl}");
+  }
+
+  @Test
+  public void testAutoImplLetContentRewrittenUpdatesVarRefs() {
+    String soyFile =
+        join(
+            "{namespace ns}",
+            "{extern e: (cond: bool) => string}",
+            "  {autoimpl}",
+            "    {let $s kind=\"text\"}{/let}",
+            "    {if $cond}",
+            "      {assign $s = 'hello' /}",
+            "    {/if}",
+            "    {return $s /}",
+            "  {/autoimpl}",
+            "{/extern}");
+
+    SoyFileSetNode fileSet = simplifyFileForTarget(soyFile, OutputTarget.JBCSRC);
+    AutoImplNode autoImpl = fileSet.getChild(0).getExterns().get(0).getAutoImpl().get();
+    LetValueNode letValue = SoyTreeUtils.getAllNodesOfType(autoImpl, LetValueNode.class).get(0);
+    assertThat(letValue.getExpr().toSourceString()).isEqualTo("''");
+    ImmutableList<VarRefNode> sRefs =
+        SoyTreeUtils.allNodesOfType(autoImpl, VarRefNode.class)
+            .filter(ref -> ref.getName().equals("$s"))
+            .collect(ImmutableList.toImmutableList());
+    assertThat(sRefs).hasSize(2);
+    for (VarRefNode ref : sRefs) {
+      assertThat(ref.getDefnDecl()).isSameInstanceAs(letValue.getVar());
+    }
+  }
+
+  private String simplifyForTarget(String body, OutputTarget target) {
+    SoyFileSetNode node = parse(body);
+    SoyTreeUtils.execOnAllV2Exprs(
+        node.getChild(0),
+        new EvaluateCompileTimeFunctionsVisitor(SoyCompilerContext.create(target)));
+    SimplifyVisitor.create(
+            node.getNodeIdGenerator(),
+            ImmutableList.copyOf(node.getChildren()),
+            ErrorReporter.exploding())
+        .simplify(node.getChild(0));
+    return toString(node.getChild(0).getChild(0));
+  }
+
+  private SoyFileSetNode simplifyFileForTarget(String soyFile, OutputTarget target) {
+    SoyFileSetNode node =
+        SoyFileSetParserBuilder.forFileContents(soyFile)
+            .runOptimizer(false)
+            .outputTarget(target)
+            .parse()
+            .fileSet();
+    SimplifyVisitor.create(
+            node.getNodeIdGenerator(),
+            ImmutableList.copyOf(node.getChildren()),
+            ErrorReporter.exploding())
+        .simplify(node.getChild(0));
+    return node;
   }
 
   private StringSubject assertSimplification(String... input) {

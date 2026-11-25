@@ -139,6 +139,7 @@ java_library(
         "//java/src/com/google/template/soy/shared",
         "//java/src/com/google/template/soy/shared:interfaces",
         "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/internal:compile_time_function",
         "//java/src/com/google/template/soy/shared/internal/gencode",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/shared/restricted:method_annotation",

@@ -32,6 +32,7 @@ java_library(
         "//java/src/com/google/template/soy/plugin/javascript/restricted",
         "//java/src/com/google/template/soy/plugin/python/restricted",
         "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/shared/internal:compile_time_function",
         "//java/src/com/google/template/soy/shared/internal:escaping_library",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/shared/restricted:method_annotation",

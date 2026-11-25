@@ -82,6 +82,7 @@ import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.ToggleRegistry;
 import com.google.template.soy.shared.internal.InternalPlugins;
+import com.google.template.soy.shared.internal.SoyCompilerContext.OutputTarget;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
@@ -1042,7 +1043,11 @@ public final class SoyFileSet {
 
   /** Runs common compiler logic shared by tofu and jbcsrc backends. */
   private ServerCompilationPrimitives compileForServerRendering(boolean isTofu) {
-    ParseResult result = parse(passManagerBuilder().addHtmlAttributesForLogging(!isTofu));
+    ParseResult result =
+        parse(
+            passManagerBuilder()
+                .setOutputTarget(isTofu ? OutputTarget.TOFU : OutputTarget.JBCSRC)
+                .addHtmlAttributesForLogging(!isTofu));
     throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();
@@ -1077,22 +1082,22 @@ public final class SoyFileSet {
 
   List<String> compileToJsSrcInternal(
       SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {
-    return entryPoint(
-        () -> {
-          PassManager.Builder builder =
-              passManagerBuilder()
-                  .allowUnknownJsGlobals()
-                  .desugarHtmlNodes(false)
-                  // Because we log by iterating the dom, this is not needed.
-                  .addHtmlAttributesForLogging(false)
-                  .validateJavaMethods(false);
-          ParseResult result = parse(builder);
-          throwIfErrorsPresent();
-          FileSetMetadata registry = result.registry();
-          SoyFileSetNode fileSet = result.fileSet();
-          return new JsSrcMain(scopedData.enterable(), typeRegistry)
-              .genJsSrc(fileSet, registry, jsSrcOptions, msgBundle, errorReporter);
-        });
+    return entryPoint(() -> {
+      PassManager.Builder builder =
+          passManagerBuilder()
+              .setOutputTarget(OutputTarget.JSSRC)
+              .allowUnknownJsGlobals()
+              .desugarHtmlNodes(false)
+              // Because we log by iterating the dom, this is not needed.
+              .addHtmlAttributesForLogging(false)
+              .validateJavaMethods(false);
+      ParseResult result = parse(builder);
+      throwIfErrorsPresent();
+      FileSetMetadata registry = result.registry();
+      SoyFileSetNode fileSet = result.fileSet();
+      return new JsSrcMain(scopedData.enterable(), typeRegistry)
+          .genJsSrc(fileSet, registry, jsSrcOptions, msgBundle, errorReporter);
+    });
   }
 
   /**
@@ -1105,23 +1110,23 @@ public final class SoyFileSet {
    * @throws SoyCompilationException If compilation fails.
    */
   List<String> compileToIdomSrcInternal(SoyIdomSrcOptions jsSrcOptions) {
-    return entryPoint(
-        () -> {
-          // For incremental dom backend, we don't desugar HTML nodes since it requires HTML
-          // context.
-          ParseResult result =
-              parse(
-                  passManagerBuilder()
-                      .desugarHtmlNodes(false)
-                      .allowUnknownJsGlobals()
-                      .desugarIdomFeatures(false)
-                      // Because we log while producing the dom, this is not needed.
-                      .addHtmlAttributesForLogging(false)
-                      .validateJavaMethods(false));
-          throwIfErrorsPresent();
-          return new IdomSrcMain(scopedData.enterable(), typeRegistry)
-              .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
-        });
+    return entryPoint(() -> {
+      // For incremental dom backend, we don't desugar HTML nodes since it requires HTML
+      // context.
+      ParseResult result =
+          parse(
+              passManagerBuilder()
+                  .setOutputTarget(OutputTarget.IDOM)
+                  .desugarHtmlNodes(false)
+                  .allowUnknownJsGlobals()
+                  .desugarIdomFeatures(false)
+                  // Because we log while producing the dom, this is not needed.
+                  .addHtmlAttributesForLogging(false)
+                  .validateJavaMethods(false));
+      throwIfErrorsPresent();
+      return new IdomSrcMain(scopedData.enterable(), typeRegistry)
+          .genJsSrc(result.fileSet(), result.registry(), jsSrcOptions, errorReporter);
+    });
   }
 
   /**
@@ -1133,22 +1138,22 @@ public final class SoyFileSet {
    *     opening/writing an output JS file.
    */
   List<String> compileToPySrcFiles(SoyPySrcOptions pySrcOptions) {
-    return entryPoint(
-        () -> {
-          try {
-            ParseResult result =
-                parse(
-                    passManagerBuilder()
-                        .validateJavaMethods(false)
-                        // pysrc doesn't support velogging
-                        .addHtmlAttributesForLogging(false));
-            throwIfErrorsPresent();
-            return new PySrcMain(scopedData.enterable())
-                .genPyFiles(result.fileSet(), result.registry(), pySrcOptions, errorReporter);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        });
+    return entryPoint(() -> {
+      try {
+        ParseResult result =
+            parse(
+                passManagerBuilder()
+                    .setOutputTarget(OutputTarget.PYSRC)
+                    .validateJavaMethods(false)
+                    // pysrc doesn't support velogging
+                    .addHtmlAttributesForLogging(false));
+        throwIfErrorsPresent();
+        return new PySrcMain(scopedData.enterable())
+            .genPyFiles(result.fileSet(), result.registry(), pySrcOptions, errorReporter);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
   @AutoValue

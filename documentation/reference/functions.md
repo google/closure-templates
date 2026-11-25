@@ -95,6 +95,12 @@ Closure `goog.array.range` function.
 Turns into `goog.reflect.objectProperty()` in JS backends. Passes the first
 argument through in all other backends.
 
+### `soyDefineIsSsr()` {#soyDefineIsSsr}
+
+Compile-time define returning `true` when compiling for server-side rendering
+(`JBCSRC` or `TOFU`) and `false` otherwise (`JSSRC`, `IDOM`, `PYSRC`). Calls are
+inlined before optimization so dead branches are eliminated.
+
 ## Math Functions
 
 ### `round(number[, numDigitsAfterDecimalPoint])` {#round}

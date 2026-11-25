@@ -34,6 +34,7 @@ import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisito
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.shared.internal.SoyCompilerContext.OutputTarget;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -104,6 +105,7 @@ public final class SoyExprForPySubject extends Subject {
   public void compilesTo(List<PyExpr> expectedPyExprs) {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(actual)
+            .outputTarget(OutputTarget.PYSRC)
             .enableExperimentalFeatures(experimentalFeatures)
             .runAutoescaper(true)
             .parse()

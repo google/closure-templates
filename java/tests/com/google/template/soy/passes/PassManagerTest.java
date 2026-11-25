@@ -28,6 +28,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager.AstRewrites;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.shared.SoyGeneralOptions;
+import com.google.template.soy.shared.internal.SoyCompilerContext.OutputTarget;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -101,12 +102,11 @@ public final class PassManagerTest {
   @Test
   public void testPassesAreAnnotated() {
     Set<Class<? extends CompilerPass>> passesWithoutAnnotations = new LinkedHashSet<>();
-    forAllPassManagers(
-        manager ->
-            Streams.<CompilerPass>concat(manager.parsePasses.stream(), manager.passes.stream())
-                .filter(pass -> pass.runBefore().isEmpty() && pass.runAfter().isEmpty())
-                .map(pass -> pass.getClass())
-                .forEach(passesWithoutAnnotations::add));
+    forAllPassManagers(manager ->
+        Streams.<CompilerPass>concat(manager.parsePasses.stream(), manager.passes.stream())
+            .filter(pass -> pass.runBefore().isEmpty() && pass.runAfter().isEmpty())
+            .map(pass -> pass.getClass())
+            .forEach(passesWithoutAnnotations::add));
     // Over time this list should decrease in size, it is, however,  reasonable that some passes may
     // never be removed for example if they could really run at any time or need to run at multiple
     // times (e.g. CombineConsecutiveRawTextNodesPass)
@@ -154,23 +154,28 @@ public final class PassManagerTest {
                 for (boolean insertEscapingDirectives : bools()) {
                   for (boolean addHtmlAttributesForDebugging : bools()) {
                     for (AstRewrites astRewrite : AstRewrites.values()) {
-                      PassManager.Builder builder =
-                          builder().setGeneralOptions(soyGeneralOptions).astRewrites(astRewrite);
-                      if (allowUnknownGlobals) {
-                        builder.allowUnknownGlobals();
+                      for (OutputTarget outputTarget : OutputTarget.values()) {
+                        PassManager.Builder builder =
+                            builder()
+                                .setGeneralOptions(soyGeneralOptions)
+                                .astRewrites(astRewrite)
+                                .setOutputTarget(outputTarget);
+                        if (allowUnknownGlobals) {
+                          builder.allowUnknownGlobals();
+                        }
+                        if (allowUnknownJsGlobals) {
+                          builder.allowUnknownJsGlobals();
+                        }
+                        if (disableAllTypeChecking) {
+                          builder.disableAllTypeChecking();
+                        }
+                        builder
+                            .desugarHtmlNodes(desugarHtmlNodes)
+                            .optimize(optimize)
+                            .insertEscapingDirectives(insertEscapingDirectives)
+                            .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging);
+                        consumer.accept(builder.build());
                       }
-                      if (allowUnknownJsGlobals) {
-                        builder.allowUnknownJsGlobals();
-                      }
-                      if (disableAllTypeChecking) {
-                        builder.disableAllTypeChecking();
-                      }
-                      builder
-                          .desugarHtmlNodes(desugarHtmlNodes)
-                          .optimize(optimize)
-                          .insertEscapingDirectives(insertEscapingDirectives)
-                          .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging);
-                      consumer.accept(builder.build());
                     }
                   }
                 }

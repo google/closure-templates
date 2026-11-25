@@ -60,6 +60,7 @@ import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.InternalPlugins;
+import com.google.template.soy.shared.internal.SoyCompilerContext.OutputTarget;
 import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
@@ -309,6 +310,7 @@ public final class TemplateTester {
       SoyFileSetParser parser =
           builder
               .typeRegistry(typeRegistry)
+              .outputTarget(OutputTarget.JBCSRC)
               .runOptimizer(true)
               .enableExperimentalFeatures(experimentalFeatures)
               .errorReporter(ErrorReporter.exploding())
@@ -380,6 +382,7 @@ public final class TemplateTester {
         ParseResult parseResult =
             builder
                 .typeRegistry(typeRegistry)
+                .outputTarget(OutputTarget.JBCSRC)
                 .runOptimizer(true)
                 .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreDeprecations())
                 .enableExperimentalFeatures(experimentalFeatures)
